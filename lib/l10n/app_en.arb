@@ -1,0 +1,295 @@
+{
+  "@@locale": "en",
+  "appTitle": "Parent App",
+  "home": "Home",
+  "myChildren": "My Children",
+  "notifications": "Notifications",
+  "assignments": "Assignments",
+  "attendance": "Attendance",
+  "grades": "Grades",
+  "fees": "Tuition Fees",
+  "settings": "Settings",
+  "selectChild": "Select Child",
+  "goodMorning": "Good Morning",
+  "goodAfternoon": "Good Afternoon",
+  "goodEvening": "Good Evening",
+  "welcomeParent": "Welcome, {name}",
+  "@welcomeParent": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "parentAccount": "Parent Account",
+  "quickAccess": "Quick Access",
+  "absenceRequest": "Absence Request",
+  "gradesAndAnalytics": "Grades & Analytics",
+  "schoolAssignments": "School Assignments",
+  "attendanceRecord": "Attendance Record",
+  "exams": "Exams",
+  "account": "Account",
+  "profile": "Profile",
+  "editProfile": "Edit account details",
+  "app": "App",
+  "appearance": "Appearance",
+  "light": "Light",
+  "dark": "Dark",
+  "language": "Language",
+  "arabic": "العربية",
+  "english": "English",
+  "activitiesAndMessages": "Activities and messages",
+  "support": "Support",
+  "helpCenter": "Help Center",
+  "contactUs": "Contact Us",
+  "aboutApp": "About App",
+  "privacyPolicy": "Privacy Policy",
+  "logout": "Logout",
+  "logoutConfirmation": "Are you sure you want to logout?",
+  "cancel": "Cancel",
+  "ok": "OK",
+  "generalNotification": "General Notification",
+  "publicHolidayTomorrow": "Tomorrow is a public holiday.",
+  "oneHourAgo": "1 hour ago",
+  "privateMessageFromAdmin": "Private message from administration",
+  "reviewWithAdmin": "Please review with administration regarding the student's level.",
+  "yesterday": "Yesterday",
+  "login": "Login",
+  "welcomeBack": "Welcome back to Riyadh & Anwar Al-Ola Schools app",
+  "phoneNumberOrUsername": "Phone Number / Username",
+  "password": "Password",
+  "forgotPassword": "Forgot Password?",
+  "forgotPasswordComingSoon": "Password recovery feature will be activated soon.",
+  "versionLabel": "Version {version}",
+  "@versionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "pleaseSelectStudent": "Please select a student",
+  "noAssignmentsForToday": "No assignments for today",
+  "totalFees": "Total Fees",
+  "paid": "Paid",
+  "remaining": "Remaining",
+  "paymentHistory": "Payment History",
+  "financialPayment": "Financial Payment",
+  "pleaseSelectChildToViewExams": "Please select a child to view their exam schedules",
+  "firstSemester": "First Semester",
+  "secondSemester": "Second Semester",
+  "noScheduleAddedFor": "No schedule added for {period}",
+  "@noScheduleAddedFor": {
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
+  },
+  "noGradesYet": "No grades yet",
+  "finalResultNote": "Final result (total months ÷ 15)",
+  "children": "Children",
+  "attendanceBehavior": "Attendance/Behavior",
+  "oral": "Oral",
+  "homework": "Homework",
+  "written": "Written",
+  "midTermFinalExam": "Mid-term / Final Exam",
+  "totalTermGrades": "Total Term Grades",
+  "totalYearlyGrades": "Total Yearly Grades (Subject)",
+  "absenceRequestSentSuccessfully": "Absence request sent successfully",
+  "errorSendingAbsenceRequest": "Error sending absence request",
+  "selectDate": "Select Date",
+  "reasonOptional": "Reason (Optional)",
+  "noRegisteredStudents": "No registered students",
+  "exampleMedicalAppointment": "Example: Medical appointment...",
+  "sendAbsenceRequest": "Send Absence Request",
+  "attendanceDays": "Attendance Days",
+  "absenceDays": "Absence Days",
+  "pleaseSelectStudentToViewAttendance": "Please select student to view attendance",
+  "saturday": "Saturday",
+  "sunday": "Sunday",
+  "monday": "Monday",
+  "tuesday": "Tuesday",
+  "wednesday": "Wednesday",
+  "currencySar": "{amount} R.Y",
+  "@currencySar": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "math": "Math",
+  "science": "Science",
+  "arabicLanguage": "Arabic Language",
+  "englishLanguage": "English Language",
+  "quran": "Holy Quran",
+  "socialStudies": "Social Studies",
+  "history": "History",
+  "physics": "Physics",
+  "month1": "First Month",
+  "month2": "Second Month",
+  "month3": "Third Month",
+  "month4": "Fourth Month",
+  "month5": "Fifth Month",
+  "month6": "Sixth Month",
+  "finalExam": "End of Term Exam",
+  "assignmentMath": "Solve exercises page 45 from student book.",
+  "assignmentScience": "Review chapter three for the exam.",
+  "assignmentArabic": "Write an essay about the importance of reading.",
+  "assignmentHistory": "Summarize the second lesson.",
+  "assignmentPhysics": "Solve constant acceleration motion problems.",
+  "assignmentQuran": "Memorize Surah An-Naba.",
+  "assignmentMath2": "Multiplication table from 1 to 5.",
+  "examQuran1": "Recite Surah Al-Baqarah from verse 1 to 50",
+  "examQuran2": "Recite Surah Al-Baqarah from 50 to 100",
+  "examMath1": "Chapter one only",
+  "examMath2": "Comprehensive",
+  "examArabic": "Texts and grammar",
+  "examScience": "Second unit",
+  "examSocial": "Geography and history",
+  "examEnglish": "Comprehensive whole book",
+  "childName1": "Ahmed Mohammed Abdullah",
+  "childGrade1": "Grade 5 - Section (A)",
+  "childName2": "Sarah Mohammed Abdullah",
+  "childGrade2": "Grade 3 - Section (B)",
+  "childName3": "Omar Mohammed Abdullah",
+  "childGrade3": "Grade 1 - Section (C)",
+  "teacherAccount": "Teacher Account",
+  "teacherName": "Mr. Ahmed Mohammed",
+  "classGrade5A": "Grade 5 - A",
+  "classGrade6B": "Grade 6 - B",
+  "subjectLughati": "Arabic (Lughati)",
+  "myClasses": "My Classes",
+  "messages": "Messages",
+  "comingSoon": "Coming soon...",
+  "emergencyMeetingTitle": "Emergency Meeting Request",
+  "emergencyMeetingMessage": "Emergency meeting for faculty members in the school library at 12 PM to discuss exams.",
+  "todayAt10am": "Today, 10:00 AM",
+  "gradesAlertTitle": "Grades Recording Alert",
+  "gradesAlertMessage": "Please complete recording the first month's grades for all students before the end of this week.",
+  "selectHint": "Select",
+  "appNameTeacherPortal": "Anwar Al-Ola Schools - Teacher Portal",
+  "loginSubtitle": "Sign in to access your classes and grades",
+  "employeeId": "Employee ID",
+  "pleaseEnterEmployeeId": "Please enter your employee ID",
+  "pleaseEnterPassword": "Please enter your password",
+  "today": "Today",
+  "present": "Present",
+  "absent": "Absent",
+  "noRecord": "No Record",
+  "all": "All",
+  "searchStudentHint": "Search by student name...",
+  "studentAttendanceRecord": "Student Attendance Record #{id}",
+  "@studentAttendanceRecord": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "noCurrentAssignments": "No current assignments.",
+  "attachmentsCount": "{count} attachments",
+  "@attachmentsCount": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "trackSubmissionsAndFeedback": "Track Submissions & Feedback",
+  "submissionsCount": "Submissions: {submitted} / {total}",
+  "@submissionsCount": {
+    "placeholders": {
+      "submitted": { "type": "String" },
+      "total": { "type": "String" }
+    }
+  },
+  "dueWithDate": "Due: {date}",
+  "@dueWithDate": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "submissionsTracking": "Submissions Tracking",
+  "teacherFeedback": "Teacher Feedback",
+  "addNoteHint": "Add feedback for the student...",
+  "gradesRecord": "Grades Record",
+  "noSearchResults": "No search results match",
+  "averageLabel": "Average ({max})",
+  "finalExamLabel": "Final Exam ({max})",
+  "monthlyTotal": "Monthly Total",
+  "totalGrade": "Total Grade",
+  "gradesSavedSuccessfully": "Grades saved successfully",
+  "recordMonthGrades": "Record Month {month} Grades",
+  "@recordMonthGrades": {
+    "placeholders": {
+      "month": { "type": "String" }
+    }
+  },
+  "recordTotalFinal": "Record Total & Final",
+  "monthGrades": "Month {month} Grades",
+  "@monthGrades": {
+    "placeholders": {
+      "month": { "type": "String" }
+    }
+  },
+  "endTermGrades": "End of Term Grades",
+  "saveGrades": "Save Grades",
+  "addNewAssignment": "Add New Assignment",
+  "classLabel": "Class",
+  "subjectLabel": "Subject",
+  "assignmentTitleLabel": "Assignment Title",
+  "assignmentDescLabel": "Assignment Description & Details",
+  "saveAndSendAssignment": "Save & Send Assignment",
+  "dueDateLabel": "Due Date",
+  "dueDay": "Due Day",
+  "selectDueDate": "Select Due Date",
+  "attachFilesOrImages": "Attach files or images",
+  "studentWithId": "Student #{id}",
+  "@studentWithId": {
+    "placeholders": {
+      "id": { "type": "String" }
+    }
+  },
+  "noStudentsPresent": "No students present currently",
+  "noStudentsAbsent": "No students absent currently",
+  "noStudentsInSection": "No students in this class section",
+  "assignmentTitleHint": "e.g. Solve exercises page 45...",
+  "assignmentDescHint": "Write assignment details here...",
+  "assignmentSelectFiles": "File and image selection will open.",
+  "assignmentSaveError": "Please complete all fields and select class and subject.",
+  "assignmentSaveSuccess": "Assignment added and notification sent to students and parents.",
+  "fileFormatHint": "PDF, JPG, PNG (Max 10MB)",
+  "submissionStatusSubmitted": "Submitted",
+  "submissionStatusLate": "Late",
+  "submissionStatusNotSubmitted": "Not Submitted",
+  "homeworkLabel": "Homework ({max})",
+  "@homeworkLabel": {
+    "placeholders": {
+      "max": { "type": "String" }
+    }
+  },
+  "attendanceLabel": "Attendance ({max})",
+  "@attendanceLabel": {
+    "placeholders": {
+      "max": { "type": "String" }
+    }
+  },
+  "behaviorLabel": "Behavior ({max})",
+  "@behaviorLabel": {
+    "placeholders": {
+      "max": { "type": "String" }
+    }
+  },
+  "oralLabel": "Oral ({max})",
+  "@oralLabel": {
+    "placeholders": {
+      "max": { "type": "String" }
+    }
+  },
+  "writtenLabel": "Written ({max})",
+  "@writtenLabel": {
+    "placeholders": {
+      "max": { "type": "String" }
+    }
+  }
+}
