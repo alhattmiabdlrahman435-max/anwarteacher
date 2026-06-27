@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:upgrader/upgrader.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_drawer.dart';
 import '../../../../core/widgets/app_sliver_header.dart';
@@ -12,6 +15,29 @@ import '../../../../core/widgets/app_notification.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
+
+  Future<bool> _onWillPop(BuildContext context) async {
+    return await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تأكيد الخروج'),
+        content: const Text('هل أنت متأكد أنك تريد الخروج من التطبيق؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(context).pop(true);
+              SystemNavigator.pop();
+            },
+            child: const Text('خروج'),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,8 +50,15 @@ class DashboardScreen extends ConsumerWidget {
       {'name': 'الصف السادس - ب', 'subject': 'الرياضيات'},
     ];
 
-    return Scaffold(
-      drawer: const AppDrawer(),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, dynamic result) async {
+        if (didPop) return;
+        await _onWillPop(context);
+      },
+      child: UpgradeAlert(
+        child: Scaffold(
+          drawer: const AppDrawer(),
       body: CustomScrollView(
         physics: const ClampingScrollPhysics(
           parent: AlwaysScrollableScrollPhysics(),
@@ -66,7 +99,7 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-    );
+    )));
   }
 }
 
@@ -122,7 +155,7 @@ class _WelcomeHeader extends ConsumerWidget {
                   color: Colors.white,
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
-                  fontFamily: 'GoogleSans',
+                  fontFamily: AppTypography.fontFamily,
                 ),
               ),
             ),

@@ -14,12 +14,22 @@ import '../../features/notifications/presentation/screens/notifications_screen.d
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/reports/presentation/screens/reports_list_screen.dart';
 
+// Assistant Screens
+import '../../features/assistant/presentation/screens/assistant_dashboard_screen.dart';
+import '../../features/assistant/presentation/screens/assistant_classes_screen.dart';
+import '../../features/assistant/presentation/screens/assistant_class_details_screen.dart';
+import '../../features/assistant/presentation/screens/assistant_qr_scanner_screen.dart';
+import '../../features/assistant/presentation/screens/assistant_attendance_history_screen.dart';
+import '../../features/assistant/presentation/screens/assistant_reports_screen.dart';
+import '../../features/error/presentation/screens/not_found_screen.dart';
+
 part 'app_router.g.dart';
 
 @riverpod
 GoRouter appRouter(Ref ref) {
   return GoRouter(
     initialLocation: '/',
+    errorBuilder: (context, state) => const NotFoundScreen(),
     routes: [
       GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
@@ -61,6 +71,35 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+
+      // Assistant Flow Routes
+      GoRoute(
+        path: '/assistant/dashboard',
+        builder: (context, state) => const AssistantDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/assistant/classes',
+        builder: (context, state) => const AssistantClassesScreen(),
+      ),
+      GoRoute(
+        path: '/assistant/classes/:classId',
+        builder: (context, state) {
+          final classId = state.pathParameters['classId']!;
+          return AssistantClassDetailsScreen(classId: classId);
+        },
+      ),
+      GoRoute(
+        path: '/assistant/qr_scan',
+        builder: (context, state) => const AssistantQrScannerScreen(),
+      ),
+      GoRoute(
+        path: '/assistant/history',
+        builder: (context, state) => const AssistantAttendanceHistoryScreen(),
+      ),
+      GoRoute(
+        path: '/assistant/reports',
+        builder: (context, state) => const AssistantReportsScreen(),
       ),
     ],
   );

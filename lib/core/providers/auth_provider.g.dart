@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'reports_provider.dart';
+part of 'auth_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -9,50 +9,50 @@ part of 'reports_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(Reports)
-final reportsProvider = ReportsProvider._();
+@ProviderFor(Auth)
+final authProvider = AuthProvider._();
 
-final class ReportsProvider extends $NotifierProvider<Reports, List<Report>> {
-  ReportsProvider._()
+final class AuthProvider extends $NotifierProvider<Auth, AuthState> {
+  AuthProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'reportsProvider',
-        isAutoDispose: true,
+        name: r'authProvider',
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$reportsHash();
+  String debugGetCreateSourceHash() => _$authHash();
 
   @$internal
   @override
-  Reports create() => Reports();
+  Auth create() => Auth();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(List<Report> value) {
+  Override overrideWithValue(AuthState value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<List<Report>>(value),
+      providerOverride: $SyncValueProvider<AuthState>(value),
     );
   }
 }
 
-String _$reportsHash() => r'd67c48efc417a431107e006158204267c2add390';
+String _$authHash() => r'452d9a117acab21caadc354b6bebd2de92476752';
 
-abstract class _$Reports extends $Notifier<List<Report>> {
-  List<Report> build();
+abstract class _$Auth extends $Notifier<AuthState> {
+  AuthState build();
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<List<Report>, List<Report>>;
+    final ref = this.ref as $Ref<AuthState, AuthState>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<List<Report>, List<Report>>,
-              List<Report>,
+              AnyNotifier<AuthState, AuthState>,
+              AuthState,
               Object?,
               Object?
             >;

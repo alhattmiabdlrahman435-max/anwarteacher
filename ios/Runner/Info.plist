@@ -68,5 +68,7 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSCameraUsageDescription</key>
+		<string>We need camera access to scan QR codes for student attendance.</string>
 	</dict>
 </plist>

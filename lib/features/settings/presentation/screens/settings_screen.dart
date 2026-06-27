@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../../core/extensions/localization_extension.dart';
+import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/settings_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -197,7 +198,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               TextButton(
                                 onPressed: () {
                                   Navigator.pop(context); // Close dialog
-                                  // TODO: Add Logout logic
+                                  ref.read(authProvider.notifier).logout();
                                 },
                                 child: Text(
                                   context.loc.logout,

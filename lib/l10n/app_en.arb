@@ -111,6 +111,8 @@
   "monday": "Monday",
   "tuesday": "Tuesday",
   "wednesday": "Wednesday",
+  "thursday": "Thursday",
+  "friday": "Friday",
   "currencySar": "{amount} R.Y",
   "@currencySar": {
     "placeholders": {
@@ -291,5 +293,91 @@
     "placeholders": {
       "max": { "type": "String" }
     }
-  }
+  },
+  "assistantHome": "Home",
+  "assistantClasses": "My Classes & Students",
+  "assistantReports": "Attendance Reports",
+  "assistantHistory": "Attendance History",
+  "studentsCount": "Students: {count}",
+  "@studentsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "attendanceStats": "Daily Attendance Stats",
+  "quickTasks": "Quick Tasks Access",
+  "totalTrackStudents": "Total Track Students",
+  "cumulativeAttendanceRate": "Cumulative Attendance Rate",
+  "dailyAttendance": "Daily Attendance",
+  "dailyAbsence": "Daily Absence",
+  "cumulativeAttendanceStats": "Cumulative Student Attendance Stats",
+  "monaAlHarbi": "Ms. Mona Al-Harbi",
+  "prepAssistant": "Preparation Assistant",
+  "recordDaysCount": "Record days: {count} days",
+  "@recordDaysCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "prepAssistantDescription": "Daily attendance & student checking supervisor",
+  "totalStudents": "Total Students",
+  "presentToday": "Present Today",
+  "absentToday": "Absent Today",
+  "pending": "Pending",
+  "scanQr": "Scan QR Code",
+  "searchStudentHint": "Search by student name or civil ID...",
+  "noMatchingResults": "No matching results found",
+  "civilIdLabel": "Civil ID: {id}",
+  "@civilIdLabel": {
+    "placeholders": {
+      "id": { "type": "String" }
+    }
+  },
+  "presentLabel": "Present",
+  "absentLabel": "Absent",
+  "attendanceDaysLabel": "Attendance Days",
+  "absenceDaysLabel": "Absence Days",
+  "sundayShort": "Sun",
+  "mondayShort": "Mon",
+  "tuesdayShort": "Tue",
+  "wednesdayShort": "Wed",
+  "thursdayShort": "Thu",
+  "attendanceThisMonth": "Attendance This Month",
+  "absenceThisMonth": "Absence This Month",
+  "absentPlural": "Absent",
+  "presentPlural": "Present",
+  "noAttendanceRecordForToday": "No attendance record registered for today:\n{date}",
+  "@noAttendanceRecordForToday": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "parentOrGuardian": "Parent / Guardian",
+  "parentPhone": "Parent Phone",
+  "contactWhatsApp": "Contact via WhatsApp",
+  "details": "Details",
+  "finishAndSendReport": "Finish & Send Attendance Report",
+  "reportSentSuccess": "Attendance report submitted successfully",
+  "reportSentFail": "Failed to submit report, please try again later",
+  "attendanceSummary": "Attendance Summary",
+  "confirmSendReport": "Are you sure you want to finish and send the attendance report to the school administration? This action cannot be undone.",
+  "unmarked": "Not Marked",
+  "unmarkedWarning": "Warning: There are {count} students whose attendance has not been marked.",
+  "@unmarkedWarning": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "sendAndConfirm": "Send & Confirm",
+  "scanSuccess": "Student attendance registered successfully:\n{name}",
+  "@scanSuccess": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "qrScannerTitle": "Student Attendance QR Scanner",
+  "pointCameraHint": "Point the camera at the student's QR code printed on their smart card",
+  "scanSimPanel": "Scan Simulation Panel (for testing/running without camera):",
+  "chooseStudentSim": "Choose a student to simulate scan",
+  "simScanBtn": "Simulate QR scan for selected student"
 }

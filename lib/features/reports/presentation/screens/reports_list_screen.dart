@@ -6,7 +6,8 @@ import '../../../../core/providers/reports_provider.dart';
 import '../../../../core/widgets/app_sliver_header.dart';
 import '../../../../core/widgets/app_drawer.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../widgets/report_entry_sheet.dart';
+import '../../../../core/theme/app_typography.dart';
+import '../widgets/report_create_sheet.dart';
 
 class ReportsListScreen extends ConsumerStatefulWidget {
   const ReportsListScreen({super.key});
@@ -31,12 +32,22 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
     super.dispose();
   }
 
-  void _openAddReportSheet(BuildContext context) {
+  void _showReportCreateSheet(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = isDark ? Colors.white : AppColors.primary;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const ReportEntrySheet(),
+      builder: (context) {
+        return ReportCreateSheet(
+          isDark: isDark,
+          primaryColor: primaryColor,
+          onSuccess: () {
+            Navigator.pop(context); // Close sheet
+          },
+        );
+      },
     );
   }
 
@@ -64,7 +75,7 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
               automaticallyImplyLeading: true,
               trailing: CupertinoButton(
                 padding: EdgeInsets.zero,
-                onPressed: () => _openAddReportSheet(context),
+                onPressed: () => _showReportCreateSheet(context),
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -79,13 +90,6 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
                     size: 22,
                   ),
                 ),
-              ),
-            ),
-            // Summary Stats
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: _buildSummaryStats(reports, isDark),
               ),
             ),
             // Tab Bar
@@ -128,22 +132,19 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
                       labelStyle: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
-                        fontFamily: 'GoogleSans',
+                        fontFamily: AppTypography.fontFamily,
                       ),
                       unselectedLabelStyle: const TextStyle(
                         fontWeight: FontWeight.w500,
                         fontSize: 12,
-                        fontFamily: 'GoogleSans',
+                        fontFamily: AppTypography.fontFamily,
                       ),
                       padding: const EdgeInsets.all(4),
                       tabs: [
                         _buildTab('الكل', reports.length),
-                        _buildTab('انتظار', pendingReports.length,
-                            color: Colors.orange),
-                        _buildTab('مقبول', approvedReports.length,
-                            color: Colors.green),
-                        _buildTab('مرفوض', rejectedReports.length,
-                            color: Colors.red),
+                        _buildTab('انتظار', pendingReports.length, color: Colors.orange),
+                        _buildTab('مقبول', approvedReports.length, color: Colors.green),
+                        _buildTab('مرفوض', rejectedReports.length, color: Colors.red),
                       ],
                     ),
                   ),
@@ -196,76 +197,6 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
     );
   }
 
-  Widget _buildSummaryStats(List<Report> reports, bool isDark) {
-    final pending =
-        reports.where((r) => r.status == ReportStatus.pending).length;
-    final approved =
-        reports.where((r) => r.status == ReportStatus.approved).length;
-    final rejected =
-        reports.where((r) => r.status == ReportStatus.rejected).length;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        children: [
-          _buildStatChip('الإجمالي', reports.length, AppColors.primary, isDark),
-          const SizedBox(width: 8),
-          _buildStatChip('انتظار', pending, Colors.orange, isDark),
-          const SizedBox(width: 8),
-          _buildStatChip('مقبول', approved, Colors.green, isDark),
-          const SizedBox(width: 8),
-          _buildStatChip('مرفوض', rejected, Colors.red, isDark),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatChip(
-      String label, int count, Color color, bool isDark) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceAltDark : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-        ),
-        child: Column(
-          children: [
-            Text(
-              '$count',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: color,
-                fontFamily: 'GoogleSans',
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                color: isDark
-                    ? AppColors.textSecondaryDark
-                    : AppColors.textSecondaryLight,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildReportsList(List<Report> reportsList, bool isDark) {
     if (reportsList.isEmpty) {
       return Center(
@@ -301,7 +232,7 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
                 fontSize: 17,
                 fontWeight: FontWeight.bold,
                 color: isDark ? Colors.white60 : Colors.grey[500],
-                fontFamily: 'GoogleSans',
+                fontFamily: AppTypography.fontFamily,
               ),
             ),
             const SizedBox(height: 6),
@@ -326,30 +257,28 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
     );
   }
 
-  Widget _buildReportCard(
-      BuildContext context, Report report, bool isDark) {
+  Widget _buildReportCard(BuildContext context, Report report, bool isDark) {
     final theme = Theme.of(context);
 
-    final (statusColor, statusBg, statusIcon, statusLabel) =
-        switch (report.status) {
+    final (statusColor, statusBg, statusIcon, statusLabel) = switch (report.status) {
       ReportStatus.pending => (
-          const Color(0xFFF59E0B),
-          const Color(0xFFFFF8E1),
-          Icons.hourglass_top_rounded,
-          'قيد الانتظار',
-        ),
+        const Color(0xFFF59E0B),
+        const Color(0xFFFFF8E1),
+        Icons.hourglass_top_rounded,
+        'قيد الانتظار',
+      ),
       ReportStatus.approved => (
-          const Color(0xFF10B981),
-          const Color(0xFFE8F5E9),
-          Icons.check_circle_rounded,
-          'مقبول',
-        ),
+        const Color(0xFF10B981),
+        const Color(0xFFE8F5E9),
+        Icons.check_circle_rounded,
+        'مقبول',
+      ),
       ReportStatus.rejected => (
-          const Color(0xFFEF4444),
-          const Color(0xFFFFEBEE),
-          Icons.cancel_rounded,
-          'مرفوض',
-        ),
+        const Color(0xFFEF4444),
+        const Color(0xFFFFEBEE),
+        Icons.cancel_rounded,
+        'مرفوض',
+      ),
     };
 
     final typeColor = report.type.color;
@@ -376,14 +305,12 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
         children: [
           // ── Top: Status bar
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               color: isDark
                   ? statusColor.withValues(alpha: 0.12)
                   : statusBg,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Row(
               children: [
@@ -395,7 +322,7 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
                     color: statusColor,
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'GoogleSans',
+                    fontFamily: AppTypography.fontFamily,
                   ),
                 ),
                 const Spacer(),
@@ -435,8 +362,7 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
                         ),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child:
-                          Icon(typeIcon, color: Colors.white, size: 22),
+                      child: Icon(typeIcon, color: Colors.white, size: 22),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -474,12 +400,10 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color:
-                                      typeColor.withValues(alpha: 0.1),
+                                  color: typeColor.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
-                                    color: typeColor
-                                        .withValues(alpha: 0.25),
+                                    color: typeColor.withValues(alpha: 0.25),
                                   ),
                                 ),
                                 child: Text(
@@ -531,8 +455,8 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
                 if (report.imageUrl != null) ...[
                   const SizedBox(height: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: Colors.green.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(10),

@@ -288,6 +288,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get wednesday => 'الأربعاء';
 
   @override
+  String get thursday => 'الخميس';
+
+  @override
+  String get friday => 'الجمعة';
+
+  @override
   String currencySar(String amount) {
     return '$amount ر.ي';
   }
@@ -475,7 +481,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get all => 'الكل';
 
   @override
-  String get searchStudentHint => 'بحث باسم الطالب...';
+  String get searchStudentHint => 'ابحث باسم الطالب أو رقم الهوية...';
 
   @override
   String studentAttendanceRecord(String id) {
@@ -653,4 +659,184 @@ class AppLocalizationsAr extends AppLocalizations {
   String writtenLabel(String max) {
     return 'التحريري ($max)';
   }
+
+  @override
+  String get assistantHome => 'الرئيسية';
+
+  @override
+  String get assistantClasses => 'فصولي والطلاب';
+
+  @override
+  String get assistantReports => 'تقارير الحضور والغياب';
+
+  @override
+  String get assistantHistory => 'سجل الحضور والغياب';
+
+  @override
+  String studentsCount(int count) {
+    return 'عدد الطلاب: $count';
+  }
+
+  @override
+  String get attendanceStats => 'إحصائيات التحضير اليومية';
+
+  @override
+  String get quickTasks => 'الوصول السريع للمهام';
+
+  @override
+  String get totalTrackStudents => 'إجمالي الطلاب بالمسارات';
+
+  @override
+  String get cumulativeAttendanceRate => 'نسبة الحضور التراكمية';
+
+  @override
+  String get dailyAttendance => 'الحضور اليومي';
+
+  @override
+  String get dailyAbsence => 'الغياب اليومي';
+
+  @override
+  String get cumulativeAttendanceStats => 'إحصائيات حضور الطلاب التراكمية';
+
+  @override
+  String get monaAlHarbi => 'أ. منى الحربي';
+
+  @override
+  String get prepAssistant => 'مشرفة تحضير';
+
+  @override
+  String recordDaysCount(int count) {
+    return 'عدد أيام الكشوفات: $count أيام';
+  }
+
+  @override
+  String get prepAssistantDescription => 'مشرفة تحضير وتفقد الطلاب اليومي';
+
+  @override
+  String get totalStudents => 'إجمالي الطلاب';
+
+  @override
+  String get presentToday => 'حاضرون اليوم';
+
+  @override
+  String get absentToday => 'غائبون اليوم';
+
+  @override
+  String get pending => 'غير محدد';
+
+  @override
+  String get scanQr => 'مسح الكود (QR)';
+
+  @override
+  String get noMatchingResults => 'لا توجد نتائج مطابقة لبحثك';
+
+  @override
+  String civilIdLabel(String id) {
+    return 'رقم الهوية: $id';
+  }
+
+  @override
+  String get presentLabel => 'حضور';
+
+  @override
+  String get absentLabel => 'غياب';
+
+  @override
+  String get attendanceDaysLabel => 'أيام الحضور';
+
+  @override
+  String get absenceDaysLabel => 'أيام الغياب';
+
+  @override
+  String get sundayShort => 'أحد';
+
+  @override
+  String get mondayShort => 'اثنين';
+
+  @override
+  String get tuesdayShort => 'ثلاثاء';
+
+  @override
+  String get wednesdayShort => 'أربعاء';
+
+  @override
+  String get thursdayShort => 'خميس';
+
+  @override
+  String get attendanceThisMonth => 'الحضور هذا الشهر';
+
+  @override
+  String get absenceThisMonth => 'الغياب هذا الشهر';
+
+  @override
+  String get absentPlural => 'غائبون';
+
+  @override
+  String get presentPlural => 'حاضرون';
+
+  @override
+  String noAttendanceRecordForToday(String date) {
+    return 'لا يوجد كشف حضور مسجل لهذا اليوم:\n$date';
+  }
+
+  @override
+  String get parentOrGuardian => 'ولي الأمر / الوصي';
+
+  @override
+  String get parentPhone => 'رقم هاتف ولي الأمر';
+
+  @override
+  String get contactWhatsApp => 'تواصل عبر الواتساب';
+
+  @override
+  String get details => 'التفاصيل';
+
+  @override
+  String get finishAndSendReport => 'إنهاء وإرسال تقرير التحضير';
+
+  @override
+  String get reportSentSuccess => 'تم تأكيد وإرسال كشف حضور الطلاب بنجاح';
+
+  @override
+  String get reportSentFail => 'فشل تأكيد وإرسال التقرير، يرجى المحاولة لاحقاً';
+
+  @override
+  String get attendanceSummary => 'ملخص كشف الحضور';
+
+  @override
+  String get confirmSendReport =>
+      'هل أنت متأكد من إنهاء وإرسال تقرير حضور الطلاب للإدارة المدرسية؟ لا يمكن تعديله لاحقاً.';
+
+  @override
+  String get unmarked => 'غير مرصود';
+
+  @override
+  String unmarkedWarning(int count) {
+    return 'تنبيه: هناك عدد $count طلاب لم يتم رصد حضورهم.';
+  }
+
+  @override
+  String get sendAndConfirm => 'إرسال وتأكيد';
+
+  @override
+  String scanSuccess(String name) {
+    return 'تم تسجيل حضور الطالب:\n$name (بنجاح)';
+  }
+
+  @override
+  String get qrScannerTitle => 'ماسح حضور الطلاب (QR)';
+
+  @override
+  String get pointCameraHint =>
+      'وجه الكاميرا نحو الرمز الخاص بالطالب المطبوع على بطاقته الذكية';
+
+  @override
+  String get scanSimPanel =>
+      'لوحة محاكاة المسح (للاختبار والتشغيل بدون كاميرا):';
+
+  @override
+  String get chooseStudentSim => 'اختر طالب لمحاكاة مسحه';
+
+  @override
+  String get simScanBtn => 'محاكاة مسح الكود للطالب المختار';
 }

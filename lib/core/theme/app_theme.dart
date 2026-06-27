@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import 'app_spacing.dart';
@@ -18,11 +19,31 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      fontFamily: AppTypography.fontFamily,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.surfaceLight,
       textTheme: AppTypography.textTheme.apply(
         bodyColor: AppColors.textPrimaryLight,
         displayColor: AppColors.textPrimaryLight,
+      ),
+      cupertinoOverrideTheme: CupertinoThemeData(
+        brightness: Brightness.light,
+        primaryColor: AppColors.primary,
+        textTheme: CupertinoTextThemeData(
+          textStyle: TextStyle(
+            fontFamily: AppTypography.fontFamily,
+            color: AppColors.textPrimaryLight,
+          ),
+          navLargeTitleTextStyle: TextStyle(
+            fontFamily: AppTypography.fontFamily,
+            color: AppColors.textPrimaryLight,
+            fontWeight: FontWeight.bold,
+          ),
+          navTitleTextStyle: TextStyle(
+            fontFamily: AppTypography.fontFamily,
+            color: AppColors.textPrimaryLight,
+          ),
+        ),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent, // Make it transparent for glassy effect
@@ -174,11 +195,31 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      fontFamily: AppTypography.fontFamily,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.surfaceDark,
       textTheme: AppTypography.textTheme.apply(
         bodyColor: AppColors.textPrimaryDark,
         displayColor: AppColors.textPrimaryDark,
+      ),
+      cupertinoOverrideTheme: CupertinoThemeData(
+        brightness: Brightness.dark,
+        primaryColor: Colors.white,
+        textTheme: CupertinoTextThemeData(
+          textStyle: TextStyle(
+            fontFamily: AppTypography.fontFamily,
+            color: AppColors.textPrimaryDark,
+          ),
+          navLargeTitleTextStyle: TextStyle(
+            fontFamily: AppTypography.fontFamily,
+            color: AppColors.textPrimaryDark,
+            fontWeight: FontWeight.bold,
+          ),
+          navTitleTextStyle: TextStyle(
+            fontFamily: AppTypography.fontFamily,
+            color: AppColors.textPrimaryDark,
+          ),
+        ),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,

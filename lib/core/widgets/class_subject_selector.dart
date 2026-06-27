@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
 import '../providers/classes_provider.dart';
 import '../providers/subjects_provider.dart';
 import '../extensions/localization_extension.dart';
@@ -59,7 +60,7 @@ class ClassSubjectSelector extends ConsumerWidget {
                     style: TextStyle(
                       color: textColor,
                       fontWeight: FontWeight.w700,
-                      fontFamily: 'GoogleSans',
+                      fontFamily: AppTypography.fontFamily,
                       fontSize: 13,
                     ),
                     items: classes.map((className) {
@@ -112,7 +113,7 @@ class ClassSubjectSelector extends ConsumerWidget {
                     style: TextStyle(
                       color: textColor,
                       fontWeight: FontWeight.w700,
-                      fontFamily: 'GoogleSans',
+                      fontFamily: AppTypography.fontFamily,
                       fontSize: 13,
                     ),
                     items: subjects.map((subjectName) {

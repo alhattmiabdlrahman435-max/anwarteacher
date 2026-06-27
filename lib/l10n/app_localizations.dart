@@ -638,6 +638,18 @@ abstract class AppLocalizations {
   /// **'الأربعاء'**
   String get wednesday;
 
+  /// No description provided for @thursday.
+  ///
+  /// In ar, this message translates to:
+  /// **'الخميس'**
+  String get thursday;
+
+  /// No description provided for @friday.
+  ///
+  /// In ar, this message translates to:
+  /// **'الجمعة'**
+  String get friday;
+
   /// No description provided for @currencySar.
   ///
   /// In ar, this message translates to:
@@ -1007,7 +1019,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchStudentHint.
   ///
   /// In ar, this message translates to:
-  /// **'بحث باسم الطالب...'**
+  /// **'ابحث باسم الطالب أو رقم الهوية...'**
   String get searchStudentHint;
 
   /// No description provided for @studentAttendanceRecord.
@@ -1303,6 +1315,336 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'التحريري ({max})'**
   String writtenLabel(String max);
+
+  /// No description provided for @assistantHome.
+  ///
+  /// In ar, this message translates to:
+  /// **'الرئيسية'**
+  String get assistantHome;
+
+  /// No description provided for @assistantClasses.
+  ///
+  /// In ar, this message translates to:
+  /// **'فصولي والطلاب'**
+  String get assistantClasses;
+
+  /// No description provided for @assistantReports.
+  ///
+  /// In ar, this message translates to:
+  /// **'تقارير الحضور والغياب'**
+  String get assistantReports;
+
+  /// No description provided for @assistantHistory.
+  ///
+  /// In ar, this message translates to:
+  /// **'سجل الحضور والغياب'**
+  String get assistantHistory;
+
+  /// No description provided for @studentsCount.
+  ///
+  /// In ar, this message translates to:
+  /// **'عدد الطلاب: {count}'**
+  String studentsCount(int count);
+
+  /// No description provided for @attendanceStats.
+  ///
+  /// In ar, this message translates to:
+  /// **'إحصائيات التحضير اليومية'**
+  String get attendanceStats;
+
+  /// No description provided for @quickTasks.
+  ///
+  /// In ar, this message translates to:
+  /// **'الوصول السريع للمهام'**
+  String get quickTasks;
+
+  /// No description provided for @totalTrackStudents.
+  ///
+  /// In ar, this message translates to:
+  /// **'إجمالي الطلاب بالمسارات'**
+  String get totalTrackStudents;
+
+  /// No description provided for @cumulativeAttendanceRate.
+  ///
+  /// In ar, this message translates to:
+  /// **'نسبة الحضور التراكمية'**
+  String get cumulativeAttendanceRate;
+
+  /// No description provided for @dailyAttendance.
+  ///
+  /// In ar, this message translates to:
+  /// **'الحضور اليومي'**
+  String get dailyAttendance;
+
+  /// No description provided for @dailyAbsence.
+  ///
+  /// In ar, this message translates to:
+  /// **'الغياب اليومي'**
+  String get dailyAbsence;
+
+  /// No description provided for @cumulativeAttendanceStats.
+  ///
+  /// In ar, this message translates to:
+  /// **'إحصائيات حضور الطلاب التراكمية'**
+  String get cumulativeAttendanceStats;
+
+  /// No description provided for @monaAlHarbi.
+  ///
+  /// In ar, this message translates to:
+  /// **'أ. منى الحربي'**
+  String get monaAlHarbi;
+
+  /// No description provided for @prepAssistant.
+  ///
+  /// In ar, this message translates to:
+  /// **'مشرفة تحضير'**
+  String get prepAssistant;
+
+  /// No description provided for @recordDaysCount.
+  ///
+  /// In ar, this message translates to:
+  /// **'عدد أيام الكشوفات: {count} أيام'**
+  String recordDaysCount(int count);
+
+  /// No description provided for @prepAssistantDescription.
+  ///
+  /// In ar, this message translates to:
+  /// **'مشرفة تحضير وتفقد الطلاب اليومي'**
+  String get prepAssistantDescription;
+
+  /// No description provided for @totalStudents.
+  ///
+  /// In ar, this message translates to:
+  /// **'إجمالي الطلاب'**
+  String get totalStudents;
+
+  /// No description provided for @presentToday.
+  ///
+  /// In ar, this message translates to:
+  /// **'حاضرون اليوم'**
+  String get presentToday;
+
+  /// No description provided for @absentToday.
+  ///
+  /// In ar, this message translates to:
+  /// **'غائبون اليوم'**
+  String get absentToday;
+
+  /// No description provided for @pending.
+  ///
+  /// In ar, this message translates to:
+  /// **'غير محدد'**
+  String get pending;
+
+  /// No description provided for @scanQr.
+  ///
+  /// In ar, this message translates to:
+  /// **'مسح الكود (QR)'**
+  String get scanQr;
+
+  /// No description provided for @noMatchingResults.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد نتائج مطابقة لبحثك'**
+  String get noMatchingResults;
+
+  /// No description provided for @civilIdLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم الهوية: {id}'**
+  String civilIdLabel(String id);
+
+  /// No description provided for @presentLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'حضور'**
+  String get presentLabel;
+
+  /// No description provided for @absentLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'غياب'**
+  String get absentLabel;
+
+  /// No description provided for @attendanceDaysLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'أيام الحضور'**
+  String get attendanceDaysLabel;
+
+  /// No description provided for @absenceDaysLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'أيام الغياب'**
+  String get absenceDaysLabel;
+
+  /// No description provided for @sundayShort.
+  ///
+  /// In ar, this message translates to:
+  /// **'أحد'**
+  String get sundayShort;
+
+  /// No description provided for @mondayShort.
+  ///
+  /// In ar, this message translates to:
+  /// **'اثنين'**
+  String get mondayShort;
+
+  /// No description provided for @tuesdayShort.
+  ///
+  /// In ar, this message translates to:
+  /// **'ثلاثاء'**
+  String get tuesdayShort;
+
+  /// No description provided for @wednesdayShort.
+  ///
+  /// In ar, this message translates to:
+  /// **'أربعاء'**
+  String get wednesdayShort;
+
+  /// No description provided for @thursdayShort.
+  ///
+  /// In ar, this message translates to:
+  /// **'خميس'**
+  String get thursdayShort;
+
+  /// No description provided for @attendanceThisMonth.
+  ///
+  /// In ar, this message translates to:
+  /// **'الحضور هذا الشهر'**
+  String get attendanceThisMonth;
+
+  /// No description provided for @absenceThisMonth.
+  ///
+  /// In ar, this message translates to:
+  /// **'الغياب هذا الشهر'**
+  String get absenceThisMonth;
+
+  /// No description provided for @absentPlural.
+  ///
+  /// In ar, this message translates to:
+  /// **'غائبون'**
+  String get absentPlural;
+
+  /// No description provided for @presentPlural.
+  ///
+  /// In ar, this message translates to:
+  /// **'حاضرون'**
+  String get presentPlural;
+
+  /// No description provided for @noAttendanceRecordForToday.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا يوجد كشف حضور مسجل لهذا اليوم:\n{date}'**
+  String noAttendanceRecordForToday(String date);
+
+  /// No description provided for @parentOrGuardian.
+  ///
+  /// In ar, this message translates to:
+  /// **'ولي الأمر / الوصي'**
+  String get parentOrGuardian;
+
+  /// No description provided for @parentPhone.
+  ///
+  /// In ar, this message translates to:
+  /// **'رقم هاتف ولي الأمر'**
+  String get parentPhone;
+
+  /// No description provided for @contactWhatsApp.
+  ///
+  /// In ar, this message translates to:
+  /// **'تواصل عبر الواتساب'**
+  String get contactWhatsApp;
+
+  /// No description provided for @details.
+  ///
+  /// In ar, this message translates to:
+  /// **'التفاصيل'**
+  String get details;
+
+  /// No description provided for @finishAndSendReport.
+  ///
+  /// In ar, this message translates to:
+  /// **'إنهاء وإرسال تقرير التحضير'**
+  String get finishAndSendReport;
+
+  /// No description provided for @reportSentSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم تأكيد وإرسال كشف حضور الطلاب بنجاح'**
+  String get reportSentSuccess;
+
+  /// No description provided for @reportSentFail.
+  ///
+  /// In ar, this message translates to:
+  /// **'فشل تأكيد وإرسال التقرير، يرجى المحاولة لاحقاً'**
+  String get reportSentFail;
+
+  /// No description provided for @attendanceSummary.
+  ///
+  /// In ar, this message translates to:
+  /// **'ملخص كشف الحضور'**
+  String get attendanceSummary;
+
+  /// No description provided for @confirmSendReport.
+  ///
+  /// In ar, this message translates to:
+  /// **'هل أنت متأكد من إنهاء وإرسال تقرير حضور الطلاب للإدارة المدرسية؟ لا يمكن تعديله لاحقاً.'**
+  String get confirmSendReport;
+
+  /// No description provided for @unmarked.
+  ///
+  /// In ar, this message translates to:
+  /// **'غير مرصود'**
+  String get unmarked;
+
+  /// No description provided for @unmarkedWarning.
+  ///
+  /// In ar, this message translates to:
+  /// **'تنبيه: هناك عدد {count} طلاب لم يتم رصد حضورهم.'**
+  String unmarkedWarning(int count);
+
+  /// No description provided for @sendAndConfirm.
+  ///
+  /// In ar, this message translates to:
+  /// **'إرسال وتأكيد'**
+  String get sendAndConfirm;
+
+  /// No description provided for @scanSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم تسجيل حضور الطالب:\n{name} (بنجاح)'**
+  String scanSuccess(String name);
+
+  /// No description provided for @qrScannerTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'ماسح حضور الطلاب (QR)'**
+  String get qrScannerTitle;
+
+  /// No description provided for @pointCameraHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'وجه الكاميرا نحو الرمز الخاص بالطالب المطبوع على بطاقته الذكية'**
+  String get pointCameraHint;
+
+  /// No description provided for @scanSimPanel.
+  ///
+  /// In ar, this message translates to:
+  /// **'لوحة محاكاة المسح (للاختبار والتشغيل بدون كاميرا):'**
+  String get scanSimPanel;
+
+  /// No description provided for @chooseStudentSim.
+  ///
+  /// In ar, this message translates to:
+  /// **'اختر طالب لمحاكاة مسحه'**
+  String get chooseStudentSim;
+
+  /// No description provided for @simScanBtn.
+  ///
+  /// In ar, this message translates to:
+  /// **'محاكاة مسح الكود للطالب المختار'**
+  String get simScanBtn;
 }
 
 class _AppLocalizationsDelegate

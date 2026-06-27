@@ -3,28 +3,35 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/models/report.dart';
 import '../../../../core/providers/reports_provider.dart';
-import '../../../../core/providers/children_provider.dart';
 import '../../../../core/providers/classes_provider.dart';
+import '../../../../core/providers/children_provider.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/modern_text_field.dart';
 import '../../../../core/widgets/app_notification.dart';
 
-class ReportEntrySheet extends ConsumerStatefulWidget {
-  const ReportEntrySheet({super.key});
+class ReportCreateSheet extends ConsumerStatefulWidget {
+  final bool isDark;
+  final Color primaryColor;
+  final VoidCallback onSuccess;
+
+  const ReportCreateSheet({
+    super.key,
+    required this.isDark,
+    required this.primaryColor,
+    required this.onSuccess,
+  });
 
   @override
-  ConsumerState<ReportEntrySheet> createState() => _ReportEntrySheetState();
+  ConsumerState<ReportCreateSheet> createState() => _ReportCreateSheetState();
 }
 
-class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
+class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
   final _descriptionController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  // Step 1 – class & student selection
   String? _selectedClass;
   Student? _selectedStudent;
-
-  // Step 2 – report details
   ReportType? _selectedType;
   String? _attachedImagePath;
   bool _isUploadingImage = false;
@@ -32,12 +39,14 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
   @override
   void initState() {
     super.initState();
-    // Pre-select the currently active class
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final currentClass = ref.read(selectedClassProvider);
-      if (currentClass.isNotEmpty && mounted) {
-        setState(() => _selectedClass = currentClass);
-      }
+      final classes = ref.read(classesProvider);
+      final currentSelectedClass = ref.read(selectedClassProvider);
+      setState(() {
+        _selectedClass = currentSelectedClass.isNotEmpty 
+            ? currentSelectedClass 
+            : (classes.isNotEmpty ? classes.first : null);
+      });
     });
   }
 
@@ -47,16 +56,18 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
     super.dispose();
   }
 
-  // ─── helpers ──────────────────────────────────────────────────────────────
+  List<Student> _getFilteredStudents(List<Student> allStudents) {
+    if (_selectedClass == null) return allStudents;
 
-  List<Student> _studentsForClass(List<Student> all, String? cls) {
-    if (cls == null || cls.isEmpty) return all;
-    final filtered = all.where((s) {
-      if (cls.contains('خامس') && s.grade.contains('خامس')) return true;
-      if (cls.contains('سادس') && s.grade.contains('سادس')) return true;
+    final filtered = allStudents.where((s) {
+      final cls = _selectedClass!;
+      final grade = s.grade;
+      if (cls.contains('خامس') && grade.contains('خامس')) return true;
+      if (cls.contains('سادس') && grade.contains('سادس')) return true;
       return false;
     }).toList();
-    return filtered.isNotEmpty ? filtered : all;
+
+    return filtered.isNotEmpty ? filtered : allStudents;
   }
 
   void _simulatePickImage() async {
@@ -71,15 +82,26 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
   }
 
   void _submitReport() {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_selectedClass == null) {
+      AppNotification.show(
+        context,
+        type: AppNotificationType.warning,
+        title: 'يرجى اختيار الفصل الدراسي',
+      );
+      return;
+    }
+
     if (_selectedStudent == null) {
       AppNotification.show(
         context,
         type: AppNotificationType.warning,
-        title: 'يرجى اختيار الطالب أولاً',
+        title: 'يرجى اختيار الطالب',
       );
       return;
     }
-    if (!_formKey.currentState!.validate()) return;
+
     if (_selectedType == null) {
       AppNotification.show(
         context,
@@ -92,9 +114,7 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
     ref.read(reportsProvider.notifier).addReport(
           studentId: _selectedStudent!.id,
           studentName: _selectedStudent!.name,
-          className: _selectedClass?.isNotEmpty == true
-              ? _selectedClass!
-              : _selectedStudent!.grade,
+          className: _selectedClass!,
           type: _selectedType!,
           description: _descriptionController.text.trim(),
           imageUrl: _attachedImagePath,
@@ -107,19 +127,23 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
       message: 'بانتظار مراجعة واعتماد الإدارة',
     );
 
-    Navigator.pop(context);
+    widget.onSuccess();
   }
-
-  // ─── build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final theme = Theme.of(context);
+    final dialogBg = widget.isDark ? AppColors.surfaceAltDark : Colors.white;
+    final textColor = widget.isDark ? Colors.white : AppColors.textPrimaryLight;
+
     final classes = ref.watch(classesProvider);
     final allStudents = ref.watch(childrenProvider);
-    final studentsForClass = _studentsForClass(allStudents, _selectedClass);
-    final dialogBg = isDark ? AppColors.surfaceAltDark : Colors.white;
+    final filteredStudents = _getFilteredStudents(allStudents);
+
+    // If selected student is not in the newly filtered list, reset it
+    if (_selectedStudent != null && !filteredStudents.any((s) => s.id == _selectedStudent!.id)) {
+      _selectedStudent = null;
+    }
 
     return Container(
       padding: EdgeInsets.only(
@@ -128,15 +152,13 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
       decoration: BoxDecoration(
         color: dialogBg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
-                  blurRadius: 20,
-                  offset: const Offset(0, -5),
-                ),
-              ],
+        boxShadow: widget.isDark ? null : [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          )
+        ],
       ),
       child: SafeArea(
         child: SingleChildScrollView(
@@ -154,31 +176,33 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
                       width: 40,
                       height: 5,
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white24
-                            : Colors.grey.shade300,
+                        color: widget.isDark ? Colors.white24 : Colors.grey.shade300,
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
 
-                  // ── Sheet title ──
+                  // Header details
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(10),
+                        width: 48,
+                        height: 48,
                         decoration: BoxDecoration(
-                          gradient: AppColors.brandGradient,
-                          borderRadius: BorderRadius.circular(14),
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.flag_rounded,
-                          color: Colors.white,
-                          size: 20,
+                        child: const Center(
+                          child: Icon(
+                            Icons.assignment_late_rounded,
+                            color: AppColors.primary,
+                            size: 24,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,17 +211,18 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
                               'بلاغ جديد',
                               style: theme.textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w800,
-                                fontFamily: 'GoogleSans',
+                                fontFamily: AppTypography.fontFamily,
                                 fontSize: 18,
                               ),
                             ),
+                            const SizedBox(height: 4),
                             Text(
-                              'اختر الطالب وأدخل تفاصيل البلاغ',
+                              'إرسال بلاغ جديد لإدارة المدرسة',
                               style: theme.textTheme.labelMedium?.copyWith(
-                                color: isDark
+                                color: widget.isDark
                                     ? AppColors.textSecondaryDark
                                     : AppColors.textSecondaryLight,
-                                fontFamily: 'GoogleSans',
+                                fontFamily: AppTypography.fontFamily,
                               ),
                             ),
                           ],
@@ -207,8 +232,7 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
                         icon: Icon(
                           CupertinoIcons.xmark_circle_fill,
                           size: 28,
-                          color:
-                              isDark ? Colors.white30 : Colors.grey.shade400,
+                          color: widget.isDark ? Colors.white30 : Colors.grey.shade400,
                         ),
                         onPressed: () => Navigator.pop(context),
                       ),
@@ -216,43 +240,34 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
                   ),
                   const SizedBox(height: 24),
 
-                  // ── Class selector ──
-                  _buildSectionLabel(
-                      'الفصل الدراسي', Icons.class_rounded, isDark),
+                  // Labeled section for Student Info
+                  _buildSectionLabel('معلومات الطالب', Icons.person_pin_rounded, widget.isDark),
                   const SizedBox(height: 10),
-                  _buildClassSelector(classes, isDark),
+                  _buildClassDropdown(classes, widget.isDark, textColor),
+                  const SizedBox(height: 10),
+                  _buildStudentDropdown(filteredStudents, widget.isDark, textColor),
                   const SizedBox(height: 20),
 
-                  // ── Student selector ──
-                  _buildSectionLabel(
-                      'الطالب', CupertinoIcons.person_fill, isDark),
+                  // Labeled section for type selector
+                  _buildSectionLabel('نوع البلاغ', Icons.category_rounded, widget.isDark),
                   const SizedBox(height: 10),
-                  _buildStudentSelector(studentsForClass, isDark, theme),
+                  _buildTypeSelector(widget.isDark),
                   const SizedBox(height: 20),
 
-                  // ── Report type ──
-                  _buildSectionLabel(
-                      'نوع البلاغ', Icons.category_rounded, isDark),
+                  // Labeled section for details text field
+                  _buildSectionLabel('تفاصيل البلاغ', Icons.notes_rounded, widget.isDark),
                   const SizedBox(height: 10),
-                  _buildTypeSelector(isDark),
+                  _buildDetailsField(widget.isDark),
                   const SizedBox(height: 20),
 
-                  // ── Details ──
-                  _buildSectionLabel(
-                      'تفاصيل البلاغ', Icons.notes_rounded, isDark),
+                  // Labeled section for image attachment
+                  _buildSectionLabel('إرفاق صورة إثبات', Icons.photo_camera_rounded, widget.isDark),
                   const SizedBox(height: 10),
-                  _buildDetailsField(isDark),
-                  const SizedBox(height: 20),
-
-                  // ── Image attachment ──
-                  _buildSectionLabel(
-                      'إرفاق صورة إثبات', Icons.photo_camera_rounded, isDark),
-                  const SizedBox(height: 10),
-                  _buildImageSection(isDark),
+                  _buildImageSection(widget.isDark),
                   const SizedBox(height: 28),
 
-                  // ── Submit ──
-                  _buildSubmitButton(),
+                  // Submit Button
+                  _buildSubmitButton(widget.isDark),
                 ],
               ),
             ),
@@ -261,8 +276,6 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
       ),
     );
   }
-
-  // ─── sub-widgets ──────────────────────────────────────────────────────────
 
   Widget _buildSectionLabel(String label, IconData icon, bool isDark) {
     return Row(
@@ -274,193 +287,92 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 13.5,
-            color: isDark
-                ? Colors.white70
-                : AppColors.textSecondaryLight,
-            fontFamily: 'GoogleSans',
+            color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
+            fontFamily: AppTypography.fontFamily,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildClassSelector(List<String> classes, bool isDark) {
+  Widget _buildClassDropdown(List<String> classes, bool isDark, Color textColor) {
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.04)
-            : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(14),
+        color: isDark ? AppColors.surfaceAltDark : Colors.white,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.1)
-              : const Color(0xFFE2E8F0),
+          color: isDark ? Colors.white12 : AppColors.border,
         ),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: _selectedClass,
-          hint: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'اختر الفصل',
-              style: TextStyle(
-                color: isDark ? Colors.white38 : Colors.grey[400],
-                fontFamily: 'GoogleSans',
-                fontSize: 14,
-              ),
-            ),
-          ),
           isExpanded: true,
-          dropdownColor:
-              isDark ? AppColors.surfaceAltDark : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          icon: Icon(
-            Icons.expand_more_rounded,
-            color: isDark ? Colors.white38 : Colors.grey[400],
-          ),
+          value: _selectedClass,
+          hint: Text('اختر الفصل الدراسي...', style: TextStyle(color: isDark ? Colors.white54 : AppColors.textSecondaryLight, fontFamily: AppTypography.fontFamily, fontSize: 13)),
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: widget.primaryColor, size: 20),
+          dropdownColor: isDark ? AppColors.surfaceAltDark : Colors.white,
+          borderRadius: BorderRadius.circular(16),
           style: TextStyle(
-            color: isDark ? Colors.white : AppColors.textPrimaryLight,
-            fontFamily: 'GoogleSans',
-            fontSize: 14,
+            color: textColor,
+            fontWeight: FontWeight.w700,
+            fontFamily: AppTypography.fontFamily,
+            fontSize: 13.5,
           ),
-          items: classes
-              .map((c) => DropdownMenuItem(
-                    value: c,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text(c),
-                    ),
-                  ))
-              .toList(),
-          onChanged: (val) => setState(() {
-            _selectedClass = val;
-            _selectedStudent = null; // reset student on class change
-          }),
+          items: classes.map((c) {
+            return DropdownMenuItem(
+              value: c,
+              child: Text(c),
+            );
+          }).toList(),
+          onChanged: (newValue) {
+            if (newValue != null) {
+              setState(() {
+                _selectedClass = newValue;
+                _selectedStudent = null;
+              });
+            }
+          },
         ),
       ),
     );
   }
 
-  Widget _buildStudentSelector(
-      List<Student> students, bool isDark, ThemeData theme) {
-    if (_selectedClass == null) {
-      return Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.03)
-              : const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.08)
-                : const Color(0xFFE2E8F0),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(CupertinoIcons.info_circle,
-                size: 16,
-                color: isDark ? Colors.white30 : Colors.grey[400]),
-            const SizedBox(width: 8),
-            Text(
-              'اختر الفصل أولاً لعرض الطلاب',
-              style: TextStyle(
-                fontSize: 13,
-                color: isDark ? Colors.white38 : Colors.grey[400],
-                fontFamily: 'GoogleSans',
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
+  Widget _buildStudentDropdown(List<Student> students, bool isDark, Color textColor) {
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.04)
-            : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(14),
+        color: isDark ? AppColors.surfaceAltDark : Colors.white,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: _selectedStudent != null
-              ? AppColors.primary.withValues(alpha: 0.4)
-              : (isDark
-                  ? Colors.white.withValues(alpha: 0.1)
-                  : const Color(0xFFE2E8F0)),
+          color: isDark ? Colors.white12 : AppColors.border,
         ),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<Student>(
-          value: _selectedStudent,
-          hint: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'اختر الطالب',
-              style: TextStyle(
-                color: isDark ? Colors.white38 : Colors.grey[400],
-                fontFamily: 'GoogleSans',
-                fontSize: 14,
-              ),
-            ),
-          ),
           isExpanded: true,
-          dropdownColor:
-              isDark ? AppColors.surfaceAltDark : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          icon: Icon(
-            Icons.expand_more_rounded,
-            color: isDark ? Colors.white38 : Colors.grey[400],
-          ),
+          value: _selectedStudent,
+          hint: Text('اختر الطالب...', style: TextStyle(color: isDark ? Colors.white54 : AppColors.textSecondaryLight, fontFamily: AppTypography.fontFamily, fontSize: 13)),
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: widget.primaryColor, size: 20),
+          dropdownColor: isDark ? AppColors.surfaceAltDark : Colors.white,
+          borderRadius: BorderRadius.circular(16),
           style: TextStyle(
-            color: isDark ? Colors.white : AppColors.textPrimaryLight,
-            fontFamily: 'GoogleSans',
-            fontSize: 14,
+            color: textColor,
+            fontWeight: FontWeight.w700,
+            fontFamily: AppTypography.fontFamily,
+            fontSize: 13.5,
           ),
-          items: students
-              .map((s) => DropdownMenuItem(
-                    value: s,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                s.name.isNotEmpty
-                                    ? s.name.substring(0, 1)
-                                    : '?',
-                                style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  fontFamily: 'GoogleSans',
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              s.name,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ))
-              .toList(),
-          onChanged: (val) => setState(() => _selectedStudent = val),
+          items: students.map((s) {
+            return DropdownMenuItem(
+              value: s,
+              child: Text(s.name),
+            );
+          }).toList(),
+          onChanged: (newValue) {
+            setState(() {
+              _selectedStudent = newValue;
+            });
+          },
         ),
       ),
     );
@@ -511,9 +423,7 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
                   size: 18,
                   color: isSelected
                       ? Colors.white
-                      : (isDark
-                          ? Colors.white60
-                          : AppColors.textSecondaryLight),
+                      : (isDark ? Colors.white60 : AppColors.textSecondaryLight),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -523,10 +433,8 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
                     fontWeight: FontWeight.bold,
                     color: isSelected
                         ? Colors.white
-                        : (isDark
-                            ? Colors.white70
-                            : AppColors.textPrimaryLight),
-                    fontFamily: 'GoogleSans',
+                        : (isDark ? Colors.white70 : AppColors.textPrimaryLight),
+                    fontFamily: AppTypography.fontFamily,
                   ),
                 ),
               ],
@@ -540,14 +448,10 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
   Widget _buildDetailsField(bool isDark) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.02)
-            : const Color(0xFFF8FAFC),
+        color: isDark ? Colors.white.withValues(alpha: 0.02) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : const Color(0xFFE2E8F0),
+          color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0),
         ),
       ),
       child: ModernTextField(
@@ -575,12 +479,11 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
       return Container(
         height: 76,
         decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.02)
-              : const Color(0xFFF8FAFC),
+          color: isDark ? Colors.white.withValues(alpha: 0.02) : const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.3)),
+            color: AppColors.primary.withValues(alpha: 0.3),
+          ),
         ),
         child: const Center(
           child: Column(
@@ -595,9 +498,10 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
               Text(
                 'جارٍ رفع الصورة...',
                 style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey,
-                    fontFamily: 'GoogleSans'),
+                  fontSize: 11,
+                  color: Colors.grey,
+                  fontFamily: AppTypography.fontFamily,
+                ),
               ),
             ],
           ),
@@ -607,13 +511,11 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
 
     if (_attachedImagePath != null) {
       return Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.green.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-              color: Colors.green.withValues(alpha: 0.25)),
+          border: Border.all(color: Colors.green.withValues(alpha: 0.25)),
         ),
         child: Row(
           children: [
@@ -623,8 +525,7 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
                 color: Colors.green.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.check_rounded,
-                  color: Colors.green, size: 20),
+              child: const Icon(Icons.check_rounded, color: Colors.green, size: 20),
             ),
             const SizedBox(width: 12),
             const Expanded(
@@ -634,29 +535,22 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
                   Text(
                     'تم إرفاق الصورة بنجاح',
                     style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                        fontSize: 13,
-                        fontFamily: 'GoogleSans'),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                      fontSize: 13,
+                      fontFamily: AppTypography.fontFamily,
+                    ),
                   ),
                   Text(
                     'اضغط على حذف لإلغاء الإرفاق',
-                    style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey,
-                        fontFamily: 'GoogleSans'),
+                    style: TextStyle(fontSize: 10, color: Colors.grey, fontFamily: AppTypography.fontFamily),
                   ),
                 ],
               ),
             ),
             TextButton(
-              onPressed: () =>
-                  setState(() => _attachedImagePath = null),
-              child: const Text('حذف',
-                  style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 13,
-                      fontFamily: 'GoogleSans')),
+              onPressed: () => setState(() => _attachedImagePath = null),
+              child: const Text('حذف', style: TextStyle(color: Colors.red, fontSize: 13, fontFamily: AppTypography.fontFamily)),
             ),
           ],
         ),
@@ -669,9 +563,7 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 18),
         decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.02)
-              : const Color(0xFFF8FAFC),
+          color: isDark ? Colors.white.withValues(alpha: 0.02) : const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isDark
@@ -697,18 +589,20 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
             const Text(
               'إرفاق صورة إثبات',
               style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: AppColors.primary,
-                  fontFamily: 'GoogleSans'),
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: AppColors.primary,
+                fontFamily: AppTypography.fontFamily,
+              ),
             ),
             const SizedBox(height: 2),
             Text(
               'اختياري — اضغط هنا لإرفاق صورة توضيحية',
               style: TextStyle(
-                  fontSize: 10.5,
-                  color: isDark ? Colors.white38 : Colors.grey[500],
-                  fontFamily: 'GoogleSans'),
+                fontSize: 10.5,
+                color: isDark ? Colors.white38 : Colors.grey[500],
+                fontFamily: AppTypography.fontFamily,
+              ),
             ),
           ],
         ),
@@ -716,7 +610,7 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
     );
   }
 
-  Widget _buildSubmitButton() {
+  Widget _buildSubmitButton(bool isDark) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -737,7 +631,8 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
           shadowColor: Colors.transparent,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16)),
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -747,9 +642,10 @@ class _ReportEntrySheetState extends ConsumerState<ReportEntrySheet> {
             Text(
               'إرسال البلاغ للإدارة',
               style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'GoogleSans'),
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                fontFamily: AppTypography.fontFamily,
+              ),
             ),
           ],
         ),

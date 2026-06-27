@@ -46,4 +46,12 @@ class AppColors {
   static const Color border = Color(0xFFE2E8F0);
   static const Color textPrimary = textPrimaryLight;
   static const Color textSecondary = textSecondaryLight;
+
+  // Compatibility Colors for Assistant Module
+  static const Color lightBlue = Color(0xFF0EA5E9);
+  static const Color successGreen = success;
+  static const Color dangerRed = error;
+  static const Color cardDark = surfaceAltDark;
+  static const Color purple = Color(0xFF8B5CF6);
+  static const Color pink = Color(0xFFEC4899);
 }

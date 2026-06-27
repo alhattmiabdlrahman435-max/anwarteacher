@@ -111,6 +111,8 @@
   "monday": "الاثنين",
   "tuesday": "الثلاثاء",
   "wednesday": "الأربعاء",
+  "thursday": "الخميس",
+  "friday": "الجمعة",
   "currencySar": "{amount} ر.ي",
   "@currencySar": {
     "placeholders": {
@@ -291,5 +293,91 @@
     "placeholders": {
       "max": { "type": "String" }
     }
-  }
+  },
+  "assistantHome": "الرئيسية",
+  "assistantClasses": "فصولي والطلاب",
+  "assistantReports": "تقارير الحضور والغياب",
+  "assistantHistory": "سجل الحضور والغياب",
+  "studentsCount": "عدد الطلاب: {count}",
+  "@studentsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "attendanceStats": "إحصائيات التحضير اليومية",
+  "quickTasks": "الوصول السريع للمهام",
+  "totalTrackStudents": "إجمالي الطلاب بالمسارات",
+  "cumulativeAttendanceRate": "نسبة الحضور التراكمية",
+  "dailyAttendance": "الحضور اليومي",
+  "dailyAbsence": "الغياب اليومي",
+  "cumulativeAttendanceStats": "إحصائيات حضور الطلاب التراكمية",
+  "monaAlHarbi": "أ. منى الحربي",
+  "prepAssistant": "مشرفة تحضير",
+  "recordDaysCount": "عدد أيام الكشوفات: {count} أيام",
+  "@recordDaysCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "prepAssistantDescription": "مشرفة تحضير وتفقد الطلاب اليومي",
+  "totalStudents": "إجمالي الطلاب",
+  "presentToday": "حاضرون اليوم",
+  "absentToday": "غائبون اليوم",
+  "pending": "غير محدد",
+  "scanQr": "مسح الكود (QR)",
+  "searchStudentHint": "ابحث باسم الطالب أو رقم الهوية...",
+  "noMatchingResults": "لا توجد نتائج مطابقة لبحثك",
+  "civilIdLabel": "رقم الهوية: {id}",
+  "@civilIdLabel": {
+    "placeholders": {
+      "id": { "type": "String" }
+    }
+  },
+  "presentLabel": "حضور",
+  "absentLabel": "غياب",
+  "attendanceDaysLabel": "أيام الحضور",
+  "absenceDaysLabel": "أيام الغياب",
+  "sundayShort": "أحد",
+  "mondayShort": "اثنين",
+  "tuesdayShort": "ثلاثاء",
+  "wednesdayShort": "أربعاء",
+  "thursdayShort": "خميس",
+  "attendanceThisMonth": "الحضور هذا الشهر",
+  "absenceThisMonth": "الغياب هذا الشهر",
+  "absentPlural": "غائبون",
+  "presentPlural": "حاضرون",
+  "noAttendanceRecordForToday": "لا يوجد كشف حضور مسجل لهذا اليوم:\n{date}",
+  "@noAttendanceRecordForToday": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "parentOrGuardian": "ولي الأمر / الوصي",
+  "parentPhone": "رقم هاتف ولي الأمر",
+  "contactWhatsApp": "تواصل عبر الواتساب",
+  "details": "التفاصيل",
+  "finishAndSendReport": "إنهاء وإرسال تقرير التحضير",
+  "reportSentSuccess": "تم تأكيد وإرسال كشف حضور الطلاب بنجاح",
+  "reportSentFail": "فشل تأكيد وإرسال التقرير، يرجى المحاولة لاحقاً",
+  "attendanceSummary": "ملخص كشف الحضور",
+  "confirmSendReport": "هل أنت متأكد من إنهاء وإرسال تقرير حضور الطلاب للإدارة المدرسية؟ لا يمكن تعديله لاحقاً.",
+  "unmarked": "غير مرصود",
+  "unmarkedWarning": "تنبيه: هناك عدد {count} طلاب لم يتم رصد حضورهم.",
+  "@unmarkedWarning": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "sendAndConfirm": "إرسال وتأكيد",
+  "scanSuccess": "تم تسجيل حضور الطالب:\n{name} (بنجاح)",
+  "@scanSuccess": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "qrScannerTitle": "ماسح حضور الطلاب (QR)",
+  "pointCameraHint": "وجه الكاميرا نحو الرمز الخاص بالطالب المطبوع على بطاقته الذكية",
+  "scanSimPanel": "لوحة محاكاة المسح (للاختبار والتشغيل بدون كاميرا):",
+  "chooseStudentSim": "اختر طالب لمحاكاة مسحه",
+  "simScanBtn": "محاكاة مسح الكود للطالب المختار"
 }

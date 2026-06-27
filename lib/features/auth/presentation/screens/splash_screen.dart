@@ -1,17 +1,19 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/providers/auth_provider.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -40,10 +42,19 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     _controller.forward();
 
-    // Navigate to Login after 2.5 seconds
+    // Check login state and navigate accordingly after 2.5 seconds
     Timer(const Duration(milliseconds: 2500), () {
       if (mounted) {
-        context.go('/login');
+        final authState = ref.read(authProvider);
+        if (authState.isLoggedIn) {
+          if (authState.role == UserRole.teacher) {
+            context.go('/dashboard');
+          } else {
+            context.go('/assistant/dashboard');
+          }
+        } else {
+          context.go('/login');
+        }
       }
     });
   }
@@ -73,7 +84,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // School Logo with premium shadow/border
                       Container(
                         width: 130,
                         height: 130,
@@ -96,7 +106,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                         ),
                       ),
                       const SizedBox(height: AppSpacing.xxl),
-                      // School Name (Arabic & English)
                       Text(
                         isArabic 
                             ? 'رياض و مدارس أنوار العلى الدولية النموذجية'
@@ -111,9 +120,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                         ),
                       ),
                       const SizedBox(height: AppSpacing.sm),
-                      // Portal Subtitle
                       Text(
-                        isArabic ? 'بوابة المعلم' : 'Teacher Portal',
+                        isArabic ? 'بوابة المعلم والمشرفين' : 'Teacher & Staff Portal',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -122,7 +130,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                         ),
                       ),
                       const SizedBox(height: 60),
-                      // Subtle loading indicator
                       SizedBox(
                         width: 24,
                         height: 24,

@@ -290,6 +290,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wednesday => 'Wednesday';
 
   @override
+  String get thursday => 'Thursday';
+
+  @override
+  String get friday => 'Friday';
+
+  @override
   String currencySar(String amount) {
     return '$amount R.Y';
   }
@@ -479,7 +485,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get all => 'All';
 
   @override
-  String get searchStudentHint => 'Search by student name...';
+  String get searchStudentHint => 'Search by student name or civil ID...';
 
   @override
   String studentAttendanceRecord(String id) {
@@ -657,4 +663,186 @@ class AppLocalizationsEn extends AppLocalizations {
   String writtenLabel(String max) {
     return 'Written ($max)';
   }
+
+  @override
+  String get assistantHome => 'Home';
+
+  @override
+  String get assistantClasses => 'My Classes & Students';
+
+  @override
+  String get assistantReports => 'Attendance Reports';
+
+  @override
+  String get assistantHistory => 'Attendance History';
+
+  @override
+  String studentsCount(int count) {
+    return 'Students: $count';
+  }
+
+  @override
+  String get attendanceStats => 'Daily Attendance Stats';
+
+  @override
+  String get quickTasks => 'Quick Tasks Access';
+
+  @override
+  String get totalTrackStudents => 'Total Track Students';
+
+  @override
+  String get cumulativeAttendanceRate => 'Cumulative Attendance Rate';
+
+  @override
+  String get dailyAttendance => 'Daily Attendance';
+
+  @override
+  String get dailyAbsence => 'Daily Absence';
+
+  @override
+  String get cumulativeAttendanceStats => 'Cumulative Student Attendance Stats';
+
+  @override
+  String get monaAlHarbi => 'Ms. Mona Al-Harbi';
+
+  @override
+  String get prepAssistant => 'Preparation Assistant';
+
+  @override
+  String recordDaysCount(int count) {
+    return 'Record days: $count days';
+  }
+
+  @override
+  String get prepAssistantDescription =>
+      'Daily attendance & student checking supervisor';
+
+  @override
+  String get totalStudents => 'Total Students';
+
+  @override
+  String get presentToday => 'Present Today';
+
+  @override
+  String get absentToday => 'Absent Today';
+
+  @override
+  String get pending => 'Pending';
+
+  @override
+  String get scanQr => 'Scan QR Code';
+
+  @override
+  String get noMatchingResults => 'No matching results found';
+
+  @override
+  String civilIdLabel(String id) {
+    return 'Civil ID: $id';
+  }
+
+  @override
+  String get presentLabel => 'Present';
+
+  @override
+  String get absentLabel => 'Absent';
+
+  @override
+  String get attendanceDaysLabel => 'Attendance Days';
+
+  @override
+  String get absenceDaysLabel => 'Absence Days';
+
+  @override
+  String get sundayShort => 'Sun';
+
+  @override
+  String get mondayShort => 'Mon';
+
+  @override
+  String get tuesdayShort => 'Tue';
+
+  @override
+  String get wednesdayShort => 'Wed';
+
+  @override
+  String get thursdayShort => 'Thu';
+
+  @override
+  String get attendanceThisMonth => 'Attendance This Month';
+
+  @override
+  String get absenceThisMonth => 'Absence This Month';
+
+  @override
+  String get absentPlural => 'Absent';
+
+  @override
+  String get presentPlural => 'Present';
+
+  @override
+  String noAttendanceRecordForToday(String date) {
+    return 'No attendance record registered for today:\n$date';
+  }
+
+  @override
+  String get parentOrGuardian => 'Parent / Guardian';
+
+  @override
+  String get parentPhone => 'Parent Phone';
+
+  @override
+  String get contactWhatsApp => 'Contact via WhatsApp';
+
+  @override
+  String get details => 'Details';
+
+  @override
+  String get finishAndSendReport => 'Finish & Send Attendance Report';
+
+  @override
+  String get reportSentSuccess => 'Attendance report submitted successfully';
+
+  @override
+  String get reportSentFail =>
+      'Failed to submit report, please try again later';
+
+  @override
+  String get attendanceSummary => 'Attendance Summary';
+
+  @override
+  String get confirmSendReport =>
+      'Are you sure you want to finish and send the attendance report to the school administration? This action cannot be undone.';
+
+  @override
+  String get unmarked => 'Not Marked';
+
+  @override
+  String unmarkedWarning(int count) {
+    return 'Warning: There are $count students whose attendance has not been marked.';
+  }
+
+  @override
+  String get sendAndConfirm => 'Send & Confirm';
+
+  @override
+  String scanSuccess(String name) {
+    return 'Student attendance registered successfully:\n$name';
+  }
+
+  @override
+  String get qrScannerTitle => 'Student Attendance QR Scanner';
+
+  @override
+  String get pointCameraHint =>
+      'Point the camera at the student\'s QR code printed on their smart card';
+
+  @override
+  String get scanSimPanel =>
+      'Scan Simulation Panel (for testing/running without camera):';
+
+  @override
+  String get chooseStudentSim => 'Choose a student to simulate scan';
+
+  @override
+  String get simScanBtn => 'Simulate QR scan for selected student';
 }
