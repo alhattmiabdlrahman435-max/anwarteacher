@@ -69,6 +69,8 @@
 		<key>UIStatusBarHidden</key>
 		<false/>
 		<key>NSCameraUsageDescription</key>
-		<string>We need camera access to scan QR codes for student attendance.</string>
+		<string>يحتاج التطبيق إلى الوصول للكاميرا لالتقاط وتحديث صورة الملف الشخصي أو مسح رموز QR لتسجيل حضور الطلاب.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>يحتاج التطبيق إلى الوصول لمعرض الصور لتحديث صورة الملف الشخصي للمعلم.</string>
 	</dict>
 </plist>

@@ -246,7 +246,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                         : 'Riyadh & Anwar Al-Ola Model Schools',
                                     textAlign: TextAlign.center,
                                     style: theme.textTheme.titleMedium?.copyWith(
-                                      color: isDark ? Colors.white : const Color(0xFF1E3A8A),
+                                      color: isDark ? Colors.white : Colors.black,
                                       fontWeight: FontWeight.w900,
                                       fontSize: 18,
                                       letterSpacing: -0.2,
@@ -287,7 +287,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                       textAlign: TextAlign.center,
                                       style: theme.textTheme.headlineSmall?.copyWith(
                                         fontWeight: FontWeight.w900,
-                                        color: isDark ? Colors.white : const Color(0xFF1E3A8A),
+                                        color: isDark ? Colors.white : Colors.black,
                                         fontSize: 24,
                                       ),
                                     ),
@@ -314,7 +314,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                           Expanded(
                                             child: _RoleCard(
                                               icon: Icons.school_rounded,
-                                              label: 'معلّـم',
+                                              label: context.loc.teacherRole,
                                               isSelected: _selectedRole == UserRole.teacher,
                                               isDark: isDark,
                                               onTap: () {
@@ -328,7 +328,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                           Expanded(
                                             child: _RoleCard(
                                               icon: Icons.checklist_rtl_rounded,
-                                              label: 'مشرفة تحضير',
+                                              label: context.loc.assistantRole,
                                               isSelected: _selectedRole == UserRole.assistant,
                                               isDark: isDark,
                                               onTap: () {
@@ -352,7 +352,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                         focusNode: _idFocusNode,
                                         keyboardType: TextInputType.number,
                                         style: TextStyle(
-                                          color: isDark ? Colors.white : const Color(0xFF1E3A8A),
+                                          color: isDark ? Colors.white : Colors.black,
                                           fontWeight: FontWeight.w600,
                                         ),
                                         decoration: InputDecoration(
@@ -424,7 +424,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                             focusNode: _passwordFocusNode,
                                             obscureText: _obscurePassword,
                                             style: TextStyle(
-                                              color: isDark ? Colors.white : const Color(0xFF1E3A8A),
+                                              color: isDark ? Colors.white : Colors.black,
                                               fontWeight: FontWeight.w600,
                                             ),
                                             decoration: InputDecoration(
@@ -643,9 +643,11 @@ class _RoleCardState extends State<_RoleCard> with SingleTickerProviderStateMixi
         ? activeColor
         : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.18));
 
-    final iconColor = isSelected ? activeColor : (isDark ? Colors.white54 : AppColors.textSecondaryLight);
+    final iconColor = isSelected 
+        ? (isDark ? Colors.white : activeColor) 
+        : (isDark ? Colors.white54 : AppColors.textSecondaryLight);
     final textColor = isSelected 
-        ? activeColor 
+        ? (isDark ? Colors.white : activeColor) 
         : (isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight);
 
     return GestureDetector(

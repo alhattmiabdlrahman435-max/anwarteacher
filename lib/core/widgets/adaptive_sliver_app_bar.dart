@@ -32,9 +32,13 @@ class AdaptiveSliverAppBar extends StatelessWidget {
       color: textColor,
     );
 
+    final largeTitleStyle = titleStyle.copyWith(
+      fontSize: 32,
+    );
+
     final titleWidget = Text(
       title,
-      style: titleStyle,
+      style: largeTitleStyle,
     );
 
     return CupertinoSliverNavigationBar(

@@ -59,6 +59,8 @@
   "phoneNumberOrUsername": "رقم الهاتف / اسم المستخدم",
   "password": "كلمة المرور",
   "forgotPassword": "نسيت كلمة المرور؟",
+  "teacherRole": "معلّـم",
+  "assistantRole": "مشرفة تحضير",
   "forgotPasswordComingSoon": "سيتم تفعيل ميزة استعادة كلمة المرور قريباً.",
   "versionLabel": "الإصدار {version}",
   "@versionLabel": {

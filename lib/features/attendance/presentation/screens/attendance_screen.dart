@@ -317,11 +317,11 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                         cellTextColor = isDark ? Colors.white.withValues(alpha: 0.3) : Colors.grey.withValues(alpha: 0.5);
                       } else {
                         if (status == AttendanceStatus.present) {
-                          cellBgColor = AppColors.success.withValues(alpha: 0.15);
-                          cellTextColor = AppColors.success;
+                          cellBgColor = AppColors.success.withValues(alpha: isDark ? 0.3 : 0.15);
+                          cellTextColor = isDark ? const Color(0xFF34D399) : AppColors.success;
                         } else {
-                          cellBgColor = AppColors.error.withValues(alpha: 0.15);
-                          cellTextColor = AppColors.error;
+                          cellBgColor = AppColors.error.withValues(alpha: isDark ? 0.3 : 0.15);
+                          cellTextColor = isDark ? const Color(0xFFFCA5A5) : AppColors.error;
                         }
                       }
                       

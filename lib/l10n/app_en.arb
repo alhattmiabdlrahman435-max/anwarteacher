@@ -59,6 +59,8 @@
   "phoneNumberOrUsername": "Phone Number / Username",
   "password": "Password",
   "forgotPassword": "Forgot Password?",
+  "teacherRole": "Teacher",
+  "assistantRole": "Assistant",
   "forgotPasswordComingSoon": "Password recovery feature will be activated soon.",
   "versionLabel": "Version {version}",
   "@versionLabel": {

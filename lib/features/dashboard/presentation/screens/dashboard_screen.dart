@@ -11,7 +11,6 @@ import '../../../../core/widgets/app_drawer.dart';
 import '../../../../core/widgets/app_sliver_header.dart';
 import '../../../../core/widgets/modern_card.dart';
 import '../../../../core/extensions/localization_extension.dart';
-import '../../../../core/widgets/app_notification.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -424,18 +423,11 @@ class _QuickActions extends StatelessWidget {
             const SizedBox(width: AppSpacing.lg),
             Expanded(
               child: _QuickActionButton(
-                icon: Icons.message_rounded,
-                label: context.loc.messages,
-                color: Colors.purple,
+                icon: Icons.report_problem_rounded,
+                label: context.translateMock('البلاغات'),
+                color: Colors.redAccent,
                 isDark: isDark,
-                badgeCount: 5,
-                onTap: () {
-                  AppNotification.show(
-                    context,
-                    type: AppNotificationType.info,
-                    title: context.loc.comingSoon,
-                  );
-                },
+                onTap: () => context.push('/reports'),
               ),
             ),
             const SizedBox(width: AppSpacing.lg),
@@ -448,24 +440,6 @@ class _QuickActions extends StatelessWidget {
                 onTap: () => context.push('/settings'),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        Row(
-          children: [
-            Expanded(
-              child: _QuickActionButton(
-                icon: Icons.report_problem_rounded,
-                label: context.translateMock('البلاغات'),
-                color: Colors.redAccent,
-                isDark: isDark,
-                onTap: () => context.push('/reports'),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.lg),
-            const Expanded(child: SizedBox()),
-            const SizedBox(width: AppSpacing.lg),
-            const Expanded(child: SizedBox()),
           ],
         ),
       ],

@@ -511,6 +511,7 @@ class _StudentDetailsModal extends StatelessWidget {
   }) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = isDark ? Colors.white : AppColors.primary;
 
     return GestureDetector(
       onTap: onTap,
@@ -519,7 +520,7 @@ class _StudentDetailsModal extends StatelessWidget {
         decoration: BoxDecoration(
           color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey[50],
           borderRadius: BorderRadius.circular(16),
-          border: onTap != null ? Border.all(color: AppColors.primary.withValues(alpha: 0.1)) : null,
+          border: onTap != null ? Border.all(color: primaryColor.withValues(alpha: 0.15)) : null,
         ),
         child: Row(
           children: [
@@ -527,7 +528,7 @@ class _StudentDetailsModal extends StatelessWidget {
               textDirection: TextDirection.ltr,
               child: Icon(
                 icon,
-                color: onTap != null ? AppColors.primary : (isDark ? Colors.white70 : Colors.black45),
+                color: onTap != null ? primaryColor : (isDark ? Colors.white70 : Colors.black45),
                 size: 24,
               ),
             ),
@@ -556,7 +557,7 @@ class _StudentDetailsModal extends StatelessWidget {
               Icon(
                 PhosphorIconsRegular.arrowSquareOut,
                 size: 16,
-                color: AppColors.primary.withValues(alpha: 0.5),
+                color: primaryColor.withValues(alpha: 0.5),
               ),
           ],
         ),
@@ -613,7 +614,7 @@ class _ConfirmationDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: (isDark ? Colors.white : AppColors.primary).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(

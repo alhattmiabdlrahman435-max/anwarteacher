@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/providers/auth_provider.dart';
@@ -54,7 +55,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         title: context.loc.profile,
                         subtitle: context.loc.editProfile,
                         onTap: () {
-                          // TODO: Navigate to Profile
+                          context.push('/profile');
                         },
                       ),
                     ],
@@ -152,7 +153,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         title: context.loc.contactUs,
                         onTap: () {
-                          // TODO: Navigate to Contact Us
+                          context.push('/settings/contact_us');
                         },
                       ),
                       _Divider(),
@@ -161,7 +162,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         title: context.loc.aboutApp,
                         subtitle: 'v2.0.0',
                         onTap: () {
-                          // TODO: Navigate to About App
+                          context.push('/settings/about');
                         },
                       ),
                       _Divider(),
@@ -171,7 +172,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         title: context.loc.privacyPolicy,
                         onTap: () {
-                          // TODO: Navigate to Privacy Policy
+                          context.push('/settings/privacy_policy');
                         },
                       ),
                     ],

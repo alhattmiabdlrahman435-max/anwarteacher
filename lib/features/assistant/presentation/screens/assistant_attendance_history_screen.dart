@@ -64,7 +64,7 @@ class _AssistantAttendanceHistoryScreenState extends ConsumerState<AssistantAtte
             AdaptiveSliverAppBar(
               title: selectedClass != null 
                   ? '${selectedClass!.className} (${intl.DateFormat('yyyy/M/d').format(_selectedDay ?? _focusedDay)})'
-                  : 'سجل الحضور والغياب',
+                  : context.loc.attendanceRecord,
               automaticallyImplyLeading: true,
               leading: selectedClass != null 
                   ? CupertinoButton(
@@ -120,10 +120,10 @@ class _AssistantAttendanceHistoryScreenState extends ConsumerState<AssistantAtte
                 leading: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: (isDark ? Colors.white : AppColors.primary).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(PhosphorIconsFill.chalkboardTeacher, color: AppColors.primary),
+                  child: Icon(PhosphorIconsFill.chalkboardTeacher, color: isDark ? Colors.white : AppColors.primary),
                 ),
                 title: Text(
                   classModel.className,
@@ -277,6 +277,7 @@ class _AssistantAttendanceHistoryScreenState extends ConsumerState<AssistantAtte
   }
 
   Widget _buildCustomCalendar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final daysInMonth = DateTime(_focusedDay.year, _focusedDay.month + 1, 0).day;
     
     int getColumnIndex(int weekday) {
@@ -324,8 +325,8 @@ class _AssistantAttendanceHistoryScreenState extends ConsumerState<AssistantAtte
                         day,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF64748B),
+                        style: TextStyle(
+                          color: isDark ? Colors.white60 : const Color(0xFF64748B),
                           fontWeight: FontWeight.w600,
                           fontSize: 11,
                         ),
@@ -373,7 +374,9 @@ class _AssistantAttendanceHistoryScreenState extends ConsumerState<AssistantAtte
                     style: TextStyle(
                       color: isSelected
                           ? const Color(0xFF10B981)
-                          : (isToday ? Colors.blue : const Color(0xFF475569)),
+                          : (isToday
+                              ? Colors.blue
+                              : (isDark ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF475569))),
                       fontWeight: (isSelected || isToday) ? FontWeight.bold : FontWeight.normal,
                       fontSize: 15,
                     ),
@@ -589,7 +592,7 @@ class _DailyDetailCard extends StatelessWidget {
                         label: context.loc.absentPlural,
                         value: record.absentCount.toString(),
                         color: const Color(0xFFEF4444),
-                        bgColor: const Color(0xFFFFF1F2),
+                        bgColor: isDark ? const Color(0xFFEF4444).withValues(alpha: 0.15) : const Color(0xFFFFF1F2),
                         isSelected: currentFilter == AttendanceStatus.absent,
                       ),
                     ),
@@ -602,7 +605,7 @@ class _DailyDetailCard extends StatelessWidget {
                         label: context.loc.presentPlural,
                         value: record.presentCount.toString(),
                         color: const Color(0xFF10B981),
-                        bgColor: const Color(0xFFECFDF5),
+                        bgColor: isDark ? const Color(0xFF10B981).withValues(alpha: 0.15) : const Color(0xFFECFDF5),
                         isSelected: currentFilter == AttendanceStatus.present,
                       ),
                     ),
@@ -634,12 +637,17 @@ class _StatusBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final displayColor = isDark 
+        ? (color == const Color(0xFF10B981) ? const Color(0xFF34D399) : const Color(0xFFFCA5A5))
+        : color;
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(16),
-        border: isSelected ? Border.all(color: color, width: 2) : null,
+        border: isSelected ? Border.all(color: displayColor, width: 2) : null,
       ),
       child: Column(
         children: [
@@ -648,14 +656,14 @@ class _StatusBox extends StatelessWidget {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: color,
+              color: displayColor,
             ),
           ),
           Text(
             label,
             style: TextStyle(
               fontSize: 12,
-              color: color.withValues(alpha: 0.8),
+              color: displayColor.withValues(alpha: 0.8),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -735,12 +743,12 @@ class _StudentHistoryCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  backgroundColor: (isDark ? Colors.white : AppColors.primary).withValues(alpha: 0.1),
                   backgroundImage: student.photoUrl != null && student.photoUrl!.isNotEmpty ? NetworkImage(student.photoUrl!) : null,
                   child: student.photoUrl == null || student.photoUrl!.isEmpty
                       ? Text(
                           student.name.isNotEmpty ? student.name[0] : '?',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                          style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppColors.primary),
                         )
                       : null,
                 ),
@@ -879,6 +887,7 @@ class _StudentDetailsModal extends StatelessWidget {
   }) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final primaryColor = isDark ? Colors.white : AppColors.primary;
 
     return GestureDetector(
       onTap: onTap,
@@ -887,7 +896,7 @@ class _StudentDetailsModal extends StatelessWidget {
         decoration: BoxDecoration(
           color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey[50],
           borderRadius: BorderRadius.circular(16),
-          border: onTap != null ? Border.all(color: AppColors.primary.withValues(alpha: 0.1)) : null,
+          border: onTap != null ? Border.all(color: primaryColor.withValues(alpha: 0.15)) : null,
         ),
         child: Row(
           children: [
@@ -895,7 +904,7 @@ class _StudentDetailsModal extends StatelessWidget {
               textDirection: TextDirection.ltr,
               child: Icon(
                 icon,
-                color: onTap != null ? AppColors.primary : (isDark ? Colors.white70 : Colors.black45),
+                color: onTap != null ? primaryColor : (isDark ? Colors.white70 : Colors.black45),
                 size: 24,
               ),
             ),
@@ -920,11 +929,11 @@ class _StudentDetailsModal extends StatelessWidget {
                 ],
               ),
             ),
-            if (onTap != null)
+             if (onTap != null)
               Icon(
                 PhosphorIconsRegular.arrowSquareOut,
                 size: 16,
-                color: AppColors.primary.withValues(alpha: 0.5),
+                color: (isDark ? Colors.white : AppColors.primary).withValues(alpha: 0.5),
               ),
           ],
         ),

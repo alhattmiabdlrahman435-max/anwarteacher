@@ -168,6 +168,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get forgotPassword => 'Forgot Password?';
 
   @override
+  String get teacherRole => 'Teacher';
+
+  @override
+  String get assistantRole => 'Assistant';
+
+  @override
   String get forgotPasswordComingSoon =>
       'Password recovery feature will be activated soon.';
 

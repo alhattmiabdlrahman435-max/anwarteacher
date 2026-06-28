@@ -13,6 +13,10 @@ import '../../features/assignments/presentation/screens/submissions_tracking_scr
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/reports/presentation/screens/reports_list_screen.dart';
+import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/settings/presentation/screens/contact_us_screen.dart';
+import '../../features/settings/presentation/screens/about_app_screen.dart';
+import '../../features/settings/presentation/screens/privacy_policy_screen.dart';
 
 // Assistant Screens
 import '../../features/assistant/presentation/screens/assistant_dashboard_screen.dart';
@@ -71,6 +75,22 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/settings/contact_us',
+        builder: (context, state) => const ContactUsScreen(),
+      ),
+      GoRoute(
+        path: '/settings/about',
+        builder: (context, state) => const AboutAppScreen(),
+      ),
+      GoRoute(
+        path: '/settings/privacy_policy',
+        builder: (context, state) => const PrivacyPolicyScreen(),
       ),
 
       // Assistant Flow Routes

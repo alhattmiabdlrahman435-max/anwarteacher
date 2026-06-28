@@ -167,6 +167,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get forgotPassword => 'نسيت كلمة المرور؟';
 
   @override
+  String get teacherRole => 'معلّـم';
+
+  @override
+  String get assistantRole => 'مشرفة تحضير';
+
+  @override
   String get forgotPasswordComingSoon =>
       'سيتم تفعيل ميزة استعادة كلمة المرور قريباً.';
 

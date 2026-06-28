@@ -410,6 +410,18 @@ abstract class AppLocalizations {
   /// **'نسيت كلمة المرور؟'**
   String get forgotPassword;
 
+  /// No description provided for @teacherRole.
+  ///
+  /// In ar, this message translates to:
+  /// **'معلّـم'**
+  String get teacherRole;
+
+  /// No description provided for @assistantRole.
+  ///
+  /// In ar, this message translates to:
+  /// **'مشرفة تحضير'**
+  String get assistantRole;
+
   /// No description provided for @forgotPasswordComingSoon.
   ///
   /// In ar, this message translates to:
