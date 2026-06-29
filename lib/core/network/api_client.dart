@@ -43,7 +43,7 @@ Dio apiClient(Ref ref) {
       return handler.next(options);
     },
     onError: (DioException e, handler) {
-      if (e.response?.statusCode == 401) {
+      if (e.response?.statusCode == 401 && !e.requestOptions.path.contains('login')) {
         ref.read(authProvider.notifier).logout();
         return handler.reject(
           DioException(

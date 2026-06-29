@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../providers/auth_provider.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
@@ -29,11 +31,43 @@ import '../../features/error/presentation/screens/not_found_screen.dart';
 
 part 'app_router.g.dart';
 
+class RouterTransitionNotifier extends ChangeNotifier {
+  final Ref _ref;
+
+  RouterTransitionNotifier(this._ref) {
+    _ref.listen(authProvider, (previous, next) {
+      notifyListeners();
+    });
+  }
+}
+
 @riverpod
 GoRouter appRouter(Ref ref) {
+  final notifier = RouterTransitionNotifier(ref);
+
   return GoRouter(
     initialLocation: '/',
+    refreshListenable: notifier,
     errorBuilder: (context, state) => const NotFoundScreen(),
+    redirect: (context, state) {
+      final authState = ref.read(authProvider);
+      final isLoggedIn = authState.isLoggedIn;
+      final location = state.uri.toString();
+
+      // If not logged in and not on splash/login, go to login
+      if (!isLoggedIn && location != '/' && location != '/login') {
+        return '/login';
+      }
+
+      // If logged in and on splash/login, redirect to correct dashboard
+      if (isLoggedIn && (location == '/' || location == '/login')) {
+        return authState.role == UserRole.teacher
+            ? '/dashboard'
+            : '/assistant/dashboard';
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),

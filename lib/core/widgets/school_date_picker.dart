@@ -56,12 +56,24 @@ class _SchoolDatePickerDialog extends StatefulWidget {
 class _SchoolDatePickerDialogState extends State<_SchoolDatePickerDialog> {
   late DateTime _selectedDate;
   late DateTime _currentMonth;
+  bool _isTextInputMode = false;
+  late final TextEditingController _textController;
+  String? _inputError;
 
   @override
   void initState() {
     super.initState();
     _selectedDate = widget.initialDate;
     _currentMonth = DateTime(_selectedDate.year, _selectedDate.month);
+    _textController = TextEditingController(
+      text: '${_selectedDate.year}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.day.toString().padLeft(2, '0')}'
+    );
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
   }
 
   int _getDaysInMonth(int year, int month) {
@@ -162,6 +174,161 @@ class _SchoolDatePickerDialogState extends State<_SchoolDatePickerDialog> {
     }
   }
 
+  void _validateInput(String value) {
+    final cleanVal = value.replaceAll('٠', '0').replaceAll('١', '1').replaceAll('٢', '2').replaceAll('٣', '3').replaceAll('٤', '4').replaceAll('٥', '5').replaceAll('٦', '6').replaceAll('٧', '7').replaceAll('٨', '8').replaceAll('٩', '9');
+    final parts = cleanVal.split('/');
+    if (parts.length != 3) {
+      setState(() {
+        _inputError = 'صيغة غير صحيحة (يجب أن تكون: YYYY/MM/DD)';
+      });
+      return;
+    }
+
+    final year = int.tryParse(parts[0]);
+    final month = int.tryParse(parts[1]);
+    final day = int.tryParse(parts[2]);
+
+    if (year == null || month == null || day == null || month < 1 || month > 12) {
+      setState(() {
+        _inputError = 'التاريخ غير صالح';
+      });
+      return;
+    }
+
+    final daysInMonth = _getDaysInMonth(year, month);
+    if (day < 1 || day > daysInMonth) {
+      setState(() {
+        _inputError = 'اليوم المحدد غير صالح لهذا الشهر';
+      });
+      return;
+    }
+
+    final date = DateTime(year, month, day);
+
+    // Check weekend (Thursday/Friday)
+    if (date.weekday == DateTime.thursday || date.weekday == DateTime.friday) {
+      setState(() {
+        _inputError = 'لا يمكن اختيار أيام الإجازة (الخميس والجمعة)';
+      });
+      return;
+    }
+
+    // Check range
+    if (widget.firstDate != null && date.isBefore(DateTime(widget.firstDate!.year, widget.firstDate!.month, widget.firstDate!.day))) {
+      setState(() {
+        _inputError = 'التاريخ قبل الحد الأدنى المسموح به';
+      });
+      return;
+    }
+    if (widget.lastDate != null && date.isAfter(DateTime(widget.lastDate!.year, widget.lastDate!.month, widget.lastDate!.day, 23, 59, 59))) {
+      setState(() {
+        _inputError = 'التاريخ بعد الحد الأقصى المسموح به';
+      });
+      return;
+    }
+
+    setState(() {
+      _selectedDate = date;
+      _currentMonth = DateTime(year, month);
+      _inputError = null;
+    });
+  }
+
+  Future<void> _showMonthYearPicker() async {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    int selectedYear = _currentMonth.year;
+    int selectedMonth = _currentMonth.month;
+
+    final result = await showDialog<DateTime>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: isDark ? AppColors.surfaceAltDark : Colors.white,
+              title: const Text('اختر الشهر والسنة', style: TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.right),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: () {
+                          setDialogState(() => selectedYear--);
+                        },
+                      ),
+                      Text(
+                        selectedYear.toString(),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: () {
+                          setDialogState(() => selectedYear++);
+                        },
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  SizedBox(
+                    width: 280,
+                    height: 200,
+                    child: GridView.builder(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        mainAxisSpacing: 8,
+                        crossAxisSpacing: 8,
+                        childAspectRatio: 2,
+                      ),
+                      itemCount: 12,
+                      itemBuilder: (context, index) {
+                        final monthNum = index + 1;
+                        final isSelected = monthNum == selectedMonth;
+                        return InkWell(
+                          onTap: () {
+                            Navigator.of(context).pop(DateTime(selectedYear, monthNum));
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isSelected ? theme.colorScheme.primary : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isSelected ? theme.colorScheme.primary : (isDark ? Colors.white24 : Colors.grey.shade300),
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              _getMonthName(monthNum),
+                              style: TextStyle(
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+        _currentMonth = result;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -193,22 +360,33 @@ class _SchoolDatePickerDialogState extends State<_SchoolDatePickerDialog> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        _formatHeaderDate(_selectedDate),
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          color: isDark ? Colors.white : Colors.black87,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 26,
+                      Expanded(
+                        child: Text(
+                          _formatHeaderDate(_selectedDate),
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            color: isDark ? Colors.white : Colors.black87,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 24,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Icon(
-                        Icons.edit_outlined,
+                      IconButton(
+                        icon: Icon(_isTextInputMode ? Icons.calendar_today_outlined : Icons.edit_outlined),
                         color: isDark ? Colors.white70 : Colors.black54,
-                        size: 22,
+                        onPressed: () {
+                          setState(() {
+                            _isTextInputMode = !_isTextInputMode;
+                            if (!_isTextInputMode) {
+                              _textController.text = '${_selectedDate.year}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.day.toString().padLeft(2, '0')}';
+                              _inputError = null;
+                            }
+                          });
+                        },
                       ),
                     ],
                   ),
@@ -222,163 +400,206 @@ class _SchoolDatePickerDialogState extends State<_SchoolDatePickerDialog> {
               thickness: 1,
               color: isDark ? Colors.white12 : Colors.black12,
             ),
-            
-            // Month Navigator Selector
-            Padding(
-              padding: const EdgeInsets.only(left: 16, right: 24, top: 12, bottom: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Month dropdown on the right in RTL
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        Localizations.localeOf(context).languageCode == 'ar'
-                            ? toArabicNumbers('${_getMonthName(month)} $year')
-                            : '${_getMonthName(month)} $year',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.arrow_drop_down,
-                        color: isDark ? Colors.white70 : Colors.black54,
-                        size: 20,
-                      ),
-                    ],
-                  ),
-                  // Chevron navigation buttons on the left in RTL
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.chevron_left_rounded),
-                        onPressed: () {
-                          setState(() {
-                            _currentMonth = DateTime(year, month - 1);
-                          });
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.chevron_right_rounded),
-                        onPressed: () {
-                          setState(() {
-                            _currentMonth = DateTime(year, month + 1);
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
 
-            // Week Day Headers (Saturday to Wednesday)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: (Localizations.localeOf(context).languageCode == 'en'
-                        ? ['S', 'S', 'M', 'T', 'W']
-                        : ['س', 'ح', 'ن', 'ث', 'ر'])
-                    .map((day) {
-                  return Expanded(
-                    child: Center(
-                      child: Text(
-                        day,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            if (_isTextInputMode) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: _textController,
+                      keyboardType: TextInputType.datetime,
+                      onChanged: _validateInput,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'التاريخ (السنة/الشهر/اليوم)',
+                        hintText: 'YYYY/MM/DD',
+                        errorText: _inputError,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        prefixIcon: const Icon(Icons.edit_calendar_rounded),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'تنبيه: لا يمكن اختيار يومي الخميس والجمعة لأنهما يمثلان عطلة نهاية الأسبوع المدرسية.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.white38 : Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else ...[
+              // Month Navigator Selector
+              Padding(
+                padding: const EdgeInsets.only(left: 16, right: 24, top: 12, bottom: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Month dropdown on the right in RTL (interactive)
+                    InkWell(
+                      onTap: _showMonthYearPicker,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              Localizations.localeOf(context).languageCode == 'ar'
+                                  ? toArabicNumbers('${_getMonthName(month)} $year')
+                                  : '${_getMonthName(month)} $year',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_drop_down,
+                              color: isDark ? Colors.white70 : Colors.black54,
+                              size: 20,
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // Calendar Grid
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 5,
-                  mainAxisSpacing: 4,
-                  crossAxisSpacing: 4,
+                    // Chevron navigation buttons on the left in RTL
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.chevron_left_rounded),
+                          onPressed: () {
+                            setState(() {
+                              _currentMonth = DateTime(year, month - 1);
+                            });
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.chevron_right_rounded),
+                          onPressed: () {
+                            setState(() {
+                              _currentMonth = DateTime(year, month + 1);
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                itemCount: gridItemCount,
-                itemBuilder: (context, index) {
-                  final date = grid[index];
-                  if (date == null) {
-                    return const SizedBox.shrink();
-                  }
+              ),
 
-                  final day = date.day;
-                  final isSelectable = _isSelectable(date);
-                  final isSelected = date.year == _selectedDate.year &&
-                      date.month == _selectedDate.month &&
-                      date.day == _selectedDate.day;
-                  final isToday = date.year == DateTime.now().year &&
-                      date.month == DateTime.now().month &&
-                      date.day == DateTime.now().day;
-
-                  Color cellBgColor = Colors.transparent;
-                  Color cellTextColor = isDark ? Colors.white : AppColors.textPrimaryLight;
-                  Border? cellBorder;
-
-                  if (!isSelectable) {
-                    cellTextColor = isDark ? Colors.white.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.4);
-                  } else if (isSelected) {
-                    cellBgColor = theme.colorScheme.primary;
-                    cellTextColor = theme.colorScheme.onPrimary;
-                  } else if (isToday) {
-                    cellBorder = Border.all(color: theme.colorScheme.primary, width: 1.5);
-                    cellTextColor = theme.colorScheme.primary;
-                  }
-
-                  return Center(
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: isSelectable
-                            ? () {
-                                setState(() {
-                                  _selectedDate = date;
-                                });
-                              }
-                            : null,
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: cellBgColor,
-                            shape: BoxShape.circle,
-                            border: cellBorder,
+              // Week Day Headers (Saturday to Wednesday)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: (Localizations.localeOf(context).languageCode == 'en'
+                          ? ['S', 'S', 'M', 'T', 'W']
+                          : ['س', 'ح', 'ن', 'ث', 'ر'])
+                      .map((day) {
+                    return Expanded(
+                      child: Center(
+                        child: Text(
+                          day,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                           ),
-                          child: Text(
-                            Localizations.localeOf(context).languageCode == 'ar'
-                                ? toArabicNumbers(day.toString())
-                                : day.toString(),
-                            style: TextStyle(
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: cellTextColor,
-                              fontSize: 14,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Calendar Grid
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 5,
+                    mainAxisSpacing: 4,
+                    crossAxisSpacing: 4,
+                  ),
+                  itemCount: gridItemCount,
+                  itemBuilder: (context, index) {
+                    final date = grid[index];
+                    if (date == null) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final day = date.day;
+                    final isSelectable = _isSelectable(date);
+                    final isSelected = date.year == _selectedDate.year &&
+                        date.month == _selectedDate.month &&
+                        date.day == _selectedDate.day;
+                    final isToday = date.year == DateTime.now().year &&
+                        date.month == DateTime.now().month &&
+                        date.day == DateTime.now().day;
+
+                    Color cellBgColor = Colors.transparent;
+                    Color cellTextColor = isDark ? Colors.white : AppColors.textPrimaryLight;
+                    Border? cellBorder;
+
+                    if (!isSelectable) {
+                      cellTextColor = isDark ? Colors.white.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.4);
+                    } else if (isSelected) {
+                      cellBgColor = theme.colorScheme.primary;
+                      cellTextColor = theme.colorScheme.onPrimary;
+                    } else if (isToday) {
+                      cellBorder = Border.all(color: theme.colorScheme.primary, width: 1.5);
+                      cellTextColor = theme.colorScheme.primary;
+                    }
+
+                    return Center(
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: isSelectable
+                              ? () {
+                                  setState(() {
+                                    _selectedDate = date;
+                                  });
+                                }
+                              : null,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: cellBgColor,
+                              shape: BoxShape.circle,
+                              border: cellBorder,
+                            ),
+                            child: Text(
+                              Localizations.localeOf(context).languageCode == 'ar'
+                                  ? toArabicNumbers(day.toString())
+                                  : day.toString(),
+                              style: TextStyle(
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                color: cellTextColor,
+                                fontSize: 14,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
+            ],
             const SizedBox(height: 16),
 
             // Dialog Actions: plain text buttons matching native layout
@@ -399,7 +620,9 @@ class _SchoolDatePickerDialogState extends State<_SchoolDatePickerDialog> {
                   ),
                   const SizedBox(width: 12),
                   TextButton(
-                    onPressed: () => Navigator.pop(context, _selectedDate),
+                    onPressed: _inputError != null 
+                        ? null 
+                        : () => Navigator.pop(context, _selectedDate),
                     child: Text(
                       context.loc.ok,
                       style: const TextStyle(

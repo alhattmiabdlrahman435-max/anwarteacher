@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/assistant_models.dart';
+import '../../../core/network/api_client.dart';
 
 part 'assistant_classes_provider.g.dart';
 
@@ -7,10 +8,24 @@ part 'assistant_classes_provider.g.dart';
 class AssistantClasses extends _$AssistantClasses {
   @override
   List<ClassroomEntity> build() {
-    return const [
-      ClassroomEntity(id: 'c1', name: 'الصف الخامس - أ', nameEn: 'Grade 5 - A', grade: '5', studentCount: 5),
-      ClassroomEntity(id: 'c2', name: 'الصف السادس - ب', nameEn: 'Grade 6 - B', grade: '6', studentCount: 4),
-      ClassroomEntity(id: 'c3', name: 'الصف الثالث - أ', nameEn: 'Grade 3 - A', grade: '3', studentCount: 3),
-    ];
+    _fetch();
+    return const [];
+  }
+
+  Future<void> _fetch() async {
+    try {
+      final dio = ref.read(apiClientProvider);
+      final response = await dio.get('supervisor/classes');
+      if (response.data != null && response.data['success'] == true) {
+        final List<dynamic> data = response.data['classes'];
+        state = data.map((json) => ClassroomEntity.fromJson(json)).toList();
+      }
+    } catch (e) {
+      print('Error fetching classes: $e');
+    }
+  }
+
+  Future<void> refresh() async {
+    await _fetch();
   }
 }

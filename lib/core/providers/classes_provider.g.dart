@@ -9,19 +9,17 @@ part of 'classes_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(classes)
+@ProviderFor(Classes)
 final classesProvider = ClassesProvider._();
 
-final class ClassesProvider
-    extends $FunctionalProvider<List<String>, List<String>, List<String>>
-    with $Provider<List<String>> {
+final class ClassesProvider extends $NotifierProvider<Classes, List<String>> {
   ClassesProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'classesProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -31,13 +29,7 @@ final class ClassesProvider
 
   @$internal
   @override
-  $ProviderElement<List<String>> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
-
-  @override
-  List<String> create(Ref ref) {
-    return classes(ref);
-  }
+  Classes create() => Classes();
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(List<String> value) {
@@ -48,7 +40,25 @@ final class ClassesProvider
   }
 }
 
-String _$classesHash() => r'11846b75e0fc47773b70a3f3979a460a92de3065';
+String _$classesHash() => r'997dce7d8e9f4a9b91fce7402aad13d878491c7a';
+
+abstract class _$Classes extends $Notifier<List<String>> {
+  List<String> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<List<String>, List<String>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<List<String>, List<String>>,
+              List<String>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}
 
 @ProviderFor(SelectedClass)
 final selectedClassProvider = SelectedClassProvider._();
@@ -61,7 +71,7 @@ final class SelectedClassProvider
         argument: null,
         retry: null,
         name: r'selectedClassProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -82,7 +92,7 @@ final class SelectedClassProvider
   }
 }
 
-String _$selectedClassHash() => r'6cf2b643028129c4fb7591954a3fe974fd24ba85';
+String _$selectedClassHash() => r'7ab5bd9ba1d1f8c62deb8db07d9cf468a30eaf1c';
 
 abstract class _$SelectedClass extends $Notifier<String> {
   String build();

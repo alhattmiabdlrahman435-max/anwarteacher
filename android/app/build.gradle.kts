@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.anwarteacher"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

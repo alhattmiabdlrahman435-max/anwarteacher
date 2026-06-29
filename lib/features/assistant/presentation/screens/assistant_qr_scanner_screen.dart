@@ -9,6 +9,7 @@ import '../../models/assistant_models.dart';
 import '../../providers/assistant_classes_provider.dart';
 import '../../providers/assistant_class_details_provider.dart';
 import '../../../../core/extensions/localization_extension.dart';
+import '../../../../core/network/api_client.dart';
 
 class AssistantQrScannerScreen extends ConsumerStatefulWidget {
   const AssistantQrScannerScreen({super.key});
@@ -51,7 +52,7 @@ class _AssistantQrScannerScreenState extends ConsumerState<AssistantQrScannerScr
     super.dispose();
   }
 
-  void _registerAttendance(StudentEntity student) async {
+  void _registerAttendance(String scannedCode) async {
     if (!_isScanning || _isProcessing) return;
 
     setState(() {
@@ -59,20 +60,32 @@ class _AssistantQrScannerScreenState extends ConsumerState<AssistantQrScannerScr
       _isProcessing = true;
     });
 
-    // Short processing delay for real scanning feel
-    await Future.delayed(const Duration(milliseconds: 600));
-
-    // Register attendance
-    ref.read(assistantClassDetailsProvider(_selectedClassId).notifier).markAttendance(
-      student.id,
-      AttendanceStatus.present,
-    );
-
-    if (mounted) {
-      setState(() {
-        _isProcessing = false;
-        _scannedMessage = context.loc.scanSuccess(student.name);
-      });
+    try {
+      final dio = ref.read(apiClientProvider);
+      final response = await dio.post('students/$scannedCode/scan');
+      
+      if (response.data != null && response.data['success'] == true) {
+        final studentName = response.data['student']['name_ar'] ?? response.data['student']['name'] ?? '';
+        
+        // Refresh the class details list
+        ref.invalidate(assistantClassDetailsProvider(_selectedClassId));
+        
+        if (mounted) {
+          setState(() {
+            _isProcessing = false;
+            _scannedMessage = context.loc.scanSuccess(studentName);
+          });
+        }
+      } else {
+        throw Exception(response.data?['message'] ?? 'فشل تسجيل الحضور');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+          _scannedMessage = 'فشل التحضير: رمز غير صالح أو عطل بالاتصال';
+        });
+      }
     }
 
     // Reset scanner after 2.5 seconds
@@ -87,17 +100,7 @@ class _AssistantQrScannerScreenState extends ConsumerState<AssistantQrScannerScr
 
   void _onQrCodeScanned(String scannedCode) {
     if (!_isScanning || _isProcessing) return;
-
-    final students = ref.read(assistantClassDetailsProvider(_selectedClassId));
-    // Find a student whose ID matches the scanned code
-    final student = students.where((s) => s.id == scannedCode || s.name == scannedCode).firstOrNull;
-
-    if (student == null) {
-      _handleInvalidCode();
-      return;
-    }
-
-    _registerAttendance(student);
+    _registerAttendance(scannedCode);
   }
 
   void _handleInvalidCode() async {
@@ -150,6 +153,15 @@ class _AssistantQrScannerScreenState extends ConsumerState<AssistantQrScannerScr
     final localeCode = Localizations.localeOf(context).languageCode;
     
     final classes = ref.watch(assistantClassesProvider);
+    if (classes.isNotEmpty && (_selectedClassId == 'c1' || !classes.any((c) => c.id == _selectedClassId))) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _selectedClassId = classes.first.id;
+          });
+        }
+      });
+    }
 
     return Scaffold(
       backgroundColor: Colors.black,

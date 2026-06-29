@@ -9,19 +9,17 @@ part of 'subjects_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(subjects)
+@ProviderFor(Subjects)
 final subjectsProvider = SubjectsProvider._();
 
-final class SubjectsProvider
-    extends $FunctionalProvider<List<String>, List<String>, List<String>>
-    with $Provider<List<String>> {
+final class SubjectsProvider extends $NotifierProvider<Subjects, List<String>> {
   SubjectsProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'subjectsProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -31,13 +29,7 @@ final class SubjectsProvider
 
   @$internal
   @override
-  $ProviderElement<List<String>> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
-
-  @override
-  List<String> create(Ref ref) {
-    return subjects(ref);
-  }
+  Subjects create() => Subjects();
 
   /// {@macro riverpod.override_with_value}
   Override overrideWithValue(List<String> value) {
@@ -48,7 +40,25 @@ final class SubjectsProvider
   }
 }
 
-String _$subjectsHash() => r'a4dddb85e4b13f1b9b9503156f274056de3475af';
+String _$subjectsHash() => r'49a8cb3b1af48ad1aabb2e9a3b06c60d5b932e68';
+
+abstract class _$Subjects extends $Notifier<List<String>> {
+  List<String> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<List<String>, List<String>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<List<String>, List<String>>,
+              List<String>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}
 
 @ProviderFor(SelectedSubject)
 final selectedSubjectProvider = SelectedSubjectProvider._();
@@ -61,7 +71,7 @@ final class SelectedSubjectProvider
         argument: null,
         retry: null,
         name: r'selectedSubjectProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -82,7 +92,7 @@ final class SelectedSubjectProvider
   }
 }
 
-String _$selectedSubjectHash() => r'745d145d5707b72a36f1cb0cb0b4f4713d0e1df2';
+String _$selectedSubjectHash() => r'e138a39a12c6fa4ae294c9cd39aae5385d82625a';
 
 abstract class _$SelectedSubject extends $Notifier<String> {
   String build();

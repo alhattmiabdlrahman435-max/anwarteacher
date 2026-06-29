@@ -59,7 +59,7 @@ final class AssistantClassDetailsProvider
 }
 
 String _$assistantClassDetailsHash() =>
-    r'd026854fd8832ba4ffd9d30ab24d2b6e3f274c0e';
+    r'6e22de29c67eaf093f62a6069b272f33d5a8341d';
 
 final class AssistantClassDetailsFamily extends $Family
     with

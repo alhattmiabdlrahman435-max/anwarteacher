@@ -25,6 +25,31 @@ class StudentEntity {
     this.isLocked = false,
   });
 
+  factory StudentEntity.fromJson(Map<String, dynamic> json) {
+    AttendanceStatus status = AttendanceStatus.unknown;
+    final statusStr = json['status']?.toString().toLowerCase();
+    if (statusStr == 'present') {
+      status = AttendanceStatus.present;
+    } else if (statusStr == 'absent') {
+      status = AttendanceStatus.absent;
+    } else if (statusStr == 'late') {
+      status = AttendanceStatus.late;
+    } else if (statusStr == 'excused') {
+      status = AttendanceStatus.excused;
+    }
+    
+    return StudentEntity(
+      id: json['id']?.toString() ?? '',
+      name: json['name'] ?? '',
+      nameEn: json['nameEn'] ?? json['name'] ?? '',
+      parentName: json['parentName'] ?? '',
+      parentPhone: json['parentPhone'] ?? '',
+      photoUrl: json['photoUrl'] ?? json['photo_url'],
+      status: status,
+      isLocked: json['isLocked'] ?? false,
+    );
+  }
+
   String getLocalizedName(String languageCode) {
     if (languageCode.toLowerCase() == 'en') {
       return (nameEn != null && nameEn!.trim().isNotEmpty) ? nameEn! : name;
@@ -81,6 +106,16 @@ class ClassroomEntity {
     required this.studentCount,
   });
 
+  factory ClassroomEntity.fromJson(Map<String, dynamic> json) {
+    return ClassroomEntity(
+      id: json['id']?.toString() ?? '',
+      name: json['name_ar'] ?? json['name'] ?? '',
+      nameEn: json['name_en'] ?? json['name'] ?? '',
+      grade: json['grade_level'] ?? '',
+      studentCount: json['students_count'] ?? 0,
+    );
+  }
+
   String getLocalizedName(String languageCode) {
     if (languageCode.toLowerCase() == 'en') {
       return (nameEn != null && nameEn!.trim().isNotEmpty) ? nameEn! : name;
@@ -110,6 +145,13 @@ class ReportEntity {
   final double attendancePercentage;
 
   const ReportEntity({required this.date, required this.attendancePercentage});
+
+  factory ReportEntity.fromJson(Map<String, dynamic> json) {
+    return ReportEntity(
+      date: DateTime.tryParse(json['date']?.toString() ?? '') ?? DateTime.now(),
+      attendancePercentage: (json['attendancePercentage'] as num?)?.toDouble() ?? 100.0,
+    );
+  }
 }
 
 class StudentReportEntity {
@@ -128,6 +170,17 @@ class StudentReportEntity {
     required this.absentCount,
     this.photoUrl,
   });
+
+  factory StudentReportEntity.fromJson(Map<String, dynamic> json) {
+    return StudentReportEntity(
+      name: json['name'] ?? '',
+      nameEn: json['nameEn'],
+      civilId: json['civilId']?.toString(),
+      presentCount: json['presentCount'] ?? 0,
+      absentCount: json['absentCount'] ?? 0,
+      photoUrl: json['photoUrl'],
+    );
+  }
 
   String getLocalizedName(String languageCode) {
     if (languageCode.toLowerCase() == 'en') {
@@ -155,6 +208,20 @@ class AttendanceStatsEntity {
     required this.weeklyTrend,
     required this.studentReports,
   });
+
+  factory AttendanceStatsEntity.fromJson(Map<String, dynamic> json) {
+    final List<dynamic> weeklyTrendJson = json['weeklyTrend'] ?? [];
+    final List<dynamic> studentReportsJson = json['studentReports'] ?? [];
+    return AttendanceStatsEntity(
+      totalStudents: json['totalStudents'] ?? 0,
+      presentToday: json['presentToday'] ?? 0,
+      absentToday: json['absentToday'] ?? 0,
+      unmarkedToday: json['unmarkedToday'] ?? 0,
+      averageAttendance: (json['averageAttendance'] as num?)?.toDouble() ?? 100.0,
+      weeklyTrend: weeklyTrendJson.map((w) => ReportEntity.fromJson(w)).toList(),
+      studentReports: studentReportsJson.map((s) => StudentReportEntity.fromJson(s)).toList(),
+    );
+  }
 }
 
 class AttendanceHistoryRecord {
@@ -172,6 +239,17 @@ class AttendanceHistoryRecord {
     required this.absentCount,
   });
 
+  factory AttendanceHistoryRecord.fromJson(Map<String, dynamic> json) {
+    final List<dynamic> studentsJson = json['attendedStudents'] ?? [];
+    return AttendanceHistoryRecord(
+      date: DateTime.tryParse(json['date']?.toString() ?? '') ?? DateTime.now(),
+      attendedStudents: studentsJson.map((s) => StudentEntity.fromJson(s)).toList(),
+      totalStudents: json['totalStudents'] ?? 0,
+      presentCount: json['presentCount'] ?? 0,
+      absentCount: json['absentCount'] ?? 0,
+    );
+  }
+
   double get attendanceRate =>
       totalStudents > 0 ? (presentCount / totalStudents) * 100 : 0;
 }
@@ -188,6 +266,16 @@ class AttendanceHistoryEntity {
     this.classNameEn,
     required this.dailyRecords,
   });
+
+  factory AttendanceHistoryEntity.fromJson(Map<String, dynamic> json) {
+    final List<dynamic> recordsJson = json['dailyRecords'] ?? [];
+    return AttendanceHistoryEntity(
+      classId: json['classId']?.toString() ?? '',
+      className: json['className'] ?? '',
+      classNameEn: json['classNameEn'] ?? json['className'] ?? '',
+      dailyRecords: recordsJson.map((r) => AttendanceHistoryRecord.fromJson(r)).toList(),
+    );
+  }
 
   String getLocalizedClassName(String languageCode) {
     if (languageCode.toLowerCase() == 'en') {

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +12,8 @@ import '../../../../core/widgets/app_drawer.dart';
 import '../../../../core/widgets/app_sliver_header.dart';
 import '../../../../core/widgets/modern_card.dart';
 import '../../../../core/extensions/localization_extension.dart';
+import '../../../../core/providers/auth_provider.dart';
+import '../../../../core/providers/classes_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -43,11 +46,11 @@ class DashboardScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // Mock classes for the teacher
-    final mockClasses = [
-      {'name': 'الصف الخامس - أ', 'subject': 'الرياضيات والعلوم'},
-      {'name': 'الصف السادس - ب', 'subject': 'الرياضيات'},
-    ];
+    final classesList = ref.watch(classesProvider);
+    final mockClasses = classesList.map((cls) => {
+      'name': cls,
+      'subject': 'المادة الدراسية',
+    }).toList();
 
     return PopScope(
       canPop: false,
@@ -82,7 +85,8 @@ class DashboardScreen extends ConsumerWidget {
                     subject: context.translateMock(c['subject']!),
                     isDark: isDark,
                     onTap: () {
-                      // Navigate to attendance by default when tapping a class
+                      // Set selected class first, then navigate to attendance
+                      ref.read(selectedClassProvider.notifier).setClass(c['name']!);
                       context.push('/attendance');
                     },
                   ),
@@ -117,7 +121,10 @@ class _WelcomeHeader extends ConsumerWidget {
       greeting = context.loc.goodEvening;
     }
 
-    final teacherName = context.loc.teacherName;
+    final authState = ref.watch(authProvider);
+    final teacherName = authState.userName.isNotEmpty
+        ? authState.userName
+        : context.loc.teacherName;
 
     final theme = Theme.of(context);
     
@@ -145,19 +152,38 @@ class _WelcomeHeader extends ConsumerWidget {
                 width: 2,
               ),
             ),
-            child: CircleAvatar(
-              radius: 30,
-              backgroundColor: Colors.white.withValues(alpha: 0.2),
-              child: Text(
-                teacherName.isNotEmpty ? teacherName.substring(0, 1) : '?',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  fontFamily: AppTypography.fontFamily,
-                ),
-              ),
-            ),
+            child: authState.userAvatar != null && authState.userAvatar!.startsWith('http')
+                ? CircleAvatar(
+                    radius: 30,
+                    backgroundImage: NetworkImage(authState.userAvatar!),
+                  )
+                : authState.userAvatar != null && (authState.userAvatar!.contains('/') || authState.userAvatar!.contains('\\') || File(authState.userAvatar!).existsSync())
+                    ? CircleAvatar(
+                        radius: 30,
+                        backgroundImage: FileImage(File(authState.userAvatar!)),
+                      )
+                : (authState.userAvatar != null && authState.userAvatar!.runes.length <= 4)
+                    ? CircleAvatar(
+                        radius: 30,
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
+                        child: Text(
+                          authState.userAvatar!,
+                          style: const TextStyle(fontSize: 26),
+                        ),
+                      )
+                    : CircleAvatar(
+                        radius: 30,
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
+                        child: Text(
+                          teacherName.isNotEmpty ? teacherName.substring(0, 1) : '?',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            fontFamily: AppTypography.fontFamily,
+                          ),
+                        ),
+                      ),
           ),
           const SizedBox(width: 16),
           Expanded(

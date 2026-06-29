@@ -1,5 +1,8 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:dio/dio.dart';
+import '../network/api_client.dart';
+import '../utils/constants.dart';
 
 part 'auth_provider.g.dart';
 
@@ -68,28 +71,100 @@ class Auth extends _$Auth {
 
   Future<void> login(String employeeId, String password, UserRole role) async {
     const storage = FlutterSecureStorage();
-    final name = role == UserRole.teacher ? 'أستاذ أحمد محمد' : 'أ. منى الحربي';
+    final dio = ref.read(apiClientProvider);
     
-    await storage.write(key: 'isLoggedIn', value: 'true');
-    await storage.write(key: 'userRole', value: role.name);
-    await storage.write(key: 'userName', value: name);
-    await storage.write(key: 'userAvatar', value: '');
-
-    state = AuthState(
-      isLoggedIn: true,
-      role: role,
-      userName: name,
-      userAvatar: '',
-    );
+    final response = await dio.post('login', data: {
+      'username': employeeId,
+      'password': password,
+    });
+    
+    if (response.data != null && response.data['success'] == true) {
+      final token = response.data['token'];
+      final userData = response.data['user'];
+      
+      await storage.write(key: AppConstants.tokenKey, value: token);
+      await storage.write(key: 'isLoggedIn', value: 'true');
+      
+      final dbRole = userData['role'];
+      UserRole mappedRole = UserRole.teacher;
+      if (dbRole == 'preparation_supervisor') {
+        mappedRole = UserRole.assistant;
+      }
+      
+      final displayName = userData['name_ar'] ?? userData['name'] ?? '';
+      final displayAvatar = userData['photo'] ?? '';
+      
+      await storage.write(key: 'userRole', value: mappedRole.name);
+      await storage.write(key: 'userName', value: displayName);
+      await storage.write(key: 'userAvatar', value: displayAvatar);
+      
+      state = AuthState(
+        isLoggedIn: true,
+        role: mappedRole,
+        userName: displayName,
+        userAvatar: displayAvatar,
+      );
+    } else {
+      throw Exception(response.data?['message'] ?? 'اسم المستخدم أو كلمة المرور غير صحيحة');
+    }
   }
 
   Future<void> logout() async {
     const storage = FlutterSecureStorage();
+    final token = await storage.read(key: AppConstants.tokenKey);
+    if (token != null) {
+      try {
+        final dio = ref.read(apiClientProvider);
+        await dio.post('logout');
+      } catch (_) {}
+    }
+    await storage.delete(key: AppConstants.tokenKey);
     await storage.delete(key: 'isLoggedIn');
     await storage.delete(key: 'userRole');
     await storage.delete(key: 'userName');
     await storage.delete(key: 'userAvatar');
 
     state = const AuthState();
+  }
+
+  Future<void> updateAvatar(String newAvatarPath) async {
+    const storage = FlutterSecureStorage();
+    
+    // Save locally first for instant UI response
+    await storage.write(key: 'userAvatar', value: newAvatarPath);
+    state = state.copyWith(userAvatar: newAvatarPath);
+
+    try {
+      final dio = ref.read(apiClientProvider);
+      
+      final file = await MultipartFile.fromFile(
+        newAvatarPath,
+        filename: newAvatarPath.split('/').last,
+      );
+      
+      final formData = FormData.fromMap({
+        'photo': file,
+      });
+      
+      final response = await dio.post('user/update-photo', data: formData);
+      if (response.data != null && response.data['success'] == true) {
+        final serverUrl = response.data['photo_url'];
+        await storage.write(key: 'userAvatar', value: serverUrl);
+        state = state.copyWith(userAvatar: serverUrl);
+      }
+    } catch (e) {
+      print('Error uploading profile photo to backend: $e');
+    }
+  }
+
+  Future<void> updatePassword(String currentPassword, String newPassword) async {
+    final dio = ref.read(apiClientProvider);
+    final response = await dio.post('user/update-password', data: {
+      'current_password': currentPassword,
+      'new_password': newPassword,
+    });
+    if (response.data == null || response.data['success'] != true) {
+      throw Exception(response.data?['message'] ?? 'فشل تغيير كلمة المرور');
+    }
   }
 }

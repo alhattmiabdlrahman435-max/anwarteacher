@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -78,15 +79,16 @@ class AssistantDashboardScreen extends ConsumerWidget {
   }
 }
 
-class _WelcomeHeader extends StatelessWidget {
+class _WelcomeHeader extends ConsumerWidget {
   final String supervisorName;
 
   const _WelcomeHeader({required this.supervisorName});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final hour = DateTime.now().hour;
+    final authState = ref.watch(authProvider);
     
     String greeting;
     if (hour < 12) {
@@ -127,15 +129,34 @@ class _WelcomeHeader extends StatelessWidget {
                 width: 2,
               ),
             ),
-            child: CircleAvatar(
-              radius: 32,
-              backgroundColor: Colors.white.withValues(alpha: 0.2),
-              child: const Icon(
-                Icons.verified_rounded,
-                size: 38,
-                color: Colors.white,
-              ),
-            ),
+            child: authState.userAvatar != null && authState.userAvatar!.startsWith('http')
+                ? CircleAvatar(
+                    radius: 32,
+                    backgroundImage: NetworkImage(authState.userAvatar!),
+                  )
+                : authState.userAvatar != null && (authState.userAvatar!.contains('/') || authState.userAvatar!.contains('\\') || File(authState.userAvatar!).existsSync())
+                    ? CircleAvatar(
+                        radius: 32,
+                        backgroundImage: FileImage(File(authState.userAvatar!)),
+                      )
+                : (authState.userAvatar != null && authState.userAvatar!.runes.length <= 4)
+                    ? CircleAvatar(
+                        radius: 32,
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
+                        child: Text(
+                          authState.userAvatar!,
+                          style: const TextStyle(fontSize: 26),
+                        ),
+                      )
+                    : CircleAvatar(
+                        radius: 32,
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
+                        child: const Icon(
+                          Icons.verified_rounded,
+                          size: 38,
+                          color: Colors.white,
+                        ),
+                      ),
           ),
           const SizedBox(width: 16),
           Expanded(

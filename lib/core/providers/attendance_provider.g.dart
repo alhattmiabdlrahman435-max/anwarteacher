@@ -41,7 +41,7 @@ final class DailyAttendanceProvider
   }
 }
 
-String _$dailyAttendanceHash() => r'498bfeb1fddaa894299adbb38cd8daca61f800f7';
+String _$dailyAttendanceHash() => r'db8ad11df3138860d50bab7e92debf49cfd5d252';
 
 abstract class _$DailyAttendance extends $Notifier<List<AttendanceRecord>> {
   List<AttendanceRecord> build();

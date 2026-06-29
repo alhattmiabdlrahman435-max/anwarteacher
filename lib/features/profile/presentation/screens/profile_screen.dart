@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/providers/classes_provider.dart';
 import '../../../../core/widgets/app_sliver_header.dart';
 import '../../../../core/extensions/localization_extension.dart';
+import '../../../../core/providers/auth_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -37,6 +38,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    final authState = ref.read(authProvider);
+    if (authState.userName.isNotEmpty) {
+      _teacherName = authState.userName;
+    }
+    if (authState.userAvatar != null && 
+        !authState.userAvatar!.startsWith('http') && 
+        (authState.userAvatar!.contains('/') || authState.userAvatar!.contains('\\') || File(authState.userAvatar!).existsSync())) {
+      _pickedImagePath = authState.userAvatar;
+    }
     _nameController = TextEditingController(text: _teacherName);
     _phoneController = TextEditingController(text: _phone);
     _addressController = TextEditingController(text: _address);
@@ -165,6 +175,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           _pickedImagePath = image.path;
         });
         
+        await ref.read(authProvider.notifier).updateAvatar(image.path);
+        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -291,13 +303,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       ),
                                     ],
                                   ),
-                                  child: CircleAvatar(
-                                    radius: 54,
-                                    backgroundColor: Colors.grey[200],
-                                    backgroundImage: _pickedImagePath != null
-                                        ? FileImage(File(_pickedImagePath!)) as ImageProvider
-                                        : const NetworkImage('https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=200') as ImageProvider,
-                                  ),
+                                  child: _pickedImagePath != null
+                                      ? CircleAvatar(
+                                          radius: 54,
+                                          backgroundImage: FileImage(File(_pickedImagePath!)),
+                                        )
+                                      : (ref.watch(authProvider).userAvatar != null && ref.watch(authProvider).userAvatar!.runes.length <= 4)
+                                          ? CircleAvatar(
+                                              radius: 54,
+                                              backgroundColor: Colors.grey[200],
+                                              child: Text(
+                                                ref.watch(authProvider).userAvatar!,
+                                                style: const TextStyle(fontSize: 45),
+                                              ),
+                                            )
+                                          : CircleAvatar(
+                                              radius: 54,
+                                              backgroundColor: Colors.grey[200],
+                                              backgroundImage: (ref.watch(authProvider).userAvatar != null && ref.watch(authProvider).userAvatar!.startsWith('http'))
+                                                  ? NetworkImage(ref.watch(authProvider).userAvatar!) as ImageProvider
+                                                  : const NetworkImage('https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=200') as ImageProvider,
+                                            ),
                                 ),
                                 Positioned(
                                   bottom: 0,
@@ -414,6 +440,88 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             textColor: textColor,
                             subTextColor: subTextColor,
                             validator: (v) => v!.isEmpty ? 'الرجاء إدخال العنوان السكني' : null,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Security & Password Settings Card
+                    _buildSectionLabel('الأمان والحماية', isDark),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: isDark ? Colors.white10 : AppColors.border,
+                        ),
+                        boxShadow: isDark
+                            ? []
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.02),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                      ),
+                      child: Column(
+                        children: [
+                          InkWell(
+                            onTap: () => _showChangePasswordDialog(context),
+                            borderRadius: BorderRadius.circular(16),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? Colors.white10 : AppColors.primary.withValues(alpha: 0.05),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      PhosphorIcons.lockKey(PhosphorIconsStyle.duotone),
+                                      color: isDark ? AppColors.accent : AppColors.primary,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'تغيير كلمة المرور',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: textColor,
+                                            fontFamily: 'GoogleSans',
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'قم بتعديل وتحديث كلمة مرور حسابك دورياً',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: subTextColor,
+                                            fontFamily: 'GoogleSans',
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    size: 16,
+                                    color: Color(0xFF94A3B8),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -628,6 +736,162 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ),
       ],
+    );
+  }
+  void _showChangePasswordDialog(BuildContext context) {
+    final currentPassController = TextEditingController();
+    final newPassController = TextEditingController();
+    final confirmPassController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool obscureCurrent = true;
+    bool obscureNew = true;
+    bool obscureConfirm = true;
+    bool dialogLoading = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            final cardColor = isDark ? AppColors.surfaceAltDark : Colors.white;
+            final textColor = isDark ? Colors.white : AppColors.textPrimaryLight;
+
+            return AlertDialog(
+              backgroundColor: cardColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              title: const Text(
+                'تغيير كلمة المرور',
+                style: TextStyle(fontFamily: 'GoogleSans', fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Current Password
+                      TextFormField(
+                        controller: currentPassController,
+                        obscureText: obscureCurrent,
+                        validator: (v) => v!.isEmpty ? 'الرجاء إدخال كلمة المرور الحالية' : null,
+                        style: TextStyle(color: textColor, fontFamily: 'GoogleSans'),
+                        decoration: InputDecoration(
+                          labelText: 'كلمة المرور الحالية',
+                          labelStyle: const TextStyle(fontFamily: 'GoogleSans', fontSize: 13),
+                          suffixIcon: IconButton(
+                            icon: Icon(obscureCurrent ? Icons.visibility_off : Icons.visibility),
+                            onPressed: () => setDialogState(() => obscureCurrent = !obscureCurrent),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // New Password
+                      TextFormField(
+                        controller: newPassController,
+                        obscureText: obscureNew,
+                        validator: (v) {
+                          if (v!.isEmpty) return 'الرجاء إدخال كلمة المرور الجديدة';
+                          if (v.length < 6) return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+                          return null;
+                        },
+                        style: TextStyle(color: textColor, fontFamily: 'GoogleSans'),
+                        decoration: InputDecoration(
+                          labelText: 'كلمة المرور الجديدة',
+                          labelStyle: const TextStyle(fontFamily: 'GoogleSans', fontSize: 13),
+                          suffixIcon: IconButton(
+                            icon: Icon(obscureNew ? Icons.visibility_off : Icons.visibility),
+                            onPressed: () => setDialogState(() => obscureNew = !obscureNew),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Confirm Password
+                      TextFormField(
+                        controller: confirmPassController,
+                        obscureText: obscureConfirm,
+                        validator: (v) {
+                          if (v!.isEmpty) return 'الرجاء تأكيد كلمة المرور الجديدة';
+                          if (v != newPassController.text) return 'كلمتا المرور غير متطابقتين';
+                          return null;
+                        },
+                        style: TextStyle(color: textColor, fontFamily: 'GoogleSans'),
+                        decoration: InputDecoration(
+                          labelText: 'تأكيد كلمة المرور الجديدة',
+                          labelStyle: const TextStyle(fontFamily: 'GoogleSans', fontSize: 13),
+                          suffixIcon: IconButton(
+                            icon: Icon(obscureConfirm ? Icons.visibility_off : Icons.visibility),
+                            onPressed: () => setDialogState(() => obscureConfirm = !obscureConfirm),
+                          ),
+                        ),
+                      ),
+                      if (dialogLoading) ...[
+                        const SizedBox(height: 24),
+                        const CircularProgressIndicator(),
+                      ]
+                    ],
+                  ),
+                ),
+              ),
+              actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              actions: [
+                TextButton(
+                  onPressed: dialogLoading ? null : () => Navigator.pop(context),
+                  child: const Text('إلغاء', style: TextStyle(fontFamily: 'GoogleSans', fontWeight: FontWeight.bold, color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: dialogLoading
+                      ? null
+                      : () async {
+                          if (!formKey.currentState!.validate()) return;
+                          
+                          setDialogState(() => dialogLoading = true);
+                          
+                          try {
+                            await ref.read(authProvider.notifier).updatePassword(
+                              currentPassController.text,
+                              newPassController.text,
+                            );
+                            
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('تم تغيير كلمة المرور بنجاح'),
+                                  backgroundColor: AppColors.success,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            setDialogState(() => dialogLoading = false);
+                            String errorMsg = e.toString().replaceAll('Exception: ', '');
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(errorMsg),
+                                  backgroundColor: AppColors.error,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  child: const Text('حفظ', style: TextStyle(fontFamily: 'GoogleSans', fontWeight: FontWeight.bold, color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

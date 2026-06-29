@@ -1,5 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:dio/dio.dart';
 import '../models/assignment.dart';
+import '../network/api_client.dart';
 
 part 'assignments_provider.g.dart';
 
@@ -7,28 +9,86 @@ part 'assignments_provider.g.dart';
 class AssignmentsData extends _$AssignmentsData {
   @override
   List<Assignment> build() {
-    return [
-      Assignment(
-        id: '1',
-        classId: 'class1',
-        subjectName: 'الرياضيات',
-        title: 'حل تمارين الكسور',
-        content: 'الرجاء حل التمارين في صفحة 45 من كتاب الطالب.',
-        dateCreated: DateTime.now().subtract(const Duration(days: 2)),
-        dueDate: DateTime.now().add(const Duration(days: 1)),
-        submissions: const [
-          StudentSubmission(studentId: 's1', studentName: 'أحمد محمد عبدالله', status: SubmissionStatus.submitted),
-          StudentSubmission(studentId: 's2', studentName: 'سارة محمد عبدالله', status: SubmissionStatus.notSubmitted),
-        ],
-      ),
-    ];
+    _fetch();
+    return const [];
   }
 
-  void addAssignment(Assignment assignment) {
-    state = [...state, assignment];
+  Future<void> _fetch() async {
+    try {
+      final dio = ref.read(apiClientProvider);
+      final response = await dio.get('assignments');
+      if (response.data != null && response.data['success'] == true) {
+        final List<dynamic> list = response.data['assignments'] ?? [];
+        state = list.map((item) {
+          final List<dynamic> subList = item['submissions'] ?? [];
+          final submissions = subList.map((sub) {
+            final studentName = sub['student']?['name_ar'] ?? sub['student']?['name'] ?? '';
+            final dbStatus = sub['status']?.toString() ?? 'pending';
+            SubmissionStatus status = SubmissionStatus.notSubmitted;
+            if (dbStatus == 'submitted') {
+              status = SubmissionStatus.submitted;
+            } else if (dbStatus == 'submitted_late') {
+              status = SubmissionStatus.submittedLate;
+            }
+            return StudentSubmission(
+              studentId: sub['student_id']?.toString() ?? '',
+              studentName: studentName,
+              status: status,
+              teacherNote: sub['teacher_note'],
+            );
+          }).toList();
+
+          return Assignment(
+            id: item['id']?.toString() ?? '',
+            classId: item['class_id']?.toString() ?? '',
+            subjectName: item['subject']?['name_ar'] ?? item['subject']?['name'] ?? '',
+            title: item['title'] ?? '',
+            content: item['content'] ?? '',
+            dateCreated: DateTime.tryParse(item['date_created']?.toString() ?? '') ?? DateTime.now(),
+            dueDate: DateTime.tryParse(item['due_date']?.toString() ?? '') ?? DateTime.now(),
+            attachments: item['attachment_url'] != null ? [item['attachment_url'].toString()] : const [],
+            submissions: submissions,
+          );
+        }).toList();
+      }
+    } catch (e) {
+      print('Error fetching assignments: $e');
+    }
   }
 
-  void updateSubmission(String assignmentId, String studentId, SubmissionStatus newStatus, String? newNote) {
+  Future<void> addAssignment(Assignment assignment, String? attachmentPath) async {
+    try {
+      final dio = ref.read(apiClientProvider);
+      
+      MultipartFile? file;
+      if (attachmentPath != null && attachmentPath.isNotEmpty) {
+        file = await MultipartFile.fromFile(
+          attachmentPath,
+          filename: attachmentPath.split('/').last,
+        );
+      }
+
+      final formData = FormData.fromMap({
+        'class_id': int.tryParse(assignment.classId) ?? 0,
+        'subject_id': int.tryParse(assignment.subjectName) ?? 0,
+        'title': assignment.title,
+        'content': assignment.content,
+        'due_date': '${assignment.dueDate.year}-${assignment.dueDate.month.toString().padLeft(2, '0')}-${assignment.dueDate.day.toString().padLeft(2, '0')}',
+        if (file != null) 'attachment': file,
+      });
+
+      await dio.post('assignments', data: formData);
+
+      // Refresh local list
+      await _fetch();
+    } catch (e) {
+      print('Error adding assignment: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateSubmission(String assignmentId, String studentId, SubmissionStatus newStatus, String? newNote) async {
+    // 1. Update local state immediately
     state = state.map((assignment) {
       if (assignment.id == assignmentId) {
         final updatedSubmissions = assignment.submissions.map((sub) {
@@ -41,5 +101,28 @@ class AssignmentsData extends _$AssignmentsData {
       }
       return assignment;
     }).toList();
+
+    // 2. Put submission changes to backend
+    try {
+      final dio = ref.read(apiClientProvider);
+      String statusStr = 'pending';
+      if (newStatus == SubmissionStatus.submitted) {
+        statusStr = 'submitted';
+      } else if (newStatus == SubmissionStatus.submittedLate) {
+        statusStr = 'submitted_late';
+      }
+
+      await dio.put('assignments/$assignmentId/submissions', data: {
+        'submissions': [
+          {
+            'student_id': int.tryParse(studentId) ?? 0,
+            'status': statusStr,
+            'teacher_note': newNote ?? '',
+          }
+        ]
+      });
+    } catch (e) {
+      print('Error updating assignment submission: $e');
+    }
   }
 }

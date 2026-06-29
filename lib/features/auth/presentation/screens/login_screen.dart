@@ -102,30 +102,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
 
     setState(() => _isLoading = true);
     
-    // Simulate network request duration
-    await Future.delayed(const Duration(milliseconds: 1000));
-    
-    await ref.read(authProvider.notifier).login(
-      _idController.text,
-      _passwordController.text,
-      _selectedRole,
-    );
-
-    if (mounted) {
-      setState(() => _isLoading = false);
-      
-      AppNotification.show(
-        context,
-        type: AppNotificationType.success,
-        title: _selectedRole == UserRole.teacher 
-            ? 'مرحباً بك يا معلم' 
-            : 'مرحباً بكِ يا مشرفة التحضير',
+    try {
+      await ref.read(authProvider.notifier).login(
+        _idController.text,
+        _passwordController.text,
+        _selectedRole,
       );
 
-      if (_selectedRole == UserRole.teacher) {
-        context.go('/dashboard');
-      } else {
-        context.go('/assistant/dashboard');
+      if (mounted) {
+        setState(() => _isLoading = false);
+        
+        final actualRole = ref.read(authProvider).role;
+        
+        AppNotification.show(
+          context,
+          type: AppNotificationType.success,
+          title: actualRole == UserRole.teacher 
+              ? 'مرحباً بك يا معلم' 
+              : 'مرحباً بكِ يا مشرفة التحضير',
+        );
+
+        if (actualRole == UserRole.teacher) {
+          context.go('/dashboard');
+        } else {
+          context.go('/assistant/dashboard');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        
+        String errorMsg = e.toString();
+        if (errorMsg.startsWith('Exception: ')) {
+          errorMsg = errorMsg.substring(11);
+        }
+        
+        AppNotification.show(
+          context,
+          type: AppNotificationType.error,
+          title: 'فشل تسجيل الدخول',
+          message: errorMsg,
+        );
       }
     }
   }

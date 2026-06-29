@@ -22,9 +22,7 @@ class AssistantClassesScreen extends ConsumerWidget {
       drawer: const AppDrawer(),
       body: RefreshIndicator(
         onRefresh: () async {
-          // Simulate network delay
-          await Future.delayed(const Duration(seconds: 1));
-          // Once the provider is async, we would do: ref.invalidate(assistantClassesProvider);
+          await ref.read(assistantClassesProvider.notifier).refresh();
         },
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),

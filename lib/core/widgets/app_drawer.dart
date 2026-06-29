@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -67,17 +68,38 @@ class AppDrawer extends ConsumerWidget {
                         width: 2,
                       ),
                     ),
-                    child: CircleAvatar(
-                      radius: 42,
-                      backgroundColor: isDark
-                          ? Colors.white.withValues(alpha: 0.1)
-                          : primaryColor.withValues(alpha: 0.2),
-                      child: Icon(
-                        isAssistant ? CupertinoIcons.checkmark_seal_fill : CupertinoIcons.person_solid,
-                        size: 45,
-                        color: isDark ? Colors.white : primaryColor,
-                      ),
-                    ),
+                    child: authState.userAvatar != null && authState.userAvatar!.startsWith('http')
+                        ? CircleAvatar(
+                            radius: 42,
+                            backgroundImage: NetworkImage(authState.userAvatar!),
+                          )
+                        : authState.userAvatar != null && (authState.userAvatar!.contains('/') || authState.userAvatar!.contains('\\') || File(authState.userAvatar!).existsSync())
+                            ? CircleAvatar(
+                                radius: 42,
+                                backgroundImage: FileImage(File(authState.userAvatar!)),
+                              )
+                            : (authState.userAvatar != null && authState.userAvatar!.runes.length <= 4)
+                                ? CircleAvatar(
+                                    radius: 42,
+                                    backgroundColor: isDark
+                                        ? Colors.white.withValues(alpha: 0.1)
+                                        : primaryColor.withValues(alpha: 0.2),
+                                    child: Text(
+                                      authState.userAvatar!,
+                                      style: const TextStyle(fontSize: 35),
+                                    ),
+                                  )
+                                : CircleAvatar(
+                                    radius: 42,
+                                    backgroundColor: isDark
+                                        ? Colors.white.withValues(alpha: 0.1)
+                                        : primaryColor.withValues(alpha: 0.2),
+                                    child: Icon(
+                                      isAssistant ? CupertinoIcons.checkmark_seal_fill : CupertinoIcons.person_solid,
+                                      size: 45,
+                                      color: isDark ? Colors.white : primaryColor,
+                                    ),
+                                  ),
                   ),
                   const SizedBox(height: 16),
                   Text(
