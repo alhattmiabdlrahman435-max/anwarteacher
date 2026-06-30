@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,16 +10,39 @@ import 'l10n/app_localizations.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/providers/settings_provider.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Initialize Firebase (Requires flutterfire configure)
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    
+    // Request permission for push notifications
+    await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    // Enable foreground notifications presentation options for alerts and sound
+    await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    // Retrieve FCM Token and print it
+    final fcmToken = await FirebaseMessaging.instance.getToken();
+    debugPrint('==================================================');
+    debugPrint('FCM Token: $fcmToken');
+    debugPrint('==================================================');
   } catch (e) {
-    debugPrint("Firebase initialization failed. Please run flutterfire configure.");
+    debugPrint("Firebase initialization failed: $e");
   }
 
   runApp(const ProviderScope(child: TeacherApp()));

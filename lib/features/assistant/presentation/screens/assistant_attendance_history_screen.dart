@@ -706,6 +706,19 @@ class _EmptyRecordCard extends StatelessWidget {
   }
 }
 
+
+/// Returns true only if [url] is a real network URL.
+bool _isNetworkUrl(String? url) =>
+    url != null && url.isNotEmpty && (url.startsWith('http://') || url.startsWith('https://'));
+
+/// Returns the emoji if available, otherwise the first letter of [name].
+String _avatarLabel(String? photoUrl, String name) {
+  if (photoUrl != null && photoUrl.isNotEmpty && !_isNetworkUrl(photoUrl)) {
+    return photoUrl; // it's an emoji
+  }
+  return name.isNotEmpty ? name[0] : '?';
+}
+
 class _StudentHistoryCard extends StatelessWidget {
   final StudentEntity student;
 
@@ -744,11 +757,15 @@ class _StudentHistoryCard extends StatelessWidget {
                 CircleAvatar(
                   radius: 24,
                   backgroundColor: (isDark ? Colors.white : AppColors.primary).withValues(alpha: 0.1),
-                  backgroundImage: student.photoUrl != null && student.photoUrl!.isNotEmpty ? NetworkImage(student.photoUrl!) : null,
-                  child: student.photoUrl == null || student.photoUrl!.isEmpty
+                  backgroundImage: _isNetworkUrl(student.photoUrl) ? NetworkImage(student.photoUrl!) : null,
+                  child: !_isNetworkUrl(student.photoUrl)
                       ? Text(
-                          student.name.isNotEmpty ? student.name[0] : '?',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : AppColors.primary),
+                          _avatarLabel(student.photoUrl, student.name),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: student.photoUrl != null && student.photoUrl!.isNotEmpty ? 18 : 14,
+                            color: isDark ? Colors.white : AppColors.primary,
+                          ),
                         )
                       : null,
                 ),
@@ -832,12 +849,13 @@ class _StudentDetailsModal extends StatelessWidget {
           CircleAvatar(
             radius: 50,
             backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-            backgroundImage: student.photoUrl != null ? NetworkImage(student.photoUrl!) : null,
-            child: student.photoUrl == null
-                ? Icon(
-                    PhosphorIconsRegular.student,
-                    size: 40,
-                    color: theme.colorScheme.primary,
+            backgroundImage: _isNetworkUrl(student.photoUrl)
+                ? NetworkImage(student.photoUrl!)
+                : null,
+            child: !_isNetworkUrl(student.photoUrl)
+                ? Text(
+                    _avatarLabel(student.photoUrl, student.name),
+                    style: const TextStyle(fontSize: 40),
                   )
                 : null,
           ),
@@ -863,14 +881,6 @@ class _StudentDetailsModal extends StatelessWidget {
             label: context.loc.parentPhone,
             value: student.parentPhone,
             onTap: () => _launchCaller(student.parentPhone),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _buildInfoRow(
-            context,
-            icon: PhosphorIconsDuotone.whatsappLogo,
-            label: context.loc.contactWhatsApp,
-            value: student.parentPhone,
-            onTap: () => _launchWhatsApp(student.parentPhone),
           ),
           const SizedBox(height: AppSpacing.xxl),
         ],
@@ -948,10 +958,16 @@ class _StudentDetailsModal extends StatelessWidget {
     }
   }
 
-  void _launchWhatsApp(String phone) async {
-    final Uri url = Uri.parse('https://wa.me/$phone');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+  /// Returns true only if [url] is a real network URL (starts with http/https).
+  bool _isNetworkUrl(String? url) =>
+      url != null && url.isNotEmpty && (url.startsWith('http://') || url.startsWith('https://'));
+
+  /// Returns the emoji if available, otherwise the first letter of [name].
+  String _avatarLabel(String? photoUrl, String name) {
+    if (photoUrl != null && photoUrl.isNotEmpty && !_isNetworkUrl(photoUrl)) {
+      return photoUrl; // it's an emoji
     }
+    return name.isNotEmpty ? name[0] : '?';
   }
 }
+

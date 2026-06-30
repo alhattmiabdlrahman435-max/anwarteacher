@@ -5,7 +5,6 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../models/assistant_models.dart';
 import '../../providers/assistant_classes_provider.dart';
 import '../../providers/assistant_class_details_provider.dart';
 import '../../../../core/extensions/localization_extension.dart';
@@ -101,33 +100,6 @@ class _AssistantQrScannerScreenState extends ConsumerState<AssistantQrScannerScr
   void _onQrCodeScanned(String scannedCode) {
     if (!_isScanning || _isProcessing) return;
     _registerAttendance(scannedCode);
-  }
-
-  void _handleInvalidCode() async {
-    setState(() {
-      _isScanning = false;
-      _isProcessing = true;
-    });
-
-    await Future.delayed(const Duration(milliseconds: 400));
-
-    if (mounted) {
-      final errorMsg = Localizations.localeOf(context).languageCode == 'ar'
-          ? 'الطالب غير موجود في هذا الصف'
-          : 'Student not found in this class';
-      setState(() {
-        _isProcessing = false;
-        _scannedMessage = errorMsg;
-      });
-    }
-
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
-      setState(() {
-        _scannedMessage = null;
-        _isScanning = true;
-      });
-    }
   }
 
   Widget _buildFloatingActionButton({

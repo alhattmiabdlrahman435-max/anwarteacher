@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/assistant_models.dart';
 import '../../../core/network/api_client.dart';
@@ -21,7 +22,7 @@ class AssistantClassDetails extends _$AssistantClassDetails {
         state = data.map((json) => StudentEntity.fromJson(json)).toList();
       }
     } catch (e) {
-      print('Error fetching students: $e');
+      debugPrint('Error fetching students: $e');
     }
   }
 
@@ -47,7 +48,7 @@ class AssistantClassDetails extends _$AssistantClassDetails {
         'status': statusStr,
       });
     } catch (e) {
-      print('Error marking attendance: $e');
+      debugPrint('Error marking attendance: $e');
     }
   }
 

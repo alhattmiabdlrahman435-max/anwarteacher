@@ -1,7 +1,7 @@
 
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../network/api_client.dart';
-
 part 'classes_provider.g.dart';
 
 @Riverpod(keepAlive: true)
@@ -36,7 +36,7 @@ class Classes extends _$Classes {
         state = names;
       }
     } catch (e) {
-      print('Error fetching teacher classes: $e');
+      debugPrint('Error fetching teacher classes: $e');
     }
   }
   

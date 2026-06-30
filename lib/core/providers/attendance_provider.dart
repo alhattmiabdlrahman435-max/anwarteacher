@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/attendance.dart';
 import '../network/api_client.dart';
@@ -39,7 +40,7 @@ class DailyAttendance extends _$DailyAttendance {
         }).toList();
       }
     } catch (e) {
-      print('Error fetching teacher class students: $e');
+      debugPrint('Error fetching teacher class students: $e');
     }
   }
 
@@ -61,7 +62,7 @@ class DailyAttendance extends _$DailyAttendance {
         'status': statusStr,
       });
     } catch (e) {
-      print('Error updating teacher student attendance: $e');
+      debugPrint('Error updating teacher student attendance: $e');
     }
   }
 
@@ -80,7 +81,7 @@ class DailyAttendance extends _$DailyAttendance {
           'status': 'present',
         });
       } catch (e) {
-        print('Error marking student ${record.studentId} present: $e');
+        debugPrint('Error marking student ${record.studentId} present: $e');
       }
     }
   }

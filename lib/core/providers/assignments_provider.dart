@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:dio/dio.dart';
 import '../models/assignment.dart';
@@ -52,7 +53,7 @@ class AssignmentsData extends _$AssignmentsData {
         }).toList();
       }
     } catch (e) {
-      print('Error fetching assignments: $e');
+      debugPrint('Error fetching assignments: $e');
     }
   }
 
@@ -74,7 +75,7 @@ class AssignmentsData extends _$AssignmentsData {
         'title': assignment.title,
         'content': assignment.content,
         'due_date': '${assignment.dueDate.year}-${assignment.dueDate.month.toString().padLeft(2, '0')}-${assignment.dueDate.day.toString().padLeft(2, '0')}',
-        if (file != null) 'attachment': file,
+        'attachment': file,
       });
 
       await dio.post('assignments', data: formData);
@@ -82,7 +83,7 @@ class AssignmentsData extends _$AssignmentsData {
       // Refresh local list
       await _fetch();
     } catch (e) {
-      print('Error adding assignment: $e');
+      debugPrint('Error adding assignment: $e');
       rethrow;
     }
   }
@@ -122,7 +123,7 @@ class AssignmentsData extends _$AssignmentsData {
         ]
       });
     } catch (e) {
-      print('Error updating assignment submission: $e');
+      debugPrint('Error updating assignment submission: $e');
     }
   }
 }
