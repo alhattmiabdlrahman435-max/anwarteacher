@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../network/api_client.dart';
+import 'classes_provider.dart';
 
 part 'subjects_provider.g.dart';
 
@@ -11,14 +12,21 @@ class Subjects extends _$Subjects {
   
   @override
   List<String> build() {
-    _fetch();
+    final selectedClass = ref.watch(selectedClassProvider);
+    if (selectedClass.isNotEmpty) {
+      final classesNotifier = ref.read(classesProvider.notifier);
+      final classId = classesNotifier.nameToIdMap[selectedClass];
+      if (classId != null) {
+        _fetchForClass(classId);
+      }
+    }
     return const [];
   }
   
-  Future<void> _fetch() async {
+  Future<void> _fetchForClass(String classId) async {
     try {
       final dio = ref.read(apiClientProvider);
-      final response = await dio.get('subjects');
+      final response = await dio.get('teacher/classes/$classId/subjects');
       if (response.data != null && response.data['success'] == true) {
         final List<dynamic> list = response.data['subjects'];
         final Map<String, String> newMap = {};
@@ -35,12 +43,19 @@ class Subjects extends _$Subjects {
         state = names;
       }
     } catch (e) {
-      print('Error fetching subjects: $e');
+      print('Error fetching class subjects: $e');
     }
   }
 
   Future<void> refresh() async {
-    await _fetch();
+    final selectedClass = ref.read(selectedClassProvider);
+    if (selectedClass.isNotEmpty) {
+      final classesNotifier = ref.read(classesProvider.notifier);
+      final classId = classesNotifier.nameToIdMap[selectedClass];
+      if (classId != null) {
+        await _fetchForClass(classId);
+      }
+    }
   }
 }
 

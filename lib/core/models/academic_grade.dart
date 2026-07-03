@@ -47,13 +47,23 @@ class MonthRecord {
   }
 
   factory MonthRecord.fromMap(Map<String, dynamic> map) {
+    double parseDouble(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is num) return value.toDouble();
+      return double.tryParse(value.toString()) ?? 0.0;
+    }
+    int parseInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is num) return value.toInt();
+      return int.tryParse(value.toString()) ?? 0;
+    }
     return MonthRecord(
-      monthIndex: map['monthIndex']?.toInt() ?? 0,
-      attendance: map['attendance']?.toDouble() ?? 0.0,
-      behavior: map['behavior']?.toDouble() ?? 0.0,
-      oral: map['oral']?.toDouble() ?? 0.0,
-      homework: map['homework']?.toDouble() ?? 0.0,
-      written: map['written']?.toDouble() ?? 0.0,
+      monthIndex: parseInt(map['monthIndex']),
+      attendance: parseDouble(map['attendance']),
+      behavior: parseDouble(map['behavior']),
+      oral: parseDouble(map['oral']),
+      homework: parseDouble(map['homework']),
+      written: parseDouble(map['written']),
     );
   }
 }
@@ -98,10 +108,20 @@ class TermRecord {
   }
 
   factory TermRecord.fromMap(Map<String, dynamic> map) {
+    double parseDouble(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is num) return value.toDouble();
+      return double.tryParse(value.toString()) ?? 0.0;
+    }
+    int parseInt(dynamic value) {
+      if (value == null) return 0;
+      if (value is num) return value.toInt();
+      return int.tryParse(value.toString()) ?? 0;
+    }
     return TermRecord(
-      termIndex: map['termIndex']?.toInt() ?? 0,
-      months: List<MonthRecord>.from(map['months']?.map((x) => MonthRecord.fromMap(x)) ?? []),
-      finalExam: map['finalExam']?.toDouble() ?? 0.0,
+      termIndex: parseInt(map['termIndex']),
+      months: List<MonthRecord>.from((map['months'] as List? ?? []).map((x) => MonthRecord.fromMap(x as Map<String, dynamic>))),
+      finalExam: parseDouble(map['finalExam']),
     );
   }
 }
@@ -151,11 +171,11 @@ class StudentSubjectGrade {
 
   factory StudentSubjectGrade.fromMap(Map<String, dynamic> map) {
     return StudentSubjectGrade(
-      studentId: map['studentId'] ?? '',
-      studentName: map['studentName'] ?? '',
-      subjectId: map['subjectId'] ?? '',
-      firstTerm: TermRecord.fromMap(map['firstTerm']),
-      secondTerm: TermRecord.fromMap(map['secondTerm']),
+      studentId: map['studentId']?.toString() ?? '',
+      studentName: map['studentName']?.toString() ?? '',
+      subjectId: map['subjectId']?.toString() ?? '',
+      firstTerm: TermRecord.fromMap(map['firstTerm'] as Map<String, dynamic>? ?? {}),
+      secondTerm: TermRecord.fromMap(map['secondTerm'] as Map<String, dynamic>? ?? {}),
     );
   }
 }

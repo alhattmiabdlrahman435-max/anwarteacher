@@ -74,12 +74,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     return grid;
   }
 
-  AttendanceStatus _getStatusForDate(String studentId, DateTime date) {
-    // Generate deterministic mock status based on day of month + student ID hash
-    final dateDay = DateTime(date.year, date.month, date.day).day;
-    final hash = (dateDay + studentId.hashCode) % 5;
-    return hash == 0 ? AttendanceStatus.absent : AttendanceStatus.present;
-  }
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();
@@ -158,8 +152,12 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         
         DateTime calendarDate = adjustToSchoolDay(DateTime.now());
         
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
+        return Consumer(
+          builder: (context, ref, child) {
+            final historyAsync = ref.watch(studentAttendanceHistoryProvider(record.studentId));
+            
+            return StatefulBuilder(
+              builder: (context, setSheetState) {
             final year = calendarDate.year;
             final month = calendarDate.month;
             final grid = _buildGridDays(year, month);
@@ -307,7 +305,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                       final isFutureDate = _isFuture(date);
                       final isTodayDate = _isToday(date);
                       
-                      final status = _getStatusForDate(record.studentId, date);
+                      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+                      final status = historyAsync.value?[dateStr];
                       
                       Color cellBgColor = Colors.transparent;
                       Color cellTextColor = isDark ? Colors.white : AppColors.textPrimaryLight;
@@ -319,9 +318,12 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                         if (status == AttendanceStatus.present) {
                           cellBgColor = AppColors.success.withValues(alpha: isDark ? 0.3 : 0.15);
                           cellTextColor = isDark ? const Color(0xFF34D399) : AppColors.success;
-                        } else {
+                        } else if (status == AttendanceStatus.absent) {
                           cellBgColor = AppColors.error.withValues(alpha: isDark ? 0.3 : 0.15);
                           cellTextColor = isDark ? const Color(0xFFFCA5A5) : AppColors.error;
+                        } else {
+                          cellBgColor = Colors.grey.withValues(alpha: isDark ? 0.15 : 0.08);
+                          cellTextColor = isDark ? Colors.white30 : Colors.grey;
                         }
                       }
                       
@@ -360,6 +362,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         );
       },
     );
+  },
+);
   }
 
   Widget _buildLegendItem(String label, Color color) {
@@ -386,7 +390,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final baseList = ref.watch(dailyAttendanceProvider);
+    final dateString = DateFormat('yyyy-MM-dd').format(_selectedDate);
+    final baseList = ref.watch(dailyAttendanceProvider(dateString));
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final theme = Theme.of(context);
 
@@ -394,7 +399,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     final dailyList = baseList.map((record) {
       return record.copyWith(
         date: _selectedDate,
-        status: _getStatusForDate(record.studentId, _selectedDate),
       );
     }).toList();
 
@@ -714,25 +718,28 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+          if (record.status != AttendanceStatus.pending)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(_getStatusIcon(record.status), color: statusColor, size: 18),
+                  if (_getStatusText(record.status).isNotEmpty) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      _getStatusText(record.status),
+                      style: TextStyle(color: statusColor, fontWeight: FontWeight.w700, fontSize: 13),
+                    ),
+                  ],
+                ],
+              ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(_getStatusIcon(record.status), color: statusColor, size: 18),
-                const SizedBox(width: 6),
-                Text(
-                  _getStatusText(record.status),
-                  style: TextStyle(color: statusColor, fontWeight: FontWeight.w700, fontSize: 13),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -742,6 +749,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     switch (status) {
       case AttendanceStatus.present: return Icons.check_circle_rounded;
       case AttendanceStatus.absent: return Icons.cancel_rounded;
+      case AttendanceStatus.pending: return Icons.radio_button_unchecked_rounded;
     }
   }
 
@@ -749,6 +757,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     switch (status) {
       case AttendanceStatus.present: return AppColors.success;
       case AttendanceStatus.absent: return AppColors.error;
+      case AttendanceStatus.pending: return Colors.grey;
     }
   }
 
@@ -756,6 +765,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     switch (status) {
       case AttendanceStatus.present: return context.loc.present;
       case AttendanceStatus.absent: return context.loc.absent;
+      case AttendanceStatus.pending: return '';
     }
   }
 }

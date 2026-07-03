@@ -199,61 +199,77 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
 
   Widget _buildReportsList(List<Report> reportsList, bool isDark) {
     if (reportsList.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: isDark
-                    ? null
-                    : [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 20,
-                        ),
-                      ],
-              ),
-              child: Icon(
-                Icons.assignment_late_outlined,
-                size: 52,
-                color: isDark ? Colors.white30 : Colors.grey[350],
-              ),
+      return RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(reportsProvider.notifier).fetch();
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Container(
+            height: MediaQuery.of(context).size.height - 250,
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.05)
+                        : Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: isDark
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 20,
+                            ),
+                          ],
+                  ),
+                  child: Icon(
+                    Icons.assignment_late_outlined,
+                    size: 52,
+                    color: isDark ? Colors.white30 : Colors.grey[350],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'لا توجد بلاغات',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white60 : Colors.grey[500],
+                    fontFamily: AppTypography.fontFamily,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'اضغط + لإضافة بلاغ جديد',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? Colors.white38 : Colors.grey[400],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              'لا توجد بلاغات',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white60 : Colors.grey[500],
-                fontFamily: AppTypography.fontFamily,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'اضغط + لإضافة بلاغ جديد',
-              style: TextStyle(
-                fontSize: 13,
-                color: isDark ? Colors.white38 : Colors.grey[400],
-              ),
-            ),
-          ],
+          ),
         ),
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-      itemCount: reportsList.length,
-      itemBuilder: (context, index) {
-        return _buildReportCard(context, reportsList[index], isDark);
+    return RefreshIndicator(
+      onRefresh: () async {
+        await ref.read(reportsProvider.notifier).fetch();
       },
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        itemCount: reportsList.length,
+        itemBuilder: (context, index) {
+          return _buildReportCard(context, reportsList[index], isDark);
+        },
+      ),
     );
   }
 

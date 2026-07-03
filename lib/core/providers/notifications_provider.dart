@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/notification_model.dart';
+import '../network/api_client.dart';
 
 part 'notifications_provider.g.dart';
 
@@ -9,32 +10,44 @@ part 'notifications_provider.g.dart';
 class Notifications extends _$Notifications {
   @override
   List<AppNotificationModel> build() {
-    return [
-      AppNotificationModel(
-        id: 'n1',
-        title: 'إشعار عام',
-        message: 'غداً إجازة رسمية بمناسبة العيد الوطني.',
-        date: DateTime.now().subtract(const Duration(hours: 1)),
-        icon: CupertinoIcons.bell_fill,
-        iconColor: Colors.blueAccent,
-      ),
-      AppNotificationModel(
-        id: 'n2',
-        title: 'طلب اجتماع طارئ',
-        message: 'اجتماع طارئ لأعضاء هيئة التدريس في المكتبة المدرسية الساعة 12 ظهراً لمناقشة سير الاختبارات.',
-        date: DateTime.now().subtract(const Duration(hours: 3)),
-        icon: CupertinoIcons.group_solid,
-        iconColor: Colors.purpleAccent,
-      ),
-      AppNotificationModel(
-        id: 'n3',
-        title: 'تنبيه رصد الدرجات',
-        message: 'يرجى استكمال رصد درجات الشهر الأول لجميع الطلاب قبل نهاية هذا الأسبوع.',
-        date: DateTime.now().subtract(const Duration(days: 1)),
-        icon: CupertinoIcons.doc_checkmark_fill,
-        iconColor: Colors.orangeAccent,
-      ),
-    ];
+    _fetch();
+    return const [];
+  }
+
+  Future<void> _fetch() async {
+    try {
+      final dio = ref.read(apiClientProvider);
+      final response = await dio.get('notifications');
+      if (response.data != null && response.data['success'] == true) {
+        final List<dynamic> list = response.data['notifications'] ?? [];
+        state = list.map((item) {
+          final String type = item['type']?.toString().toLowerCase() ?? 'general';
+          
+          IconData icon = CupertinoIcons.bell_fill;
+          Color iconColor = Colors.blueAccent;
+          
+          if (type == 'attendance') {
+            icon = CupertinoIcons.doc_checkmark_fill;
+            iconColor = Colors.orangeAccent;
+          } else if (type == 'broadcast' || type == 'meeting') {
+            icon = CupertinoIcons.group_solid;
+            iconColor = Colors.purpleAccent;
+          }
+
+          return AppNotificationModel(
+            id: item['id']?.toString() ?? '',
+            title: item['title'] ?? '',
+            message: item['content'] ?? '',
+            date: DateTime.tryParse(item['created_at']?.toString() ?? '') ?? DateTime.now(),
+            icon: icon,
+            iconColor: iconColor,
+            isRead: item['is_read'] == 1 || item['is_read'] == true,
+          );
+        }).toList();
+      }
+    } catch (e) {
+      print('Error fetching notifications: $e');
+    }
   }
 
   void addNotification({
@@ -54,10 +67,17 @@ class Notifications extends _$Notifications {
     state = [newNotification, ...state];
   }
 
-  void markAsRead(String id) {
+  Future<void> markAsRead(String id) async {
     state = [
       for (final n in state)
         if (n.id == id) n.copyWith(isRead: true) else n
     ];
+
+    try {
+      final dio = ref.read(apiClientProvider);
+      await dio.put('notifications/$id/read');
+    } catch (e) {
+      print('Error marking notification as read in backend: $e');
+    }
   }
 }

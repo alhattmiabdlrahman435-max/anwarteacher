@@ -10,23 +10,30 @@ part of 'attendance_provider.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(DailyAttendance)
-final dailyAttendanceProvider = DailyAttendanceProvider._();
+final dailyAttendanceProvider = DailyAttendanceFamily._();
 
 final class DailyAttendanceProvider
     extends $NotifierProvider<DailyAttendance, List<AttendanceRecord>> {
-  DailyAttendanceProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'dailyAttendanceProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
+  DailyAttendanceProvider._({
+    required DailyAttendanceFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'dailyAttendanceProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$dailyAttendanceHash();
+
+  @override
+  String toString() {
+    return r'dailyAttendanceProvider'
+        ''
+        '($argument)';
+  }
 
   @$internal
   @override
@@ -39,12 +46,50 @@ final class DailyAttendanceProvider
       providerOverride: $SyncValueProvider<List<AttendanceRecord>>(value),
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    return other is DailyAttendanceProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
 }
 
-String _$dailyAttendanceHash() => r'db8ad11df3138860d50bab7e92debf49cfd5d252';
+String _$dailyAttendanceHash() => r'9896ece19c76436dc33e246f3447124479756d91';
+
+final class DailyAttendanceFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          DailyAttendance,
+          List<AttendanceRecord>,
+          List<AttendanceRecord>,
+          List<AttendanceRecord>,
+          String
+        > {
+  DailyAttendanceFamily._()
+    : super(
+        retry: null,
+        name: r'dailyAttendanceProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  DailyAttendanceProvider call(String date) =>
+      DailyAttendanceProvider._(argument: date, from: this);
+
+  @override
+  String toString() => r'dailyAttendanceProvider';
+}
 
 abstract class _$DailyAttendance extends $Notifier<List<AttendanceRecord>> {
-  List<AttendanceRecord> build();
+  late final _$args = ref.$arg as String;
+  String get date => _$args;
+
+  List<AttendanceRecord> build(String date);
   @$mustCallSuper
   @override
   void runBuild() {
@@ -58,6 +103,89 @@ abstract class _$DailyAttendance extends $Notifier<List<AttendanceRecord>> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    element.handleCreate(ref, () => build(_$args));
   }
+}
+
+@ProviderFor(studentAttendanceHistory)
+final studentAttendanceHistoryProvider = StudentAttendanceHistoryFamily._();
+
+final class StudentAttendanceHistoryProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<Map<String, AttendanceStatus>>,
+          Map<String, AttendanceStatus>,
+          FutureOr<Map<String, AttendanceStatus>>
+        >
+    with
+        $FutureModifier<Map<String, AttendanceStatus>>,
+        $FutureProvider<Map<String, AttendanceStatus>> {
+  StudentAttendanceHistoryProvider._({
+    required StudentAttendanceHistoryFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'studentAttendanceHistoryProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$studentAttendanceHistoryHash();
+
+  @override
+  String toString() {
+    return r'studentAttendanceHistoryProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<Map<String, AttendanceStatus>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Map<String, AttendanceStatus>> create(Ref ref) {
+    final argument = this.argument as String;
+    return studentAttendanceHistory(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is StudentAttendanceHistoryProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$studentAttendanceHistoryHash() =>
+    r'b0cc580dec49d599770c6c36ae64c8f5fef859b2';
+
+final class StudentAttendanceHistoryFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<Map<String, AttendanceStatus>>,
+          String
+        > {
+  StudentAttendanceHistoryFamily._()
+    : super(
+        retry: null,
+        name: r'studentAttendanceHistoryProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  StudentAttendanceHistoryProvider call(String studentId) =>
+      StudentAttendanceHistoryProvider._(argument: studentId, from: this);
+
+  @override
+  String toString() => r'studentAttendanceHistoryProvider';
 }

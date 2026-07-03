@@ -14,6 +14,7 @@ import '../../../../core/widgets/modern_card.dart';
 import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/classes_provider.dart';
+import '../../../../core/providers/notifications_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -52,6 +53,9 @@ class DashboardScreen extends ConsumerWidget {
       'subject': 'المادة الدراسية',
     }).toList();
 
+    final notificationsList = ref.watch(notificationsProvider);
+    final unreadNotificationsCount = notificationsList.where((n) => !n.isRead).length;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, dynamic result) async {
@@ -74,7 +78,11 @@ class DashboardScreen extends ConsumerWidget {
                 const _WelcomeHeader(),
                 const SizedBox(height: AppSpacing.xl),
 
-                _SummaryStats(classesCount: mockClasses.length, isDark: isDark),
+                _SummaryStats(
+                  classesCount: mockClasses.length,
+                  unreadCount: unreadNotificationsCount,
+                  isDark: isDark,
+                ),
                 const SizedBox(height: AppSpacing.xl),
 
                 _SectionTitle(title: context.loc.myClasses, isDark: isDark),
@@ -95,7 +103,7 @@ class DashboardScreen extends ConsumerWidget {
 
                 _SectionTitle(title: context.loc.quickAccess, isDark: isDark),
                 const SizedBox(height: AppSpacing.lg),
-                _QuickActions(isDark: isDark),
+                _QuickActions(isDark: isDark, unreadCount: unreadNotificationsCount),
                 const SizedBox(height: AppSpacing.xxxl),
               ]),
             ),
@@ -235,9 +243,10 @@ class _WelcomeHeader extends ConsumerWidget {
 }
 
 class _SummaryStats extends StatelessWidget {
-  const _SummaryStats({required this.classesCount, required this.isDark});
+  const _SummaryStats({required this.classesCount, required this.unreadCount, required this.isDark});
 
   final int classesCount;
+  final int unreadCount;
   final bool isDark;
 
   @override
@@ -257,7 +266,7 @@ class _SummaryStats extends StatelessWidget {
         Expanded(
           child: _StatCard(
             icon: Icons.notifications_rounded,
-            value: '3',
+            value: unreadCount.toString(),
             label: context.loc.notifications,
             color: Colors.orange,
             isDark: isDark,
@@ -392,9 +401,10 @@ class _ClassQuickCard extends StatelessWidget {
 }
 
 class _QuickActions extends StatelessWidget {
-  const _QuickActions({required this.isDark});
+  const _QuickActions({required this.isDark, required this.unreadCount});
 
   final bool isDark;
+  final int unreadCount;
 
   @override
   Widget build(BuildContext context) {
@@ -442,7 +452,7 @@ class _QuickActions extends StatelessWidget {
                 label: context.loc.notifications,
                 color: Colors.orange,
                 isDark: isDark,
-                badgeCount: 3,
+                badgeCount: unreadCount,
                 onTap: () => context.push('/notifications'),
               ),
             ),

@@ -48,6 +48,10 @@ class NotificationsScreen extends ConsumerWidget {
                         icon: n.icon,
                         iconColor: n.iconColor,
                         isDark: isDark,
+                        isRead: n.isRead,
+                        onTap: () {
+                          ref.read(notificationsProvider.notifier).markAsRead(n.id);
+                        },
                       ),
                     );
                   },
@@ -80,20 +84,44 @@ class NotificationsScreen extends ConsumerWidget {
     required IconData icon,
     required Color iconColor,
     required bool isDark,
+    required bool isRead,
+    required VoidCallback onTap,
   }) {
     return ModernCard(
       isDark: isDark,
+      onTap: onTap,
+      borderColor: isRead ? null : iconColor.withValues(alpha: 0.5),
+      borderWidth: isRead ? 1.0 : 2.0,
+      backgroundColor: isRead ? null : iconColor.withValues(alpha: isDark ? 0.08 : 0.04),
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: iconColor, size: 24),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(icon, color: iconColor, size: 24),
+              ),
+              if (!isRead)
+                Positioned(
+                  top: -2,
+                  right: -2,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(width: AppSpacing.lg),
           Expanded(
@@ -103,7 +131,7 @@ class NotificationsScreen extends ConsumerWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: isRead ? FontWeight.bold : FontWeight.w900,
                       ),
                 ),
                 const SizedBox(height: 4),

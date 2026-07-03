@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/models/report.dart';
+import '../../../../core/models/attendance.dart';
 import '../../../../core/providers/reports_provider.dart';
 import '../../../../core/providers/classes_provider.dart';
-import '../../../../core/providers/children_provider.dart';
+import '../../../../core/providers/attendance_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/modern_text_field.dart';
@@ -31,7 +33,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
   final _formKey = GlobalKey<FormState>();
 
   String? _selectedClass;
-  Student? _selectedStudent;
+  AttendanceRecord? _selectedStudent;
   ReportType? _selectedType;
   String? _attachedImagePath;
   bool _isUploadingImage = false;
@@ -56,32 +58,127 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
     super.dispose();
   }
 
-  List<Student> _getFilteredStudents(List<Student> allStudents) {
-    if (_selectedClass == null) return allStudents;
-
-    final filtered = allStudents.where((s) {
-      final cls = _selectedClass!;
-      final grade = s.grade;
-      if (cls.contains('خامس') && grade.contains('خامس')) return true;
-      if (cls.contains('سادس') && grade.contains('سادس')) return true;
-      return false;
-    }).toList();
-
-    return filtered.isNotEmpty ? filtered : allStudents;
-  }
-
-  void _simulatePickImage() async {
+  Future<void> _pickImage(ImageSource source) async {
     setState(() => _isUploadingImage = true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (mounted) {
-      setState(() {
-        _attachedImagePath = 'mock_report_image.png';
-        _isUploadingImage = false;
-      });
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+      
+      if (image != null) {
+        setState(() {
+          _attachedImagePath = image.path;
+        });
+      }
+    } catch (e) {
+      print('Error picking image: $e');
+    } finally {
+      setState(() => _isUploadingImage = false);
     }
   }
 
-  void _submitReport() {
+  void _showImageSourceSheet() {
+    final isDark = widget.isDark;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? AppColors.surfaceAltDark : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'إرفاق صورة إثبات',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                  fontFamily: AppTypography.fontFamily,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _pickImage(ImageSource.camera);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        side: BorderSide(
+                          color: isDark ? Colors.white24 : AppColors.border,
+                        ),
+                      ),
+                      icon: Icon(
+                        Icons.camera_alt_rounded,
+                        color: isDark ? AppColors.accent : AppColors.primary,
+                      ),
+                      label: Text(
+                        'التقاط صورة',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                          fontFamily: AppTypography.fontFamily,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _pickImage(ImageSource.gallery);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        side: BorderSide(
+                          color: isDark ? Colors.white24 : AppColors.border,
+                        ),
+                      ),
+                      icon: Icon(
+                        Icons.photo_library_rounded,
+                        color: isDark ? AppColors.accent : AppColors.primary,
+                      ),
+                      label: Text(
+                        'من المعرض',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                          fontFamily: AppTypography.fontFamily,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _submitReport() async {
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedClass == null) {
@@ -111,23 +208,45 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
       return;
     }
 
-    ref.read(reportsProvider.notifier).addReport(
-          studentId: _selectedStudent!.id,
-          studentName: _selectedStudent!.name,
-          className: _selectedClass!,
-          type: _selectedType!,
-          description: _descriptionController.text.trim(),
-          imageUrl: _attachedImagePath,
+    try {
+      setState(() {
+        _isUploadingImage = true;
+      });
+
+      await ref.read(reportsProvider.notifier).addReport(
+            studentId: _selectedStudent!.studentId,
+            studentName: _selectedStudent!.studentName,
+            className: _selectedClass!,
+            type: _selectedType!,
+            description: _descriptionController.text.trim(),
+            imageUrl: _attachedImagePath,
+          );
+
+      if (mounted) {
+        AppNotification.show(
+          context,
+          type: AppNotificationType.success,
+          title: 'تم إرسال البلاغ بنجاح',
+          message: 'بانتظار مراجعة واعتماد الإدارة',
         );
-
-    AppNotification.show(
-      context,
-      type: AppNotificationType.success,
-      title: 'تم إرسال البلاغ بنجاح',
-      message: 'بانتظار مراجعة واعتماد الإدارة',
-    );
-
-    widget.onSuccess();
+        widget.onSuccess();
+      }
+    } catch (e) {
+      if (mounted) {
+        AppNotification.show(
+          context,
+          type: AppNotificationType.error,
+          title: 'حدث خطأ أثناء الإرسال',
+          message: e.toString(),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingImage = false;
+        });
+      }
+    }
   }
 
   @override
@@ -137,11 +256,13 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
     final textColor = widget.isDark ? Colors.white : AppColors.textPrimaryLight;
 
     final classes = ref.watch(classesProvider);
-    final allStudents = ref.watch(childrenProvider);
-    final filteredStudents = _getFilteredStudents(allStudents);
+    
+    // Get students dynamically for the selected class
+    final String todayDateStr = "${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}";
+    final classStudents = ref.watch(dailyAttendanceProvider(todayDateStr));
 
-    // If selected student is not in the newly filtered list, reset it
-    if (_selectedStudent != null && !filteredStudents.any((s) => s.id == _selectedStudent!.id)) {
+    // If selected student is not in the current class list, reset it
+    if (_selectedStudent != null && !classStudents.any((s) => s.studentId == _selectedStudent!.studentId)) {
       _selectedStudent = null;
     }
 
@@ -245,7 +366,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
                   const SizedBox(height: 10),
                   _buildClassDropdown(classes, widget.isDark, textColor),
                   const SizedBox(height: 10),
-                  _buildStudentDropdown(filteredStudents, widget.isDark, textColor),
+                  _buildStudentDropdown(classStudents, widget.isDark, textColor),
                   const SizedBox(height: 20),
 
                   // Labeled section for type selector
@@ -331,6 +452,8 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
                 _selectedClass = newValue;
                 _selectedStudent = null;
               });
+              // Update selected class provider so dailyAttendance matches!
+              ref.read(selectedClassProvider.notifier).setClass(newValue);
             }
           },
         ),
@@ -338,7 +461,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
     );
   }
 
-  Widget _buildStudentDropdown(List<Student> students, bool isDark, Color textColor) {
+  Widget _buildStudentDropdown(List<AttendanceRecord> students, bool isDark, Color textColor) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
@@ -349,7 +472,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
         ),
       ),
       child: DropdownButtonHideUnderline(
-        child: DropdownButton<Student>(
+        child: DropdownButton<AttendanceRecord>(
           isExpanded: true,
           value: _selectedStudent,
           hint: Text('اختر الطالب...', style: TextStyle(color: isDark ? Colors.white54 : AppColors.textSecondaryLight, fontFamily: AppTypography.fontFamily, fontSize: 13)),
@@ -365,7 +488,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
           items: students.map((s) {
             return DropdownMenuItem(
               value: s,
-              child: Text(s.name),
+              child: Text(s.studentName),
             );
           }).toList(),
           onChanged: (newValue) {
@@ -558,7 +681,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
     }
 
     return InkWell(
-      onTap: _simulatePickImage,
+      onTap: _showImageSourceSheet,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 18),
@@ -566,9 +689,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
           color: isDark ? Colors.white.withValues(alpha: 0.02) : const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.08)
-                : const Color(0xFFE2E8F0),
+            color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
           ),
         ),
         child: Column(

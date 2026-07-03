@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:dio/dio.dart';
 import '../models/report.dart';
-import 'notifications_provider.dart';
+import '../network/api_client.dart';
 
 part 'reports_provider.g.dart';
 
@@ -9,90 +9,87 @@ part 'reports_provider.g.dart';
 class Reports extends _$Reports {
   @override
   List<Report> build() {
-    return [
-      Report(
-        id: 'r1',
-        studentId: 's1',
-        studentName: 'أحمد محمد عبدالله',
-        className: 'الصف الخامس - أ',
-        type: ReportType.academic,
-        description: 'تراجع ملحوظ في مستوى الطالب في مادة الرياضيات خلال الأسبوعين الماضيين، ويحتاج إلى متابعة وتعزيز من المنزل.',
-        status: ReportStatus.approved,
-        createdAt: DateTime.now().subtract(const Duration(days: 2)),
-      ),
-      Report(
-        id: 'r2',
-        studentId: 's2',
-        studentName: 'سارة محمد عبدالله',
-        className: 'الصف الخامس - أ',
-        type: ReportType.behavioral,
-        description: 'تكرار الحديث الجانبي أثناء الشرح وعدم الانتباه للمعلمة بشكل متكرر خلال الأسبوع الماضي.',
-        status: ReportStatus.pending,
-        createdAt: DateTime.now().subtract(const Duration(hours: 4)),
-      ),
-      Report(
-        id: 'r3',
-        studentId: 's1',
-        studentName: 'أحمد محمد عبدالله',
-        className: 'الصف الخامس - أ',
-        type: ReportType.homework,
-        description: 'لم يسلم الطالب واجبات الرياضيات للأسبوع الثالث على التوالي.',
-        status: ReportStatus.rejected,
-        createdAt: DateTime.now().subtract(const Duration(days: 5)),
-      ),
-    ];
+    fetch();
+    return const [];
   }
 
-  void addReport({
+  Future<void> fetch() async {
+    try {
+      final dio = ref.read(apiClientProvider);
+      final response = await dio.get('reports');
+      if (response.data != null && response.data['success'] == true) {
+        final List<dynamic> list = response.data['reports'] ?? [];
+        state = list.map((item) {
+          final String statusStr = item['status']?.toString().toLowerCase() ?? 'pending';
+          ReportStatus status = ReportStatus.pending;
+          if (statusStr == 'approved') {
+            status = ReportStatus.approved;
+          } else if (statusStr == 'rejected') {
+            status = ReportStatus.rejected;
+          }
+
+          final String typeStr = item['type']?.toString().toLowerCase() ?? 'academic';
+          ReportType type = ReportType.academic;
+          if (typeStr == 'behavioral') {
+            type = ReportType.behavioral;
+          } else if (typeStr == 'homework') {
+            type = ReportType.homework;
+          } else if (typeStr == 'psychological') {
+            type = ReportType.psychological;
+          }
+
+          return Report(
+            id: item['id']?.toString() ?? '',
+            studentId: item['studentId']?.toString() ?? '',
+            studentName: item['studentName'] ?? '',
+            className: item['className'] ?? '',
+            type: type,
+            description: item['description'] ?? '',
+            imageUrl: item['imageUrl'],
+            status: status,
+            createdAt: DateTime.tryParse(item['createdAt']?.toString() ?? '') ?? DateTime.now(),
+          );
+        }).toList();
+      }
+    } catch (e) {
+      print('Error fetching teacher student reports: $e');
+    }
+  }
+
+  Future<void> addReport({
     required String studentId,
     required String studentName,
     required String className,
     required ReportType type,
     required String description,
-    String? imageUrl,
-  }) {
-    final newReport = Report(
-      id: 'rep_${DateTime.now().millisecondsSinceEpoch}',
-      studentId: studentId,
-      studentName: studentName,
-      className: className,
-      type: type,
-      description: description,
-      imageUrl: imageUrl,
-      status: ReportStatus.pending,
-      createdAt: DateTime.now(),
-    );
-    state = [newReport, ...state];
-  }
+    String? imageUrl, // Local picked image path
+  }) async {
+    try {
+      final dio = ref.read(apiClientProvider);
+      
+      MultipartFile? file;
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        file = await MultipartFile.fromFile(
+          imageUrl,
+          filename: imageUrl.split('/').last,
+        );
+      }
 
-  void updateReportStatus(String id, ReportStatus newStatus) {
-    state = [
-      for (final report in state)
-        if (report.id == id) _handleStatusChange(report, newStatus) else report
-    ];
-  }
+      final formData = FormData.fromMap({
+        'student_id': int.tryParse(studentId) ?? 0,
+        'type': type.name, // academic, behavioral, homework, psychological
+        'description': description,
+        if (file != null) 'image': file,
+      });
 
-  Report _handleStatusChange(Report report, ReportStatus newStatus) {
-    final updatedReport = report.copyWith(status: newStatus);
-
-    if (newStatus == ReportStatus.approved) {
-      // Trigger a notification to the parent
-      ref.read(notificationsProvider.notifier).addNotification(
-        title: 'تم إرسال بلاغ لولي الأمر',
-        message: 'تمت الموافقة من الإدارة وإرسال البلاغ لولي أمر الطالب ${report.studentName} (${report.type.nameAr}).',
-        icon: Icons.check_circle_rounded,
-        iconColor: Colors.green,
-      );
-    } else if (newStatus == ReportStatus.rejected) {
-      // Trigger notification that report was rejected by admin
-      ref.read(notificationsProvider.notifier).addNotification(
-        title: 'تم رفض بلاغ من الإدارة',
-        message: 'رفضت الإدارة إرسال البلاغ الخاص بالطالب ${report.studentName}.',
-        icon: Icons.cancel_rounded,
-        iconColor: Colors.red,
-      );
+      final response = await dio.post('reports', data: formData);
+      if (response.data != null && response.data['success'] == true) {
+        // Refresh reports list
+        await fetch();
+      }
+    } catch (e) {
+      print('Error submitting report to backend: $e');
+      rethrow;
     }
-
-    return updatedReport;
   }
 }

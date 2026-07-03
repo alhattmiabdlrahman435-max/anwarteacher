@@ -41,7 +41,7 @@ final class GradesDataProvider
   }
 }
 
-String _$gradesDataHash() => r'1c1b11db8724ab0fec399937de08386d8565ef95';
+String _$gradesDataHash() => r'4dbb437e2285278f82e36e31ca008f5614af2917';
 
 abstract class _$GradesData extends $Notifier<ClassSubjectGrades> {
   ClassSubjectGrades build();
