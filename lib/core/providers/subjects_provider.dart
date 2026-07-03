@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../network/api_client.dart';
 import 'classes_provider.dart';
@@ -43,7 +44,7 @@ class Subjects extends _$Subjects {
         state = names;
       }
     } catch (e) {
-      print('Error fetching class subjects: $e');
+      debugPrint('Error fetching subjects: $e');
     }
   }
 

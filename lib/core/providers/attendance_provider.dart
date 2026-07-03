@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/attendance.dart';
 import '../network/api_client.dart';
@@ -44,7 +45,48 @@ class DailyAttendance extends _$DailyAttendance {
         }).toList();
       }
     } catch (e) {
-      print('Error fetching teacher class students: $e');
+      debugPrint('Error fetching teacher class students: $e');
+    }
+  }
+  Future<void> updateStatus(String studentId, AttendanceStatus newStatus) async {
+    // 1. Update state immediately
+    state = [
+      for (final record in state)
+        if (record.studentId == studentId)
+          record.copyWith(status: newStatus)
+        else
+          record
+    ];
+
+    // 2. Put attendance update to backend
+    try {
+      final dio = ref.read(apiClientProvider);
+      final statusStr = newStatus.name; // present, absent
+      await dio.put('teacher/students/$studentId/attendance', data: {
+        'status': statusStr,
+      });
+    } catch (e) {
+      debugPrint('Error updating teacher student attendance: $e');
+    }
+  }
+
+  Future<void> markAllPresent() async {
+    // Update local state
+    state = [
+      for (final record in state)
+        record.copyWith(status: AttendanceStatus.present)
+    ];
+    
+    // Send updates to backend for each student in the list
+    final dio = ref.read(apiClientProvider);
+    for (final record in state) {
+      try {
+        await dio.put('teacher/students/${record.studentId}/attendance', data: {
+          'status': 'present',
+        });
+      } catch (e) {
+        debugPrint('Error marking student ${record.studentId} present: $e');
+      }
     }
   }
 }

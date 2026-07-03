@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/dio.dart';
@@ -153,7 +154,7 @@ class Auth extends _$Auth {
         state = state.copyWith(userAvatar: serverUrl);
       }
     } catch (e) {
-      print('Error uploading profile photo to backend: $e');
+      debugPrint('Error uploading profile photo to backend: $e');
     }
   }
 

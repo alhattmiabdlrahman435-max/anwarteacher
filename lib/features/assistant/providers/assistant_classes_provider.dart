@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/assistant_models.dart';
 import '../../../core/network/api_client.dart';
@@ -21,7 +22,7 @@ class AssistantClasses extends _$AssistantClasses {
         state = data.map((json) => ClassroomEntity.fromJson(json)).toList();
       }
     } catch (e) {
-      print('Error fetching classes: $e');
+      debugPrint('Error fetching classes: $e');
     }
   }
 

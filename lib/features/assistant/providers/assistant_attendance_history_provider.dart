@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/assistant_models.dart';
 import '../../../core/network/api_client.dart';
@@ -21,7 +22,7 @@ class AssistantAttendanceHistory extends _$AssistantAttendanceHistory {
         state = data.map((json) => AttendanceHistoryEntity.fromJson(json)).toList();
       }
     } catch (e) {
-      print('Error fetching supervisor attendance history: $e');
+      debugPrint('Error fetching supervisor attendance history: $e');
     }
   }
 

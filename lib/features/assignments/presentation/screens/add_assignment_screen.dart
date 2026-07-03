@@ -430,7 +430,7 @@ class _AddAssignmentScreenState extends ConsumerState<AddAssignmentScreen> {
         setState(() => _pickedImagePath = image.path);
       }
     } catch (e) {
-      print('Error picking image: $e');
+      debugPrint('Error picking image: $e');
     }
   }
 
@@ -444,7 +444,7 @@ class _AddAssignmentScreenState extends ConsumerState<AddAssignmentScreen> {
         setState(() => _pickedImagePath = result.files.single.path);
       }
     } catch (e) {
-      print('Error picking file: $e');
+      debugPrint('Error picking file: $e');
     }
   }
 
@@ -580,24 +580,25 @@ class _AddAssignmentScreenState extends ConsumerState<AddAssignmentScreen> {
       await ref.read(assignmentsDataProvider.notifier).addAssignment(newAssignment, _pickedImagePath);
 
       // Close loading dialog
-      if (mounted) Navigator.of(context).pop();
-
-      AppNotification.show(
-        context,
-        type: AppNotificationType.success,
-        title: context.loc.assignmentSaveSuccess,
-      );
-      
-      if (mounted) context.pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+        AppNotification.show(
+          context,
+          type: AppNotificationType.success,
+          title: context.loc.assignmentSaveSuccess,
+        );
+        context.pop();
+      }
     } catch (e) {
       // Close loading dialog
-      if (mounted) Navigator.of(context).pop();
-      
-      AppNotification.show(
-        context,
-        type: AppNotificationType.error,
-        title: 'فشل حفظ وإرسال الواجب. يرجى التحقق من الاتصال بالشبكة.',
-      );
+      if (mounted) {
+        Navigator.of(context).pop();
+        AppNotification.show(
+          context,
+          type: AppNotificationType.error,
+          title: 'فشل حفظ وإرسال الواجب. يرجى التحقق من الاتصال بالشبكة.',
+        );
+      }
     }
   }
 }

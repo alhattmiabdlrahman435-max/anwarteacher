@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/assistant_models.dart';
 import '../../../core/network/api_client.dart';
@@ -28,7 +29,7 @@ class AssistantReports extends _$AssistantReports {
         state = AttendanceStatsEntity.fromJson(response.data);
       }
     } catch (e) {
-      print('Error fetching supervisor reports: $e');
+      debugPrint('Error fetching supervisor reports: $e');
     }
   }
 
