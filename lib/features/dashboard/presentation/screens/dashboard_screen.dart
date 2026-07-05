@@ -48,9 +48,14 @@ class DashboardScreen extends ConsumerWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     final classesList = ref.watch(classesProvider);
-    final mockClasses = classesList.map((cls) => {
-      'name': cls,
-      'subject': 'المادة الدراسية',
+    final classesNotifier = ref.read(classesProvider.notifier);
+    final mockClasses = classesList.map((cls) {
+      final subjects = classesNotifier.classToSubjectsMap[cls] ?? [];
+      final subjectsStr = subjects.isNotEmpty ? subjects.join('، ') : 'المادة الدراسية';
+      return {
+        'name': cls,
+        'subject': subjectsStr,
+      };
     }).toList();
 
     final notificationsList = ref.watch(notificationsProvider);

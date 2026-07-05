@@ -41,7 +41,7 @@ final class AssistantClassesProvider
   }
 }
 
-String _$assistantClassesHash() => r'869b481a6f9857451cab822dbf8b475bbb3c0857';
+String _$assistantClassesHash() => r'9b90c54cc85948dce32ad45d11f645a0f847d5cb';
 
 abstract class _$AssistantClasses extends $Notifier<List<ClassroomEntity>> {
   List<ClassroomEntity> build();

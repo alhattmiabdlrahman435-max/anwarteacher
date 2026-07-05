@@ -234,6 +234,15 @@ class AppDrawer extends ConsumerWidget {
                         onTap: () => _navigate(context, currentRoute, '/attendance'),
                       ),
                       _DrawerItem(
+                        title: context.translateMock('الجدول الدراسي'),
+                        icon: CupertinoIcons.calendar,
+                        route: '/schedule',
+                        currentRoute: currentRoute,
+                        isDark: isDark,
+                        primaryColor: primaryColor,
+                        onTap: () => _navigate(context, currentRoute, '/schedule'),
+                      ),
+                      _DrawerItem(
                         title: context.loc.notifications,
                         icon: CupertinoIcons.bell_fill,
                         route: '/notifications',

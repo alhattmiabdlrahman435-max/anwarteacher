@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -11,6 +11,7 @@ import '../../features/attendance/presentation/screens/attendance_screen.dart';
 import '../../features/assignments/presentation/screens/assignments_screen.dart';
 import '../../features/assignments/presentation/screens/add_assignment_screen.dart';
 import '../../features/assignments/presentation/screens/submissions_tracking_screen.dart';
+import '../../features/schedule/presentation/screens/schedule_screen.dart';
 
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
@@ -31,6 +32,8 @@ import '../../features/error/presentation/screens/not_found_screen.dart';
 
 part 'app_router.g.dart';
 
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 class RouterTransitionNotifier extends ChangeNotifier {
   final Ref _ref;
 
@@ -46,6 +49,7 @@ GoRouter appRouter(Ref ref) {
   final notifier = RouterTransitionNotifier(ref);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     refreshListenable: notifier,
     errorBuilder: (context, state) => const NotFoundScreen(),
@@ -82,6 +86,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/attendance',
         builder: (context, state) => const AttendanceScreen(),
+      ),
+      GoRoute(
+        path: '/schedule',
+        builder: (context, state) => const ScheduleScreen(),
       ),
       GoRoute(
         path: '/notifications',

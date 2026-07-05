@@ -49,7 +49,7 @@ final class AssistantAttendanceHistoryProvider
 }
 
 String _$assistantAttendanceHistoryHash() =>
-    r'eeb229a61778f359ca3fe6c588be0c8f3aff67d5';
+    r'df23fff14905f13b99107bfbfe1a23d60dbdcb7f';
 
 abstract class _$AssistantAttendanceHistory
     extends $Notifier<List<AttendanceHistoryEntity>> {

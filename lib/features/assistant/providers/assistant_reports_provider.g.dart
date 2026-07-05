@@ -41,7 +41,7 @@ final class AssistantReportsProvider
   }
 }
 
-String _$assistantReportsHash() => r'08e82ee1fe61b4ccc06152c35ac9f5c03aa5804f';
+String _$assistantReportsHash() => r'becc2877ce3a2e95a6bde05d96497c1faf33784b';
 
 abstract class _$AssistantReports extends $Notifier<AttendanceStatsEntity> {
   AttendanceStatsEntity build();

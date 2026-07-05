@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/dio.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../network/api_client.dart';
 import '../utils/constants.dart';
 
@@ -68,6 +69,25 @@ class Auth extends _$Auth {
       userName: userName,
       userAvatar: userAvatar,
     );
+
+    if (isLoggedIn) {
+      Future.microtask(() => syncFcmToken());
+    }
+  }
+
+  Future<void> syncFcmToken() async {
+    try {
+      final dio = ref.read(apiClientProvider);
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+      if (fcmToken != null) {
+        await dio.post('user/fcm-token', data: {
+          'fcm_token': fcmToken,
+        });
+        debugPrint('Teacher/Supervisor FCM Token synced to backend successfully: $fcmToken');
+      }
+    } catch (e) {
+      debugPrint('Error syncing Teacher/Supervisor FCM Token to backend: $e');
+    }
   }
 
   Future<void> login(String employeeId, String password, UserRole role) async {
@@ -105,6 +125,8 @@ class Auth extends _$Auth {
         userName: displayName,
         userAvatar: displayAvatar,
       );
+
+      Future.microtask(() => syncFcmToken());
     } else {
       throw Exception(response.data?['message'] ?? 'اسم المستخدم أو كلمة المرور غير صحيحة');
     }
