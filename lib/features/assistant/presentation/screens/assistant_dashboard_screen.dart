@@ -10,12 +10,39 @@ import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/widgets/adaptive_sliver_app_bar.dart';
 import '../../providers/assistant_dashboard_provider.dart';
+import '../../providers/assistant_classes_provider.dart';
+import '../../providers/assistant_class_details_provider.dart';
 
-class AssistantDashboardScreen extends ConsumerWidget {
+class AssistantDashboardScreen extends ConsumerStatefulWidget {
   const AssistantDashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AssistantDashboardScreen> createState() => _AssistantDashboardScreenState();
+}
+
+class _AssistantDashboardScreenState extends ConsumerState<AssistantDashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      if (mounted) {
+        // 1. Refresh assistant classes
+        await ref.read(assistantClassesProvider.notifier).refresh();
+        // 2. Refresh each class details to update stats
+        final classes = ref.read(assistantClassesProvider);
+        if (mounted) {
+          await Future.wait(
+            classes.map(
+              (cls) => ref.read(assistantClassDetailsProvider(cls.id).notifier).refresh(cls.id),
+            ),
+          );
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     
@@ -28,52 +55,66 @@ class AssistantDashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       drawer: const AppDrawer(),
-      body: CustomScrollView(
-        slivers: [
-          AdaptiveSliverAppBar(
-            title: context.loc.home,
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Welcome Section
-                  _WelcomeHeader(supervisorName: supervisorName),
-                  const SizedBox(height: AppSpacing.md),
-
-                  // Statistics Header
-                  Text(
-                    context.loc.attendanceStats,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : AppColors.textPrimaryLight,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          // 1. Refresh assistant classes
+          await ref.read(assistantClassesProvider.notifier).refresh();
+          // 2. Refresh each class details to update stats
+          final classes = ref.read(assistantClassesProvider);
+          await Future.wait(
+            classes.map(
+              (cls) => ref.read(assistantClassDetailsProvider(cls.id).notifier).refresh(cls.id),
+            ),
+          );
+        },
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            AdaptiveSliverAppBar(
+              title: context.loc.home,
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Welcome Section
+                    _WelcomeHeader(supervisorName: supervisorName),
+                    const SizedBox(height: AppSpacing.md),
+  
+                    // Statistics Header
+                    Text(
+                      context.loc.attendanceStats,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-
-                  // Stats cards row
-                  _StatsSection(stats: stats),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Quick Actions Title
-                  Text(
-                    context.loc.quickTasks,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                    const SizedBox(height: AppSpacing.md),
+  
+                    // Stats cards row
+                    _StatsSection(stats: stats),
+                    const SizedBox(height: AppSpacing.lg),
+  
+                    // Quick Actions Title
+                    Text(
+                      context.loc.quickTasks,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-
-                  // Quick Actions Grid
-                  const _QuickActionsGrid(),
-                ],
+                    const SizedBox(height: AppSpacing.md),
+  
+                    // Quick Actions Grid
+                    const _QuickActionsGrid(),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../network/api_client.dart';
+import 'auth_provider.dart';
 part 'classes_provider.g.dart';
 
 @Riverpod(keepAlive: true)
@@ -14,6 +15,12 @@ class Classes extends _$Classes {
   
   @override
   List<String> build() {
+    final authState = ref.watch(authProvider);
+    if (!authState.isLoggedIn) {
+      _nameToIdMap = {};
+      _classToSubjectsMap = {};
+      return const [];
+    }
     _fetch();
     return const [];
   }

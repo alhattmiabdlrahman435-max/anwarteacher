@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/teacher_schedule.dart';
 import '../network/api_client.dart';
+import 'auth_provider.dart';
 
 part 'schedule_provider.g.dart';
 
@@ -9,6 +10,8 @@ part 'schedule_provider.g.dart';
 class TeacherScheduleState extends _$TeacherScheduleState {
   @override
   FutureOr<Map<String, List<TeacherPeriod>>> build() async {
+    final authState = ref.watch(authProvider);
+    if (!authState.isLoggedIn) return const {};
     return _loadSchedule();
   }
 

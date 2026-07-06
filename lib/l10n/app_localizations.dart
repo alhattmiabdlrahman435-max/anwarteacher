@@ -401,7 +401,7 @@ abstract class AppLocalizations {
   /// No description provided for @password.
   ///
   /// In ar, this message translates to:
-  /// **'كلمة المرور'**
+  /// **'رقم الجوال'**
   String get password;
 
   /// No description provided for @forgotPassword.
@@ -995,7 +995,7 @@ abstract class AppLocalizations {
   /// No description provided for @pleaseEnterPassword.
   ///
   /// In ar, this message translates to:
-  /// **'الرجاء إدخال كلمة المرور'**
+  /// **'الرجاء إدخال رقم الجوال'**
   String get pleaseEnterPassword;
 
   /// No description provided for @today.

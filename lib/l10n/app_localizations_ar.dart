@@ -161,7 +161,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get phoneNumberOrUsername => 'رقم الهاتف / اسم المستخدم';
 
   @override
-  String get password => 'كلمة المرور';
+  String get password => 'رقم الجوال';
 
   @override
   String get forgotPassword => 'نسيت كلمة المرور؟';
@@ -469,7 +469,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get pleaseEnterEmployeeId => 'الرجاء إدخال الرقم الوظيفي';
 
   @override
-  String get pleaseEnterPassword => 'الرجاء إدخال كلمة المرور';
+  String get pleaseEnterPassword => 'الرجاء إدخال رقم الجوال';
 
   @override
   String get today => 'اليوم';

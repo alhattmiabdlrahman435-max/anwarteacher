@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/providers/classes_provider.dart';
 import '../../../../core/widgets/app_sliver_header.dart';
 import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/providers/auth_provider.dart';
+import '../../../../core/network/api_client.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -19,10 +21,10 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   // Teacher info states
-  String _teacherName = 'أستاذ أحمد محمد';
-  final String _employeeId = 'EMP-202609';
-  String _phone = '+967 777 777 777';
-  String _address = 'صنعاء - شارع الستين';
+  String _teacherName = '';
+  String _employeeId = '';
+  String _phone = '';
+  String _address = '';
   
   // Real picked image path
   String? _pickedImagePath;
@@ -39,9 +41,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void initState() {
     super.initState();
     final authState = ref.read(authProvider);
-    if (authState.userName.isNotEmpty) {
-      _teacherName = authState.userName;
-    }
+    _teacherName = authState.userName;
+    _employeeId = authState.userJobId ?? '';
+    _phone = authState.userPhone ?? '';
+    _address = authState.userAddress ?? '';
+    
     if (authState.userAvatar != null && 
         !authState.userAvatar!.startsWith('http') && 
         (authState.userAvatar!.contains('/') || authState.userAvatar!.contains('\\') || File(authState.userAvatar!).existsSync())) {
@@ -202,24 +206,73 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-  void _saveDetails() {
+  Future<void> _saveDetails() async {
     if (!_formKey.currentState!.validate()) return;
     
+    final authState = ref.read(authProvider);
+    final teacherId = authState.userId;
+    if (teacherId == null || teacherId.isEmpty) return;
+
     setState(() {
-      _teacherName = _nameController.text;
-      _phone = _phoneController.text;
-      _address = _addressController.text;
       _isEditing = false;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('تم حفظ التغييرات بنجاح'),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+    try {
+      final dio = ref.read(apiClientProvider);
+      final response = await dio.put('teachers/$teacherId', data: {
+        'name_ar': _nameController.text,
+        'phone': _phoneController.text,
+        'address': _addressController.text,
+      });
+
+      if (response.data != null && response.data['success'] == true) {
+        final updatedTeacher = response.data['teacher'];
+        
+        const storage = FlutterSecureStorage();
+        await storage.write(key: 'userName', value: _nameController.text);
+        await storage.write(key: 'userPhone', value: _phoneController.text);
+        await storage.write(key: 'userAddress', value: _addressController.text);
+        
+        setState(() {
+          _teacherName = _nameController.text;
+          _phone = _phoneController.text;
+          _address = _addressController.text;
+        });
+
+        // Trigger session reload to sync authState
+        // Since build() is keepAlive and _loadSession updates the state
+        // we can trigger loading manually or call a public reload function.
+        // Actually, we can update state copyWith:
+        ref.read(authProvider.notifier).state = authState.copyWith(
+          userName: _nameController.text,
+          userPhone: _phoneController.text,
+          userAddress: _addressController.text,
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('تم حفظ التغييرات بنجاح'),
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error updating teacher profile: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('حدث خطأ أثناء حفظ التغييرات: $e'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    }
   }
 
   @override

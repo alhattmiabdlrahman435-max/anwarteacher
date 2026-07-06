@@ -162,7 +162,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneNumberOrUsername => 'Phone Number / Username';
 
   @override
-  String get password => 'Password';
+  String get password => 'Phone Number';
 
   @override
   String get forgotPassword => 'Forgot Password?';
@@ -473,7 +473,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pleaseEnterEmployeeId => 'Please enter your employee ID';
 
   @override
-  String get pleaseEnterPassword => 'Please enter your password';
+  String get pleaseEnterPassword => 'Please enter your phone number';
 
   @override
   String get today => 'Today';

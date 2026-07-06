@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/notification_model.dart';
 import '../network/api_client.dart';
+import 'auth_provider.dart';
 
 part 'notifications_provider.g.dart';
 
@@ -10,6 +11,8 @@ part 'notifications_provider.g.dart';
 class Notifications extends _$Notifications {
   @override
   List<AppNotificationModel> build() {
+    final authState = ref.watch(authProvider);
+    if (!authState.isLoggedIn) return const [];
     _fetch();
     return const [];
   }
@@ -48,6 +51,10 @@ class Notifications extends _$Notifications {
     } catch (e) {
       print('Error fetching notifications: $e');
     }
+  }
+
+  Future<void> refresh() async {
+    await _fetch();
   }
 
   void addNotification({

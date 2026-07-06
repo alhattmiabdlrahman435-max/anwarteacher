@@ -40,7 +40,7 @@ final class ClassesProvider extends $NotifierProvider<Classes, List<String>> {
   }
 }
 
-String _$classesHash() => r'38e78b9f3fc55291b7ca1d3a9ef85ddb4fad704c';
+String _$classesHash() => r'ffdb43fefac18a62920da6b15007688af970e19d';
 
 abstract class _$Classes extends $Notifier<List<String>> {
   List<String> build();

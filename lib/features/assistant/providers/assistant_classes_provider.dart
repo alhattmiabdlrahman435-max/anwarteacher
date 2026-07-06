@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/assistant_models.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/providers/auth_provider.dart';
 
 part 'assistant_classes_provider.g.dart';
 
@@ -9,6 +10,8 @@ part 'assistant_classes_provider.g.dart';
 class AssistantClasses extends _$AssistantClasses {
   @override
   List<ClassroomEntity> build() {
+    final authState = ref.watch(authProvider);
+    if (!authState.isLoggedIn) return const [];
     _fetch();
     return const [];
   }

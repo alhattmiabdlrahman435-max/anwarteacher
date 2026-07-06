@@ -16,8 +16,24 @@ import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/classes_provider.dart';
 import '../../../../core/providers/notifications_provider.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      if (mounted) {
+        ref.read(classesProvider.notifier).refresh();
+        ref.read(notificationsProvider.notifier).refresh();
+      }
+    });
+  }
 
   Future<bool> _onWillPop(BuildContext context) async {
     return await showDialog(
@@ -43,7 +59,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -70,52 +86,58 @@ class DashboardScreen extends ConsumerWidget {
       child: UpgradeAlert(
         child: Scaffold(
           drawer: const AppDrawer(),
-      body: CustomScrollView(
-        physics: const ClampingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
-        slivers: [
-          AppSliverHeader(title: context.loc.home),
-          SliverPadding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                const _WelcomeHeader(),
-                const SizedBox(height: AppSpacing.xl),
+          body: RefreshIndicator(
+            onRefresh: () async {
+              await ref.read(classesProvider.notifier).refresh();
+              await ref.read(notificationsProvider.notifier).refresh();
+            },
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                AppSliverHeader(title: context.loc.home),
+                SliverPadding(
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      const _WelcomeHeader(),
+                      const SizedBox(height: AppSpacing.xl),
 
-                _SummaryStats(
-                  classesCount: mockClasses.length,
-                  unreadCount: unreadNotificationsCount,
-                  isDark: isDark,
-                ),
-                const SizedBox(height: AppSpacing.xl),
+                      _SummaryStats(
+                        classesCount: mockClasses.length,
+                        unreadCount: unreadNotificationsCount,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
 
-                _SectionTitle(title: context.loc.myClasses, isDark: isDark),
-                const SizedBox(height: AppSpacing.lg),
-                ...mockClasses.map(
-                  (c) => _ClassQuickCard(
-                    className: context.translateMock(c['name']!),
-                    subject: context.translateMock(c['subject']!),
-                    isDark: isDark,
-                    onTap: () {
-                      // Set selected class first, then navigate to attendance
-                      ref.read(selectedClassProvider.notifier).setClass(c['name']!);
-                      context.push('/attendance');
-                    },
+                      _SectionTitle(title: context.loc.myClasses, isDark: isDark),
+                      const SizedBox(height: AppSpacing.lg),
+                      ...mockClasses.map(
+                        (c) => _ClassQuickCard(
+                          className: context.translateMock(c['name']!),
+                          subject: context.translateMock(c['subject']!),
+                          isDark: isDark,
+                          onTap: () {
+                            // Set selected class first, then navigate to attendance
+                            ref.read(selectedClassProvider.notifier).setClass(c['name']!);
+                            context.push('/attendance');
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+
+                      _SectionTitle(title: context.loc.quickAccess, isDark: isDark),
+                      const SizedBox(height: AppSpacing.lg),
+                      _QuickActions(isDark: isDark, unreadCount: unreadNotificationsCount),
+                      const SizedBox(height: AppSpacing.xxxl),
+                    ]),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xl),
-
-                _SectionTitle(title: context.loc.quickAccess, isDark: isDark),
-                const SizedBox(height: AppSpacing.lg),
-                _QuickActions(isDark: isDark, unreadCount: unreadNotificationsCount),
-                const SizedBox(height: AppSpacing.xxxl),
-              ]),
+              ],
             ),
           ),
-        ],
+        ),
       ),
-    )));
+    );
   }
 }
 
