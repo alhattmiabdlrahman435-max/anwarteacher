@@ -429,7 +429,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           isExpanded: true,
-          value: _selectedClass,
+          value: (classes.contains(_selectedClass)) ? _selectedClass : null,
           hint: Text('اختر الفصل الدراسي...', style: TextStyle(color: isDark ? Colors.white54 : AppColors.textSecondaryLight, fontFamily: AppTypography.fontFamily, fontSize: 13)),
           icon: Icon(Icons.keyboard_arrow_down_rounded, color: widget.primaryColor, size: 20),
           dropdownColor: isDark ? AppColors.surfaceAltDark : Colors.white,
@@ -474,7 +474,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<AttendanceRecord>(
           isExpanded: true,
-          value: _selectedStudent,
+          value: (students.contains(_selectedStudent)) ? _selectedStudent : null,
           hint: Text('اختر الطالب...', style: TextStyle(color: isDark ? Colors.white54 : AppColors.textSecondaryLight, fontFamily: AppTypography.fontFamily, fontSize: 13)),
           icon: Icon(Icons.keyboard_arrow_down_rounded, color: widget.primaryColor, size: 20),
           dropdownColor: isDark ? AppColors.surfaceAltDark : Colors.white,

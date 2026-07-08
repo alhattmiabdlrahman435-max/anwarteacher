@@ -129,6 +129,7 @@ class TermRecord {
 class StudentSubjectGrade {
   final String studentId;
   final String studentName;
+  final String? studentPhotoUrl;
   final String subjectId;
   final TermRecord firstTerm;
   final TermRecord secondTerm;
@@ -136,6 +137,7 @@ class StudentSubjectGrade {
   const StudentSubjectGrade({
     required this.studentId,
     required this.studentName,
+    this.studentPhotoUrl,
     required this.subjectId,
     required this.firstTerm,
     required this.secondTerm,
@@ -146,6 +148,7 @@ class StudentSubjectGrade {
   StudentSubjectGrade copyWith({
     String? studentId,
     String? studentName,
+    String? studentPhotoUrl,
     String? subjectId,
     TermRecord? firstTerm,
     TermRecord? secondTerm,
@@ -153,6 +156,7 @@ class StudentSubjectGrade {
     return StudentSubjectGrade(
       studentId: studentId ?? this.studentId,
       studentName: studentName ?? this.studentName,
+      studentPhotoUrl: studentPhotoUrl ?? this.studentPhotoUrl,
       subjectId: subjectId ?? this.subjectId,
       firstTerm: firstTerm ?? this.firstTerm,
       secondTerm: secondTerm ?? this.secondTerm,
@@ -163,6 +167,7 @@ class StudentSubjectGrade {
     return {
       'studentId': studentId,
       'studentName': studentName,
+      'studentPhotoUrl': studentPhotoUrl,
       'subjectId': subjectId,
       'firstTerm': firstTerm.toMap(),
       'secondTerm': secondTerm.toMap(),
@@ -173,6 +178,7 @@ class StudentSubjectGrade {
     return StudentSubjectGrade(
       studentId: map['studentId']?.toString() ?? '',
       studentName: map['studentName']?.toString() ?? '',
+      studentPhotoUrl: map['studentPhotoUrl']?.toString(),
       subjectId: map['subjectId']?.toString() ?? '',
       firstTerm: TermRecord.fromMap(map['firstTerm'] as Map<String, dynamic>? ?? {}),
       secondTerm: TermRecord.fromMap(map['secondTerm'] as Map<String, dynamic>? ?? {}),

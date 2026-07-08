@@ -125,11 +125,16 @@ class _AssistantQrScannerScreenState extends ConsumerState<AssistantQrScannerScr
     final localeCode = Localizations.localeOf(context).languageCode;
     
     final classes = ref.watch(assistantClassesProvider);
-    if (classes.isNotEmpty && (_selectedClassId == 'c1' || !classes.any((c) => c.id == _selectedClassId))) {
+    final bool isCurrentValueValid = classes.any((c) => c.id == _selectedClassId);
+    final String? dropdownValue = isCurrentValueValid
+        ? _selectedClassId
+        : (classes.isNotEmpty ? classes.first.id : null);
+
+    if (dropdownValue != null && dropdownValue != _selectedClassId) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {
-            _selectedClassId = classes.first.id;
+            _selectedClassId = dropdownValue;
           });
         }
       });
@@ -248,7 +253,7 @@ class _AssistantQrScannerScreenState extends ConsumerState<AssistantQrScannerScr
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
-                          value: _selectedClassId,
+                          value: dropdownValue,
                           dropdownColor: const Color(0xFF1E293B),
                           style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
                           icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70),

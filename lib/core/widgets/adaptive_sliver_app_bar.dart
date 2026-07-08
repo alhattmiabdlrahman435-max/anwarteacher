@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import 'start_aligned_collapsing_title.dart';
@@ -50,7 +49,7 @@ class AdaptiveSliverAppBar extends StatelessWidget {
       backgroundColor: bgColor.withValues(alpha: 0.9),
       border: null,
       leading: leading ?? (automaticallyImplyLeading
-          ? (context.canPop()
+          ? (Navigator.of(context).canPop()
               ? CupertinoButton(
                   padding: EdgeInsets.zero,
                   child: Icon(
@@ -58,7 +57,7 @@ class AdaptiveSliverAppBar extends StatelessWidget {
                     color: primaryColor,
                     size: 22,
                   ),
-                  onPressed: () => context.pop(),
+                  onPressed: () => Navigator.of(context).maybePop(),
                 )
               : Builder(
                   builder: (context) {

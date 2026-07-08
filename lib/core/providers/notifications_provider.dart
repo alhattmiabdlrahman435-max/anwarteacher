@@ -87,4 +87,18 @@ class Notifications extends _$Notifications {
       print('Error marking notification as read in backend: $e');
     }
   }
+
+  Future<void> markAllAsRead() async {
+    state = [
+      for (final n in state)
+        n.copyWith(isRead: true)
+    ];
+
+    try {
+      final dio = ref.read(apiClientProvider);
+      await dio.put('notifications/read-all');
+    } catch (e) {
+      print('Error marking all notifications as read in backend: $e');
+    }
+  }
 }

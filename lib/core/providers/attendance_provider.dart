@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/attendance.dart';
 import '../network/api_client.dart';
+import '../utils/constants.dart';
 import 'classes_provider.dart';
 
 part 'attendance_provider.g.dart';
@@ -41,6 +42,7 @@ class DailyAttendance extends _$DailyAttendance {
             studentName: json['name'] ?? '',
             date: DateTime.tryParse(date) ?? DateTime.now(),
             status: status,
+            studentPhotoUrl: AppConstants.normalizeUrl(json['photoUrl'] ?? json['photo_url']),
           );
         }).toList();
       }

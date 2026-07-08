@@ -53,7 +53,7 @@ class ClassSubjectSelector extends ConsumerWidget {
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     isExpanded: true,
-                    value: selectedClass.isNotEmpty ? selectedClass : null,
+                    value: (selectedClass.isNotEmpty && classes.contains(selectedClass)) ? selectedClass : null,
                     icon: Icon(Icons.keyboard_arrow_down_rounded, color: primaryColor, size: 20),
                     dropdownColor: bgColor,
                     borderRadius: BorderRadius.circular(16),
@@ -106,7 +106,7 @@ class ClassSubjectSelector extends ConsumerWidget {
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     isExpanded: true,
-                    value: selectedSubject.isNotEmpty ? selectedSubject : null,
+                    value: (selectedSubject.isNotEmpty && subjects.contains(selectedSubject)) ? selectedSubject : null,
                     icon: Icon(Icons.keyboard_arrow_down_rounded, color: primaryColor, size: 20),
                     dropdownColor: bgColor,
                     borderRadius: BorderRadius.circular(16),

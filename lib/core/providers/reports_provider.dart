@@ -46,6 +46,7 @@ class Reports extends _$Reports {
             type: type,
             description: item['description'] ?? '',
             imageUrl: item['imageUrl'],
+            studentPhotoUrl: item['studentPhotoUrl'],
             status: status,
             createdAt: DateTime.tryParse(item['createdAt']?.toString() ?? '') ?? DateTime.now(),
           );

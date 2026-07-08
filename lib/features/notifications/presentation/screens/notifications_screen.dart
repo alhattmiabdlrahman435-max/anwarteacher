@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/extensions/localization_extension.dart';
@@ -24,7 +25,22 @@ class NotificationsScreen extends ConsumerWidget {
           parent: AlwaysScrollableScrollPhysics(),
         ),
         slivers: [
-          AppSliverHeader(title: context.loc.notifications),
+          AppSliverHeader(
+            title: context.loc.notifications,
+            trailing: notifications.any((n) => !n.isRead)
+                ? CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: Icon(
+                      Icons.done_all_rounded,
+                      color: isDark ? Colors.white : AppColors.primary,
+                      size: 24,
+                    ),
+                    onPressed: () {
+                      ref.read(notificationsProvider.notifier).markAllAsRead();
+                    },
+                  )
+                : null,
+          ),
           if (notifications.isEmpty)
             const SliverFillRemaining(
               child: Center(

@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import 'start_aligned_collapsing_title.dart';
@@ -50,33 +49,34 @@ class AppSliverHeader extends StatelessWidget {
       backgroundColor: bgColor.withValues(alpha: 0.9),
       border: null,
       leading: leading ?? (automaticallyImplyLeading
-          ? (context.canPop()
-              ? CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  child: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: primaryColor,
-                    size: 22,
-                  ),
-                  onPressed: () => context.pop(),
-                )
-              : Builder(
-                  builder: (context) {
-                    final scaffold = Scaffold.maybeOf(context);
-                    if (scaffold != null && scaffold.hasDrawer) {
-                      return CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        child: Icon(
-                          CupertinoIcons.bars,
-                          color: textColor,
-                          size: 28,
-                        ),
-                        onPressed: () => scaffold.openDrawer(),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ))
+          ? Builder(
+              builder: (context) {
+                final scaffold = Scaffold.maybeOf(context);
+                if (scaffold != null && scaffold.hasDrawer) {
+                  return CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: Icon(
+                      CupertinoIcons.bars,
+                      color: textColor,
+                      size: 28,
+                    ),
+                    onPressed: () => scaffold.openDrawer(),
+                  );
+                }
+                if (Navigator.of(context).canPop()) {
+                  return CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: primaryColor,
+                      size: 22,
+                    ),
+                    onPressed: () => Navigator.of(context).maybePop(),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            )
           : null),
       trailing: trailing,
     );

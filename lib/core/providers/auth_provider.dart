@@ -118,53 +118,78 @@ class Auth extends _$Auth {
     const storage = FlutterSecureStorage();
     final dio = ref.read(apiClientProvider);
     
-    final response = await dio.post('login', data: {
-      'username': employeeId,
-      'password': password,
-    });
+    debugPrint('🔵 LOGIN: Attempting login to ${AppConstants.baseUrl}login');
+    debugPrint('🔵 LOGIN: username=$employeeId');
     
-    if (response.data != null && response.data['success'] == true) {
-      final token = response.data['token'];
-      final userData = response.data['user'];
+    try {
+      final response = await dio.post('login', data: {
+        'username': employeeId,
+        'password': password,
+      });
       
-      await storage.write(key: AppConstants.tokenKey, value: token);
-      await storage.write(key: 'isLoggedIn', value: 'true');
+      debugPrint('🟢 LOGIN: Response received: ${response.statusCode}');
       
-      final dbRole = userData['role'];
-      UserRole mappedRole = UserRole.teacher;
-      if (dbRole == 'preparation_supervisor' || dbRole == 'supervisor') {
-        mappedRole = UserRole.assistant;
-      }
-      
-      final displayName = userData['name_ar'] ?? userData['name'] ?? '';
-      final displayAvatar = userData['photo'] ?? '';
-      final idVal = userData['id']?.toString() ?? '';
-      final phoneVal = userData['phone'] ?? '';
-      final addressVal = userData['address'] ?? '';
-      final jobIdVal = userData['job_id'] ?? '';
-      
-      await storage.write(key: 'userRole', value: mappedRole.name);
-      await storage.write(key: 'userName', value: displayName);
-      await storage.write(key: 'userAvatar', value: displayAvatar);
-      await storage.write(key: 'userId', value: idVal);
-      await storage.write(key: 'userPhone', value: phoneVal);
-      await storage.write(key: 'userAddress', value: addressVal);
-      await storage.write(key: 'userJobId', value: jobIdVal);
-      
-      state = AuthState(
-        isLoggedIn: true,
-        role: mappedRole,
-        userName: displayName,
-        userAvatar: displayAvatar,
-        userId: idVal,
-        userPhone: phoneVal,
-        userAddress: addressVal,
-        userJobId: jobIdVal,
-      );
+      if (response.data != null && response.data['success'] == true) {
+        final token = response.data['token'];
+        final userData = response.data['user'];
+        
+        await storage.write(key: AppConstants.tokenKey, value: token);
+        await storage.write(key: 'isLoggedIn', value: 'true');
+        
+        final dbRole = userData['role'];
+        UserRole mappedRole = UserRole.teacher;
+        if (dbRole == 'preparation_supervisor' || dbRole == 'supervisor') {
+          mappedRole = UserRole.assistant;
+        }
+        
+        final displayName = userData['name_ar'] ?? userData['name'] ?? '';
+        final displayAvatar = userData['photo'] ?? '';
+        final idVal = userData['id']?.toString() ?? '';
+        final phoneVal = userData['phone'] ?? '';
+        final addressVal = userData['address'] ?? '';
+        final jobIdVal = userData['job_id'] ?? '';
+        
+        await storage.write(key: 'userRole', value: mappedRole.name);
+        await storage.write(key: 'userName', value: displayName);
+        await storage.write(key: 'userAvatar', value: displayAvatar);
+        await storage.write(key: 'userId', value: idVal);
+        await storage.write(key: 'userPhone', value: phoneVal);
+        await storage.write(key: 'userAddress', value: addressVal);
+        await storage.write(key: 'userJobId', value: jobIdVal);
+        
+        state = AuthState(
+          isLoggedIn: true,
+          role: mappedRole,
+          userName: displayName,
+          userAvatar: displayAvatar,
+          userId: idVal,
+          userPhone: phoneVal,
+          userAddress: addressVal,
+          userJobId: jobIdVal,
+        );
 
-      Future.microtask(() => syncFcmToken());
-    } else {
-      throw Exception(response.data?['message'] ?? 'الرقم الوظيفي أو رقم الجوال غير صحيح');
+        Future.microtask(() => syncFcmToken());
+      } else {
+        throw Exception(response.data?['message'] ?? 'الرقم الوظيفي أو رقم الجوال غير صحيح');
+      }
+    } on DioException catch (e) {
+      debugPrint('🔴 LOGIN DioException: type=${e.type}, message=${e.message}, error=${e.error}');
+      debugPrint('🔴 LOGIN DioException: response=${e.response?.statusCode} ${e.response?.data}');
+      debugPrint('🔴 LOGIN DioException: requestUrl=${e.requestOptions.uri}');
+      final serverMessage = e.response?.data?['message'];
+      if (serverMessage != null) {
+        throw Exception(serverMessage);
+      }
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        throw Exception('تعذر الاتصال بالخادم. يرجى التأكد من تشغيل السيرفر ومن صحة عنوان الـ IP.');
+      }
+      throw Exception('اسم المستخدم أو كلمة المرور غير صحيحة');
+    } catch (e) {
+      debugPrint('🔴 LOGIN General Exception: ${e.runtimeType}: $e');
+      rethrow;
     }
   }
 

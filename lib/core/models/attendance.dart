@@ -7,6 +7,7 @@ class AttendanceRecord {
   final DateTime date;
   final AttendanceStatus status;
   final String? note;
+  final String? studentPhotoUrl;
 
   const AttendanceRecord({
     required this.id,
@@ -15,6 +16,7 @@ class AttendanceRecord {
     required this.date,
     required this.status,
     this.note,
+    this.studentPhotoUrl,
   });
 
   AttendanceRecord copyWith({
@@ -24,6 +26,7 @@ class AttendanceRecord {
     DateTime? date,
     AttendanceStatus? status,
     String? note,
+    String? studentPhotoUrl,
   }) {
     return AttendanceRecord(
       id: id ?? this.id,
@@ -32,6 +35,7 @@ class AttendanceRecord {
       date: date ?? this.date,
       status: status ?? this.status,
       note: note ?? this.note,
+      studentPhotoUrl: studentPhotoUrl ?? this.studentPhotoUrl,
     );
   }
 }

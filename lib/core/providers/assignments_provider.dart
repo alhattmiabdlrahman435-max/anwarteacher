@@ -24,6 +24,7 @@ class AssignmentsData extends _$AssignmentsData {
           final List<dynamic> subList = item['submissions'] ?? [];
           final submissions = subList.map((sub) {
             final studentName = sub['student']?['name_ar'] ?? sub['student']?['name'] ?? '';
+            final studentPhotoUrl = sub['student']?['photo_url'] ?? sub['student']?['photoUrl'];
             final dbStatus = sub['status']?.toString() ?? 'pending';
             SubmissionStatus status = SubmissionStatus.notSubmitted;
             if (dbStatus == 'submitted') {
@@ -34,6 +35,7 @@ class AssignmentsData extends _$AssignmentsData {
             return StudentSubmission(
               studentId: sub['student_id']?.toString() ?? '',
               studentName: studentName,
+              studentPhotoUrl: studentPhotoUrl,
               status: status,
               teacherNote: sub['teacher_note'],
             );

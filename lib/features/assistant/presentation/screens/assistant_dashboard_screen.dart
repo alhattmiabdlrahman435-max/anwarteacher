@@ -383,7 +383,7 @@ class _QuickActionsGrid extends StatelessWidget {
           label: context.loc.assistantClasses,
           color: AppColors.lightBlue,
           onTap: () {
-            context.push('/assistant/classes');
+            context.go('/assistant/classes');
           },
         ),
         _ActionCard(
@@ -399,7 +399,7 @@ class _QuickActionsGrid extends StatelessWidget {
           label: context.loc.assistantHistory,
           color: AppColors.purple,
           onTap: () {
-            context.push('/assistant/history');
+            context.go('/assistant/history');
           },
         ),
         _ActionCard(
@@ -407,7 +407,7 @@ class _QuickActionsGrid extends StatelessWidget {
           label: context.loc.assistantReports,
           color: AppColors.pink,
           onTap: () {
-            context.push('/assistant/reports');
+            context.go('/assistant/reports');
           },
         ),
       ],

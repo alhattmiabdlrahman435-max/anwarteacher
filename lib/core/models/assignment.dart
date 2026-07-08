@@ -3,12 +3,14 @@ enum SubmissionStatus { submitted, notSubmitted, submittedLate }
 class StudentSubmission {
   final String studentId;
   final String studentName;
+  final String? studentPhotoUrl;
   final SubmissionStatus status;
   final String? teacherNote;
 
   const StudentSubmission({
     required this.studentId,
     required this.studentName,
+    this.studentPhotoUrl,
     required this.status,
     this.teacherNote,
   });
@@ -16,10 +18,12 @@ class StudentSubmission {
   StudentSubmission copyWith({
     SubmissionStatus? status,
     String? teacherNote,
+    String? studentPhotoUrl,
   }) {
     return StudentSubmission(
       studentId: studentId,
       studentName: studentName,
+      studentPhotoUrl: studentPhotoUrl ?? this.studentPhotoUrl,
       status: status ?? this.status,
       teacherNote: teacherNote ?? this.teacherNote,
     );

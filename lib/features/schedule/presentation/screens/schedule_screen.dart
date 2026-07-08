@@ -449,7 +449,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                   borderRadius: BorderRadius.circular(16),
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
+                    physics: const ClampingScrollPhysics(),
                     child: DataTable(
                       dataRowMinHeight: 90,
                       dataRowMaxHeight: 90,
@@ -481,7 +481,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                       ),
                       columns: [
                         const DataColumn(label: Text('اليوم')),
-                        ...List.generate(6, (i) => DataColumn(
+                        ...List.generate(7, (i) => DataColumn(
                           label: Center(
                             child: Text('الحصة ${i + 1}'),
                           ),
@@ -501,7 +501,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
                                 ),
                               ),
                             ),
-                            ...List.generate(6, (periodIdx) {
+                            ...List.generate(7, (periodIdx) {
                               if (periodIdx >= periods.length) {
                                 return const DataCell(Center(child: Text('-')));
                               }

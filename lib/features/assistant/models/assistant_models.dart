@@ -1,3 +1,5 @@
+import '../../../core/utils/constants.dart';
+
 enum AttendanceStatus { present, absent, late, excused, unknown }
 
 class StudentEntity {
@@ -44,7 +46,8 @@ class StudentEntity {
       nameEn: json['nameEn'] ?? json['name'] ?? '',
       parentName: json['parentName'] ?? '',
       parentPhone: json['parentPhone'] ?? '',
-      photoUrl: json['photoUrl'] ?? json['photo_url'],
+      photoUrl: AppConstants.normalizeUrl(json['photoUrl'] ?? json['photo_url']),
+      parentPhotoUrl: AppConstants.normalizeUrl(json['parentPhotoUrl'] ?? json['parent_photo_url']),
       status: status,
       isLocked: json['isLocked'] ?? false,
     );

@@ -8,6 +8,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/modern_card.dart';
 import '../../../../core/widgets/modern_text_field.dart';
 import '../../../../core/extensions/localization_extension.dart';
+import '../../../../core/widgets/student_avatar.dart';
 
 class SubmissionsTrackingScreen extends ConsumerStatefulWidget {
   final String assignmentId;
@@ -159,19 +160,10 @@ class _SubmissionsTrackingScreenState extends ConsumerState<SubmissionsTrackingS
         children: [
           Row(
             children: [
-              CircleAvatar(
-                backgroundColor: isDark
-                    ? Colors.white.withValues(alpha: 0.15)
-                    : AppColors.primary.withValues(alpha: 0.1),
-                child: Text(
-                  context.translateMock(submission.studentName).isNotEmpty
-                      ? context.translateMock(submission.studentName).substring(0, 1)
-                      : '?',
-                  style: TextStyle(
-                    color: isDark ? Colors.white : AppColors.primary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+              StudentAvatar(
+                photoUrl: submission.studentPhotoUrl,
+                name: submission.studentName,
+                size: 40,
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(

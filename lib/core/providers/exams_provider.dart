@@ -22,8 +22,14 @@ class Exams extends _$Exams {
           final String title = item['title'] ?? '';
           
           // Map title/term/period to ExamTerm and ExamPeriod
+          final termStr = item['term']?.toString() ?? '';
           ExamTerm term = ExamTerm.first;
-          if (item['term']?.toString().toLowerCase() == 'second' || title.contains('الثاني')) {
+          if (termStr == '2' || 
+              termStr.toLowerCase() == 'second' || 
+              termStr.toLowerCase() == 'term2' ||
+              termStr.contains('الثاني') || 
+              termStr.contains('الترم الثاني') || 
+              termStr.contains('الفصل الثاني')) {
             term = ExamTerm.second;
           }
 

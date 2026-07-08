@@ -8,21 +8,10 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/adaptive_sliver_app_bar.dart';
 import '../../../../core/extensions/localization_extension.dart';
+import '../../../../core/widgets/student_avatar.dart';
 import '../../models/assistant_models.dart';
 import '../../providers/assistant_classes_provider.dart';
 import '../../providers/assistant_class_details_provider.dart';
-
-/// Returns true only if [url] is a real network URL (starts with http/https).
-bool _isNetworkUrl(String? url) =>
-    url != null && url.isNotEmpty && (url.startsWith('http://') || url.startsWith('https://'));
-
-/// Returns the emoji if available, otherwise the first letter of [name].
-String _avatarLabel(String? photoUrl, String name) {
-  if (photoUrl != null && photoUrl.isNotEmpty && !_isNetworkUrl(photoUrl)) {
-    return photoUrl;
-  }
-  return name.isNotEmpty ? name[0] : '?';
-}
 
 class AssistantClassDetailsScreen extends ConsumerWidget {
   final String classId;
@@ -230,22 +219,11 @@ class _StudentCard extends ConsumerWidget {
                           width: 2,
                         ),
                       ),
-                      child: CircleAvatar(
-                        radius: 28,
+                      child: StudentAvatar(
+                        photoUrl: student.photoUrl,
+                        name: student.name,
+                        size: 56,
                         backgroundColor: _getStatusColor(student.status).withValues(alpha: 0.1),
-                        backgroundImage: _isNetworkUrl(student.photoUrl)
-                            ? NetworkImage(student.photoUrl!)
-                            : null,
-                        child: !_isNetworkUrl(student.photoUrl)
-                            ? Text(
-                                _avatarLabel(student.photoUrl, student.name),
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: _isNetworkUrl(student.photoUrl) ? 18 : 22,
-                                  color: _getStatusColor(student.status),
-                                ),
-                              )
-                            : null,
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
@@ -458,18 +436,11 @@ class _StudentDetailsModal extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
-          CircleAvatar(
-            radius: 50,
+          StudentAvatar(
+            photoUrl: student.photoUrl,
+            name: student.name,
+            size: 100,
             backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-            backgroundImage: _isNetworkUrl(student.photoUrl)
-                ? NetworkImage(student.photoUrl!)
-                : null,
-            child: !_isNetworkUrl(student.photoUrl)
-                ? Text(
-                    _avatarLabel(student.photoUrl, student.name),
-                    style: const TextStyle(fontSize: 40),
-                  )
-                : null,
           ),
           const SizedBox(height: AppSpacing.md),
           Text(

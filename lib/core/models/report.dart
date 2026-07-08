@@ -95,6 +95,7 @@ class Report {
   final ReportType type;
   final String description;
   final String? imageUrl;
+  final String? studentPhotoUrl;
   final ReportStatus status;
   final DateTime createdAt;
 
@@ -106,6 +107,7 @@ class Report {
     required this.type,
     required this.description,
     this.imageUrl,
+    this.studentPhotoUrl,
     required this.status,
     required this.createdAt,
   });
@@ -118,6 +120,7 @@ class Report {
     ReportType? type,
     String? description,
     String? imageUrl,
+    String? studentPhotoUrl,
     ReportStatus? status,
     DateTime? createdAt,
   }) {
@@ -129,6 +132,7 @@ class Report {
       type: type ?? this.type,
       description: description ?? this.description,
       imageUrl: imageUrl ?? this.imageUrl,
+      studentPhotoUrl: studentPhotoUrl ?? this.studentPhotoUrl,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
     );

@@ -12,6 +12,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/modern_card.dart';
 import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/widgets/app_notification.dart';
+import '../../../../core/widgets/student_avatar.dart';
 
 class GradesScreen extends ConsumerStatefulWidget {
   const GradesScreen({super.key});
@@ -32,7 +33,9 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
     final primaryColor = isDark ? Colors.white : AppColors.primary;
 
     final filteredGrades = classGrades.grades.where((g) {
-      return g.studentName.toLowerCase().contains(_searchQuery.toLowerCase());
+      final query = _searchQuery.trim().toLowerCase();
+      return g.studentName.toLowerCase().contains(query) ||
+          g.studentId.toLowerCase().contains(query);
     }).toList();
 
     return Scaffold(
@@ -260,25 +263,10 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
             child: Row(
               children: [
                 // Avatar
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: primaryColor.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      context.translateMock(grade.studentName).isNotEmpty
-                          ? context.translateMock(grade.studentName).substring(0, 1)
-                          : '?',
-                      style: TextStyle(
-                        color: primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
-                  ),
+                StudentAvatar(
+                  photoUrl: grade.studentPhotoUrl,
+                  name: grade.studentName,
+                  size: 50,
                 ),
                 const SizedBox(width: 16),
                 // Details
@@ -471,25 +459,10 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: widget.primaryColor.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          context.translateMock(widget.grade.studentName).isNotEmpty
-                              ? context.translateMock(widget.grade.studentName).substring(0, 1)
-                              : '?',
-                          style: TextStyle(
-                            color: widget.primaryColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 24,
-                          ),
-                        ),
-                      ),
+                    StudentAvatar(
+                      photoUrl: widget.grade.studentPhotoUrl,
+                      name: widget.grade.studentName,
+                      size: 56,
                     ),
                     const SizedBox(width: 16),
                     Expanded(

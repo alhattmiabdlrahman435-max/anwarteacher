@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -368,17 +370,27 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            typeColor.withValues(alpha: 0.6),
-                            typeColor,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
                         borderRadius: BorderRadius.circular(14),
+                        image: _getImageProvider(report.studentPhotoUrl) != null
+                            ? DecorationImage(
+                                image: _getImageProvider(report.studentPhotoUrl)!,
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                        gradient: _getImageProvider(report.studentPhotoUrl) == null
+                            ? LinearGradient(
+                                colors: [
+                                  typeColor.withValues(alpha: 0.6),
+                                  typeColor,
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              )
+                            : null,
                       ),
-                      child: Icon(typeIcon, color: Colors.white, size: 22),
+                      child: _getImageProvider(report.studentPhotoUrl) == null
+                          ? Icon(typeIcon, color: Colors.white, size: 22)
+                          : null,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -539,4 +551,37 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(_StickyTabBarDelegate oldDelegate) =>
       oldDelegate.child != child;
+}
+
+bool _isNetworkUrl(String? url) =>
+    url != null && url.isNotEmpty && (url.startsWith('http://') || url.startsWith('https://'));
+
+bool _isBase64Image(String? url) =>
+    url != null && url.isNotEmpty && url.startsWith('data:image/') && url.contains('base64,');
+
+Uint8List? _bytesFromBase64(String? base64Str) {
+  if (base64Str == null || base64Str.isEmpty) return null;
+  try {
+    final commaIndex = base64Str.indexOf(',');
+    if (commaIndex != -1) {
+      final data = base64Str.substring(commaIndex + 1);
+      return base64Decode(data);
+    }
+  } catch (e) {
+    debugPrint('Error decoding base64 image: $e');
+  }
+  return null;
+}
+
+ImageProvider? _getImageProvider(String? photoUrl) {
+  if (_isNetworkUrl(photoUrl)) {
+    return NetworkImage(photoUrl!);
+  }
+  if (_isBase64Image(photoUrl)) {
+    final bytes = _bytesFromBase64(photoUrl);
+    if (bytes != null) {
+      return MemoryImage(bytes);
+    }
+  }
+  return null;
 }

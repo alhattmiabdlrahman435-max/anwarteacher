@@ -36,7 +36,10 @@ class AppDrawer extends ConsumerWidget {
       elevation: 10,
       backgroundColor: drawerBg,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero, // Flat edge or rounded
+        borderRadius: BorderRadiusDirectional.only(
+          topEnd: Radius.circular(30),
+          bottomEnd: Radius.circular(30),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

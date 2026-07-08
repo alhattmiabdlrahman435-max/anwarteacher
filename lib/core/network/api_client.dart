@@ -24,16 +24,17 @@ Dio apiClient(Ref ref) {
   // Add interceptors for auth tokens, logging, etc.
   dio.interceptors.add(InterceptorsWrapper(
     onRequest: (options, handler) async {
-      final List<ConnectivityResult> connectivityResult = await (Connectivity().checkConnectivity());
-      if (connectivityResult.contains(ConnectivityResult.none)) {
-        return handler.reject(
-          DioException(
-            requestOptions: options,
-            type: DioExceptionType.connectionError,
-            error: 'No Internet Connection',
-          ),
-        );
-      }
+      // Removed connectivity check as it can give false negatives on simulators
+      // final List<ConnectivityResult> connectivityResult = await (Connectivity().checkConnectivity());
+      // if (connectivityResult.contains(ConnectivityResult.none)) {
+      //   return handler.reject(
+      //     DioException(
+      //       requestOptions: options,
+      //       type: DioExceptionType.connectionError,
+      //       error: 'No Internet Connection',
+      //     ),
+      //   );
+      // }
 
       const storage = FlutterSecureStorage();
       final token = await storage.read(key: AppConstants.tokenKey);

@@ -10,6 +10,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_drawer.dart';
 import '../../../../core/widgets/adaptive_sliver_app_bar.dart';
 import '../../../../core/extensions/localization_extension.dart';
+import '../../../../core/widgets/student_avatar.dart';
 import '../../models/assistant_models.dart';
 import '../../providers/assistant_attendance_history_provider.dart';
 
@@ -39,6 +40,13 @@ class _AssistantAttendanceHistoryScreenState extends ConsumerState<AssistantAtte
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    final activeSelectedClass = selectedClass == null
+        ? null
+        : history.firstWhere(
+            (c) => c.classId == selectedClass!.classId,
+            orElse: () => selectedClass!,
+          );
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -58,34 +66,41 @@ class _AssistantAttendanceHistoryScreenState extends ConsumerState<AssistantAtte
       child: Scaffold(
         drawer: const AppDrawer(),
         backgroundColor: isDark ? theme.scaffoldBackgroundColor : const Color(0xFFF8FAFC),
-        body: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            AdaptiveSliverAppBar(
-              title: selectedClass != null 
-                  ? '${selectedClass!.className} (${intl.DateFormat('yyyy/M/d').format(_selectedDay ?? _focusedDay)})'
-                  : context.loc.attendanceRecord,
-              automaticallyImplyLeading: true,
-              leading: selectedClass != null 
-                  ? CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      child: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: isDark ? Colors.white : AppColors.primary,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          selectedClass = null;
-                        });
-                      },
-                    )
-                  : null,
+        body: RefreshIndicator(
+          onRefresh: () async {
+            await ref.read(assistantAttendanceHistoryProvider.notifier).refresh();
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
             ),
-            if (selectedClass != null)
-              ..._buildClassHistoryContent(selectedClass!)
-            else
-              _buildClassesSliverList(history),
-          ],
+            slivers: [
+              AdaptiveSliverAppBar(
+                title: activeSelectedClass != null 
+                    ? '${activeSelectedClass.className} (${intl.DateFormat('yyyy/M/d').format(_selectedDay ?? _focusedDay)})'
+                    : context.loc.attendanceRecord,
+                automaticallyImplyLeading: true,
+                leading: activeSelectedClass != null 
+                    ? CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        child: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: isDark ? Colors.white : AppColors.primary,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            selectedClass = null;
+                          });
+                        },
+                      )
+                    : null,
+              ),
+              if (activeSelectedClass != null)
+                ..._buildClassHistoryContent(activeSelectedClass)
+              else
+                _buildClassesSliverList(history),
+            ],
+          ),
         ),
       ),
     );
@@ -708,17 +723,6 @@ class _EmptyRecordCard extends StatelessWidget {
 
 
 /// Returns true only if [url] is a real network URL.
-bool _isNetworkUrl(String? url) =>
-    url != null && url.isNotEmpty && (url.startsWith('http://') || url.startsWith('https://'));
-
-/// Returns the emoji if available, otherwise the first letter of [name].
-String _avatarLabel(String? photoUrl, String name) {
-  if (photoUrl != null && photoUrl.isNotEmpty && !_isNetworkUrl(photoUrl)) {
-    return photoUrl; // it's an emoji
-  }
-  return name.isNotEmpty ? name[0] : '?';
-}
-
 class _StudentHistoryCard extends StatelessWidget {
   final StudentEntity student;
 
@@ -754,20 +758,10 @@ class _StudentHistoryCard extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: (isDark ? Colors.white : AppColors.primary).withValues(alpha: 0.1),
-                  backgroundImage: _isNetworkUrl(student.photoUrl) ? NetworkImage(student.photoUrl!) : null,
-                  child: !_isNetworkUrl(student.photoUrl)
-                      ? Text(
-                          _avatarLabel(student.photoUrl, student.name),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: student.photoUrl != null && student.photoUrl!.isNotEmpty ? 18 : 14,
-                            color: isDark ? Colors.white : AppColors.primary,
-                          ),
-                        )
-                      : null,
+                StudentAvatar(
+                  photoUrl: student.photoUrl,
+                  name: student.name,
+                  size: 48,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -846,18 +840,11 @@ class _StudentDetailsModal extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
-          CircleAvatar(
-            radius: 50,
+          StudentAvatar(
+            photoUrl: student.photoUrl,
+            name: student.name,
+            size: 100,
             backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-            backgroundImage: _isNetworkUrl(student.photoUrl)
-                ? NetworkImage(student.photoUrl!)
-                : null,
-            child: !_isNetworkUrl(student.photoUrl)
-                ? Text(
-                    _avatarLabel(student.photoUrl, student.name),
-                    style: const TextStyle(fontSize: 40),
-                  )
-                : null,
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
@@ -956,18 +943,6 @@ class _StudentDetailsModal extends StatelessWidget {
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
     }
-  }
-
-  /// Returns true only if [url] is a real network URL (starts with http/https).
-  bool _isNetworkUrl(String? url) =>
-      url != null && url.isNotEmpty && (url.startsWith('http://') || url.startsWith('https://'));
-
-  /// Returns the emoji if available, otherwise the first letter of [name].
-  String _avatarLabel(String? photoUrl, String name) {
-    if (photoUrl != null && photoUrl.isNotEmpty && !_isNetworkUrl(photoUrl)) {
-      return photoUrl; // it's an emoji
-    }
-    return name.isNotEmpty ? name[0] : '?';
   }
 }
 

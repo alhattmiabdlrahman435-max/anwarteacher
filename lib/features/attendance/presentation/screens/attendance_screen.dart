@@ -11,6 +11,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/modern_card.dart';
 import '../../../../core/widgets/school_date_picker.dart';
 import '../../../../core/extensions/localization_extension.dart';
+import '../../../../core/widgets/student_avatar.dart';
 
 enum AttendanceFilter { all, present, absent }
 
@@ -184,21 +185,10 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                   // Student Header info
                   Row(
                     children: [
-                      CircleAvatar(
-                        radius: 24,
-                        backgroundColor: isDark
-                            ? Colors.white.withValues(alpha: 0.15)
-                            : AppColors.uiPalettePrimary.withValues(alpha: 0.1),
-                        child: Text(
-                          context.translateMock(record.studentName).isNotEmpty
-                              ? context.translateMock(record.studentName).substring(0, 1)
-                              : '?',
-                          style: TextStyle(
-                            color: isDark ? Colors.white : AppColors.uiPalettePrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
+                      StudentAvatar(
+                        photoUrl: record.studentPhotoUrl,
+                        name: record.studentName,
+                        size: 48,
                       ),
                       const SizedBox(width: 12),
                       Column(
@@ -679,24 +669,15 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       child: Row(
         children: [
           Container(
-            width: 48,
-            height: 48,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [statusColor.withValues(alpha: 0.15), statusColor.withValues(alpha: 0.05)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
               shape: BoxShape.circle,
-              border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+              border: Border.all(color: statusColor.withValues(alpha: 0.5), width: 1.5),
             ),
-            child: Center(
-              child: Text(
-                context.translateMock(record.studentName).isNotEmpty
-                    ? context.translateMock(record.studentName).substring(0, 1)
-                    : '?',
-                style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 20),
-              ),
+            child: StudentAvatar(
+              photoUrl: record.studentPhotoUrl,
+              name: record.studentName,
+              size: 46,
+              backgroundColor: statusColor.withValues(alpha: 0.15),
             ),
           ),
           const SizedBox(width: 14),

@@ -96,6 +96,8 @@ PODS:
     - nanopb (~> 3.30910.0)
     - PromisesSwift (~> 2.1)
   - Flutter (1.0.0)
+  - flutter_local_notifications (0.0.1):
+    - Flutter
   - flutter_native_splash (2.4.3):
     - Flutter
   - flutter_secure_storage_darwin (10.0.0):
@@ -140,6 +142,9 @@ PODS:
   - nanopb/encode (3.30910.0)
   - package_info_plus (0.4.5):
     - Flutter
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
   - PromisesObjC (2.4.1)
   - PromisesSwift (2.4.1):
     - PromisesObjC (= 2.4.1)
@@ -163,11 +168,13 @@ DEPENDENCIES:
   - firebase_crashlytics (from `.symlinks/plugins/firebase_crashlytics/ios`)
   - firebase_messaging (from `.symlinks/plugins/firebase_messaging/ios`)
   - Flutter (from `Flutter`)
+  - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
   - flutter_secure_storage_darwin (from `.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - mobile_scanner (from `.symlinks/plugins/mobile_scanner/darwin`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
+  - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sqflite_darwin (from `.symlinks/plugins/sqflite_darwin/darwin`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
@@ -206,6 +213,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/firebase_messaging/ios"
   Flutter:
     :path: Flutter
+  flutter_local_notifications:
+    :path: ".symlinks/plugins/flutter_local_notifications/ios"
   flutter_native_splash:
     :path: ".symlinks/plugins/flutter_native_splash/ios"
   flutter_secure_storage_darwin:
@@ -216,6 +225,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/mobile_scanner/darwin"
   package_info_plus:
     :path: ".symlinks/plugins/package_info_plus/ios"
+  path_provider_foundation:
+    :path: ".symlinks/plugins/path_provider_foundation/darwin"
   shared_preferences_foundation:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
   sqflite_darwin:
@@ -241,6 +252,7 @@ SPEC CHECKSUMS:
   FirebaseRemoteConfigInterop: 7e3d57ce4b1e958bb1d15403faa7178f46bbb5b7
   FirebaseSessions: acfe7eadca47cda94ac86592737204581bb1abf6
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  flutter_local_notifications: 643a3eda1ce1c0599413ca31672536d423dee214
   flutter_native_splash: c32d145d68aeda5502d5f543ee38c192065986cf
   flutter_secure_storage_darwin: acdb3f316ed05a3e68f856e0353b133eec373a23
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
@@ -249,6 +261,7 @@ SPEC CHECKSUMS:
   mobile_scanner: 9157936403f5a0644ca3779a38ff8404c5434a93
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
+  path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   PromisesObjC: 752c3227f599e3467650e47ea36f433eeb10c273
   PromisesSwift: 217dea0fd5d2ad65222a109c48698add13cc1c5b
   SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf

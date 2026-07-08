@@ -7,21 +7,11 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_drawer.dart';
 import '../../../../core/widgets/adaptive_sliver_app_bar.dart';
 import '../../../../core/extensions/localization_extension.dart';
+import '../../../../core/widgets/student_avatar.dart';
 import '../../models/assistant_models.dart';
 import '../../providers/assistant_reports_provider.dart';
 
 /// Returns true only if [url] is a real network URL (starts with http/https).
-bool _isNetworkUrl(String? url) =>
-    url != null && url.isNotEmpty && (url.startsWith('http://') || url.startsWith('https://'));
-
-/// Returns the emoji if available, otherwise the first letter of [name].
-String _avatarLabel(String? photoUrl, String name) {
-  if (photoUrl != null && photoUrl.isNotEmpty && !_isNetworkUrl(photoUrl)) {
-    return photoUrl;
-  }
-  return name.isNotEmpty ? name[0] : '?';
-}
-
 class AssistantReportsScreen extends ConsumerStatefulWidget {
   const AssistantReportsScreen({super.key});
 
@@ -267,22 +257,11 @@ class _AssistantReportsScreenState extends ConsumerState<AssistantReportsScreen>
                 ),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: 24,
+                    StudentAvatar(
+                      photoUrl: student.photoUrl,
+                      name: student.name,
+                      size: 48,
                       backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-                      backgroundImage: _isNetworkUrl(student.photoUrl)
-                        ? NetworkImage(student.photoUrl!)
-                        : null,
-                      child: !_isNetworkUrl(student.photoUrl)
-                        ? Text(
-                            _avatarLabel(student.photoUrl, student.name),
-                            style: TextStyle(
-                              color: isDark ? Colors.white : theme.colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: student.photoUrl != null && student.photoUrl!.isNotEmpty ? 18 : 14,
-                            ),
-                          )
-                        : null,
                     ),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
@@ -527,18 +506,11 @@ class _StudentAttendanceModalState extends State<_StudentAttendanceModal> {
             ),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 20,
+                StudentAvatar(
+                  photoUrl: widget.student.photoUrl,
+                  name: widget.student.name,
+                  size: 40,
                   backgroundColor: theme.colorScheme.primary,
-                  backgroundImage: _isNetworkUrl(widget.student.photoUrl)
-                    ? NetworkImage(widget.student.photoUrl!)
-                    : null,
-                  child: !_isNetworkUrl(widget.student.photoUrl)
-                    ? Text(
-                        _avatarLabel(widget.student.photoUrl, widget.student.name),
-                        style: const TextStyle(fontSize: 18),
-                      )
-                    : null,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

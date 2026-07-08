@@ -89,6 +89,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           body: RefreshIndicator(
             onRefresh: () async {
               await ref.read(classesProvider.notifier).refresh();
+              if (!mounted) return;
               await ref.read(notificationsProvider.notifier).refresh();
             },
             child: CustomScrollView(
@@ -297,7 +298,7 @@ class _SummaryStats extends StatelessWidget {
             label: context.loc.notifications,
             color: Colors.orange,
             isDark: isDark,
-            onTap: () => context.push('/notifications'),
+            onTap: () => context.go('/notifications'),
           ),
         ),
       ],
@@ -445,7 +446,7 @@ class _QuickActions extends StatelessWidget {
                 label: context.loc.assignments,
                 color: Colors.teal,
                 isDark: isDark,
-                onTap: () => context.push('/assignments'),
+                onTap: () => context.go('/assignments'),
               ),
             ),
             const SizedBox(width: AppSpacing.lg),
@@ -455,7 +456,7 @@ class _QuickActions extends StatelessWidget {
                 label: context.loc.attendanceRecord,
                 color: Colors.blue,
                 isDark: isDark,
-                onTap: () => context.push('/attendance'),
+                onTap: () => context.go('/attendance'),
               ),
             ),
             const SizedBox(width: AppSpacing.lg),
@@ -465,7 +466,7 @@ class _QuickActions extends StatelessWidget {
                 label: context.loc.grades,
                 color: AppColors.warning,
                 isDark: isDark,
-                onTap: () => context.push('/grades'),
+                onTap: () => context.go('/grades'),
               ),
             ),
           ],
@@ -480,7 +481,7 @@ class _QuickActions extends StatelessWidget {
                 color: Colors.orange,
                 isDark: isDark,
                 badgeCount: unreadCount,
-                onTap: () => context.push('/notifications'),
+                onTap: () => context.go('/notifications'),
               ),
             ),
             const SizedBox(width: AppSpacing.lg),
@@ -490,7 +491,7 @@ class _QuickActions extends StatelessWidget {
                 label: context.translateMock('البلاغات'),
                 color: Colors.redAccent,
                 isDark: isDark,
-                onTap: () => context.push('/reports'),
+                onTap: () => context.go('/reports'),
               ),
             ),
             const SizedBox(width: AppSpacing.lg),
@@ -500,7 +501,7 @@ class _QuickActions extends StatelessWidget {
                 label: context.loc.settings,
                 color: Colors.grey,
                 isDark: isDark,
-                onTap: () => context.push('/settings'),
+                onTap: () => context.go('/settings'),
               ),
             ),
           ],
