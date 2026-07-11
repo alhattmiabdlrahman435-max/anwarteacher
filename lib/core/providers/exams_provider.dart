@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/exam_schedule.dart';
 import '../network/api_client.dart';
@@ -61,7 +62,7 @@ class Exams extends _$Exams {
         }).toList();
       }
     } catch (e) {
-      print('Error fetching exam schedules: $e');
+      debugPrint('Error fetching exam schedules: $e');
     }
   }
 

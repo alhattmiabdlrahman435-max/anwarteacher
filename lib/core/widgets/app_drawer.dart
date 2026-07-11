@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/providers/auth_provider.dart';
+import '../../../../core/providers/notifications_provider.dart';
 
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
@@ -18,6 +19,9 @@ class AppDrawer extends ConsumerWidget {
 
     final authState = ref.watch(authProvider);
     final isAssistant = authState.role == UserRole.assistant;
+    
+    final notificationsList = ref.watch(notificationsProvider);
+    final unreadNotificationsCount = notificationsList.where((n) => !n.isRead).length;
 
     final textColor = isDark ? Colors.white : AppColors.textPrimaryLight;
     final subTextColor = isDark ? Colors.white70 : AppColors.textSecondaryLight;
@@ -253,6 +257,7 @@ class AppDrawer extends ConsumerWidget {
                         isDark: isDark,
                         primaryColor: primaryColor,
                         onTap: () => _navigate(context, currentRoute, '/notifications'),
+                        badgeCount: unreadNotificationsCount,
                       ),
                       _DrawerItem(
                         title: context.translateMock('البلاغات'),
@@ -363,6 +368,7 @@ class _DrawerItem extends StatelessWidget {
     required this.isDark,
     required this.primaryColor,
     required this.onTap,
+    this.badgeCount = 0,
   });
 
   final String title;
@@ -372,6 +378,7 @@ class _DrawerItem extends StatelessWidget {
   final bool isDark;
   final Color primaryColor;
   final VoidCallback onTap;
+  final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -420,16 +427,32 @@ class _DrawerItem extends StatelessWidget {
               fontSize: 14,
             ),
           ),
-          trailing: isSelected
+          trailing: badgeCount > 0
               ? Container(
-                  width: 6,
-                  height: 6,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: foregroundColor,
-                    shape: BoxShape.circle,
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    badgeCount.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 )
-              : null,
+              : (isSelected
+                  ? Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: foregroundColor,
+                        shape: BoxShape.circle,
+                      ),
+                    )
+                  : null),
         ),
       ),
     );

@@ -49,7 +49,6 @@ class _SubmissionsTrackingScreenState extends ConsumerState<SubmissionsTrackingS
     );
 
     int submittedCount = assignment.submissions.where((s) => s.status == SubmissionStatus.submitted).length;
-    int lateCount = assignment.submissions.where((s) => s.status == SubmissionStatus.submittedLate).length;
     int notSubmittedCount = assignment.submissions.where((s) => s.status == SubmissionStatus.notSubmitted).length;
 
     return Scaffold(
@@ -96,10 +95,9 @@ class _SubmissionsTrackingScreenState extends ConsumerState<SubmissionsTrackingS
                     ),
                     const Divider(height: 32),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         _buildStatColumn(context.loc.submissionStatusSubmitted, submittedCount, AppColors.success),
-                        _buildStatColumn(context.loc.submissionStatusLate, lateCount, AppColors.accent),
                         _buildStatColumn(context.loc.submissionStatusNotSubmitted, notSubmittedCount, AppColors.error),
                       ],
                     ),
@@ -192,14 +190,6 @@ class _SubmissionsTrackingScreenState extends ConsumerState<SubmissionsTrackingS
                   SubmissionStatus.submitted,
                   context.loc.submissionStatusSubmitted,
                   AppColors.success,
-                  isDark,
-                ),
-                _buildStatusOption(
-                  assignmentId,
-                  submission,
-                  SubmissionStatus.submittedLate,
-                  context.loc.submissionStatusLate,
-                  AppColors.accent,
                   isDark,
                 ),
                 _buildStatusOption(

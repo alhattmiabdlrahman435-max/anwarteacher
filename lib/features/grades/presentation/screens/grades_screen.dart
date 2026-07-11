@@ -40,9 +40,12 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
 
     return Scaffold(
       drawer: const AppDrawer(),
-      body: CustomScrollView(
-        slivers: [
-          AppSliverHeader(
+      body: RefreshIndicator(
+        onRefresh: () => ref.read(gradesDataProvider.notifier).refresh(),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            AppSliverHeader(
             title: context.loc.gradesRecord,
             automaticallyImplyLeading: true,
           ),
@@ -86,7 +89,8 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
                     ),
                   ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -505,15 +509,15 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
 
                 const SizedBox(height: 32),
 
-                // Save Button
-                FilledButton(
-                  onPressed: _saveAndClose,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                if ((widget.isMonthView && !_currentMonth.isSaved) || (!widget.isMonthView && !_currentTerm.isFinalSaved))
+                  FilledButton(
+                    onPressed: _saveAndClose,
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: Text(context.loc.saveGrades, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                   ),
-                  child: Text(context.loc.saveGrades, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                ),
               ],
             ),
           ),
@@ -523,27 +527,28 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
   }
 
   Widget _buildMonthInputs() {
+    bool isReadOnly = _currentMonth.isSaved;
     return Column(
       children: [
         Row(
           children: [
-            Expanded(child: _buildLabeledInput(context.loc.homeworkLabel('15'), _currentMonth.homework, 15, (v) => setState(() => _currentMonth = _currentMonth.copyWith(homework: v)))),
+            Expanded(child: _buildLabeledInput(context.loc.homeworkLabel('15'), _currentMonth.homework, 15, isReadOnly, (v) => setState(() => _currentMonth = _currentMonth.copyWith(homework: v)))),
             const SizedBox(width: 16),
-            Expanded(child: _buildLabeledInput(context.loc.attendanceLabel('15'), _currentMonth.attendance, 15, (v) => setState(() => _currentMonth = _currentMonth.copyWith(attendance: v)))),
+            Expanded(child: _buildLabeledInput(context.loc.attendanceLabel('15'), _currentMonth.attendance, 15, isReadOnly, (v) => setState(() => _currentMonth = _currentMonth.copyWith(attendance: v)))),
           ],
         ),
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(child: _buildLabeledInput(context.loc.behaviorLabel('10'), _currentMonth.behavior, 10, (v) => setState(() => _currentMonth = _currentMonth.copyWith(behavior: v)))),
+            Expanded(child: _buildLabeledInput(context.loc.behaviorLabel('10'), _currentMonth.behavior, 10, isReadOnly, (v) => setState(() => _currentMonth = _currentMonth.copyWith(behavior: v)))),
             const SizedBox(width: 16),
-            Expanded(child: _buildLabeledInput(context.loc.oralLabel('10'), _currentMonth.oral, 10, (v) => setState(() => _currentMonth = _currentMonth.copyWith(oral: v)))),
+            Expanded(child: _buildLabeledInput(context.loc.oralLabel('10'), _currentMonth.oral, 10, isReadOnly, (v) => setState(() => _currentMonth = _currentMonth.copyWith(oral: v)))),
           ],
         ),
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(child: _buildLabeledInput(context.loc.writtenLabel('50'), _currentMonth.written, 50, (v) => setState(() => _currentMonth = _currentMonth.copyWith(written: v)))),
+            Expanded(child: _buildLabeledInput(context.loc.writtenLabel('50'), _currentMonth.written, 50, isReadOnly, (v) => setState(() => _currentMonth = _currentMonth.copyWith(written: v)))),
           ],
         ),
         const SizedBox(height: 24),
@@ -570,6 +575,7 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
   }
 
   Widget _buildTermSummaryInputs() {
+    bool isReadOnly = _currentTerm.isFinalSaved;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -580,7 +586,7 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: _buildLabeledInput(context.loc.finalExamLabel('30'), _currentTerm.finalExam, 30, (v) => setState(() => _currentTerm = _currentTerm.copyWith(finalExam: v))),
+              child: _buildLabeledInput(context.loc.finalExamLabel('30'), _currentTerm.finalExam, 30, isReadOnly, (v) => setState(() => _currentTerm = _currentTerm.copyWith(finalExam: v))),
             ),
           ],
         ),
@@ -607,7 +613,7 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
     );
   }
 
-  Widget _buildLabeledInput(String label, double value, double maxValue, Function(double) onChanged) {
+  Widget _buildLabeledInput(String label, double value, double maxValue, bool isReadOnly, Function(double) onChanged) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -622,6 +628,7 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
         const SizedBox(height: 8),
         TextFormField(
           initialValue: value == 0 ? '' : value.toString(),
+          readOnly: isReadOnly,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [
             TextInputFormatter.withFunction((oldValue, newValue) {
@@ -684,8 +691,10 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
     
     if (widget.isMonthView) {
       final updatedMonths = List<MonthRecord>.from(_currentTerm.months);
-      updatedMonths[widget.selectedView - 1] = _currentMonth;
+      updatedMonths[widget.selectedView - 1] = _currentMonth.copyWith(isSaved: true);
       updatedTerm = updatedTerm.copyWith(months: updatedMonths);
+    } else {
+      updatedTerm = updatedTerm.copyWith(isFinalSaved: true);
     }
 
     var updatedGrade = widget.grade;

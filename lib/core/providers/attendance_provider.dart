@@ -113,7 +113,7 @@ Future<Map<String, AttendanceStatus>> studentAttendanceHistory(Ref ref, String s
       return history;
     }
   } catch (e) {
-    print('Error fetching student attendance history: $e');
+    debugPrint('Error fetching student attendance history: $e');
   }
   return const {};
 }

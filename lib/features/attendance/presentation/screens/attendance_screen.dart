@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import '../../../../core/models/attendance.dart';
 import '../../../../core/providers/attendance_provider.dart';
 import '../../../../core/widgets/app_sliver_header.dart';
@@ -212,32 +212,45 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                   const Divider(),
                   const SizedBox(height: AppSpacing.sm),
                   // Month Navigator
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.chevron_left_rounded),
-                        onPressed: () {
-                          setSheetState(() {
-                            calendarDate = adjustToSchoolDay(DateTime(year, month - 1));
-                          });
-                        },
-                      ),
-                      Text(
-                        Localizations.localeOf(context).languageCode == 'ar'
-                            ? toArabicNumbers('${_getMonthName(month)} $year')
-                            : '${_getMonthName(month)} $year',
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.chevron_right_rounded),
-                        onPressed: () {
-                          setSheetState(() {
-                            calendarDate = adjustToSchoolDay(DateTime(year, month + 1));
-                          });
-                        },
-                      ),
-                    ],
+                  Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.chevron_left_rounded),
+                          onPressed: () {
+                            final isAr = Localizations.localeOf(context).languageCode == 'ar';
+                            setSheetState(() {
+                              if (isAr) {
+                                calendarDate = adjustToSchoolDay(DateTime(year, month + 1));
+                              } else {
+                                calendarDate = adjustToSchoolDay(DateTime(year, month - 1));
+                              }
+                            });
+                          },
+                        ),
+                        Text(
+                          Localizations.localeOf(context).languageCode == 'ar'
+                              ? toArabicNumbers('${_getMonthName(month)} $year')
+                              : '${_getMonthName(month)} $year',
+                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.chevron_right_rounded),
+                          onPressed: () {
+                            final isAr = Localizations.localeOf(context).languageCode == 'ar';
+                            setSheetState(() {
+                              if (isAr) {
+                                calendarDate = adjustToSchoolDay(DateTime(year, month - 1));
+                              } else {
+                                calendarDate = adjustToSchoolDay(DateTime(year, month + 1));
+                              }
+                            });
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   // Calendar Legend

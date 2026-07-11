@@ -1,8 +1,9 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../utils/constants.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
+import '../providers/server_error_provider.dart';
 import '../providers/auth_provider.dart';
 
 part 'api_client.g.dart';
@@ -12,8 +13,8 @@ Dio apiClient(Ref ref) {
   final dio = Dio(
     BaseOptions(
       baseUrl: AppConstants.baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 15),
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -21,21 +22,9 @@ Dio apiClient(Ref ref) {
     ),
   );
 
-  // Add interceptors for auth tokens, logging, etc.
+  // Auth token interceptor: attaches Bearer token, handles connectivity/server error states, and session expiry.
   dio.interceptors.add(InterceptorsWrapper(
     onRequest: (options, handler) async {
-      // Removed connectivity check as it can give false negatives on simulators
-      // final List<ConnectivityResult> connectivityResult = await (Connectivity().checkConnectivity());
-      // if (connectivityResult.contains(ConnectivityResult.none)) {
-      //   return handler.reject(
-      //     DioException(
-      //       requestOptions: options,
-      //       type: DioExceptionType.connectionError,
-      //       error: 'No Internet Connection',
-      //     ),
-      //   );
-      // }
-
       const storage = FlutterSecureStorage();
       final token = await storage.read(key: AppConstants.tokenKey);
       if (token != null) {
@@ -43,7 +32,27 @@ Dio apiClient(Ref ref) {
       }
       return handler.next(options);
     },
+    onResponse: (response, handler) {
+      // Clear server error state if a response is successfully received
+      ref.read(serverErrorProvider.notifier).setHasError(false);
+      return handler.next(response);
+    },
     onError: (DioException e, handler) {
+      // If error is connection timeout, connection error, or 5xx server status
+      final isConnectionError = e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError;
+      
+      final isServerError = e.response != null && e.response!.statusCode != null && e.response!.statusCode! >= 500;
+      
+      if (isConnectionError || isServerError) {
+        ref.read(serverErrorProvider.notifier).setHasError(true);
+      } else {
+        // Clear if it's another client-side error (like 400, 422, etc.) meaning server is reachable
+        ref.read(serverErrorProvider.notifier).setHasError(false);
+      }
+
       if (e.response?.statusCode == 401 && !e.requestOptions.path.contains('login')) {
         ref.read(authProvider.notifier).logout();
         return handler.reject(
@@ -57,7 +66,11 @@ Dio apiClient(Ref ref) {
       return handler.next(e);
     },
   ));
-  dio.interceptors.add(LogInterceptor(responseBody: true, requestBody: true));
+
+  // Request/response logging in debug mode only — never in production.
+  if (kDebugMode) {
+    dio.interceptors.add(LogInterceptor(responseBody: true, requestBody: true));
+  }
 
   return dio;
 }

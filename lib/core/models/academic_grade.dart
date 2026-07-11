@@ -5,6 +5,7 @@ class MonthRecord {
   final double oral; // شفوي
   final double homework; // واجبات
   final double written; // تحريري
+  final bool isSaved; // هل تم الحفظ مسبقاً؟
 
   const MonthRecord({
     required this.monthIndex,
@@ -13,6 +14,7 @@ class MonthRecord {
     this.oral = 0,
     this.homework = 0,
     this.written = 0,
+    this.isSaved = false,
   });
 
   double get total => attendance + behavior + oral + homework + written;
@@ -24,6 +26,7 @@ class MonthRecord {
     double? oral,
     double? homework,
     double? written,
+    bool? isSaved,
   }) {
     return MonthRecord(
       monthIndex: monthIndex ?? this.monthIndex,
@@ -32,6 +35,7 @@ class MonthRecord {
       oral: oral ?? this.oral,
       homework: homework ?? this.homework,
       written: written ?? this.written,
+      isSaved: isSaved ?? this.isSaved,
     );
   }
 
@@ -43,6 +47,7 @@ class MonthRecord {
       'oral': oral,
       'homework': homework,
       'written': written,
+      'isSaved': isSaved,
     };
   }
 
@@ -64,6 +69,7 @@ class MonthRecord {
       oral: parseDouble(map['oral']),
       homework: parseDouble(map['homework']),
       written: parseDouble(map['written']),
+      isSaved: map['isSaved'] == true,
     );
   }
 }
@@ -72,11 +78,13 @@ class TermRecord {
   final int termIndex; // 1 or 2
   final List<MonthRecord> months;
   final double finalExam;
+  final bool isFinalSaved;
 
   const TermRecord({
     required this.termIndex,
     required this.months,
     this.finalExam = 0,
+    this.isFinalSaved = false,
   });
 
   double get monthsAverage {
@@ -91,11 +99,13 @@ class TermRecord {
     int? termIndex,
     List<MonthRecord>? months,
     double? finalExam,
+    bool? isFinalSaved,
   }) {
     return TermRecord(
       termIndex: termIndex ?? this.termIndex,
       months: months ?? this.months,
       finalExam: finalExam ?? this.finalExam,
+      isFinalSaved: isFinalSaved ?? this.isFinalSaved,
     );
   }
 
@@ -104,6 +114,7 @@ class TermRecord {
       'termIndex': termIndex,
       'months': months.map((x) => x.toMap()).toList(),
       'finalExam': finalExam,
+      'isFinalSaved': isFinalSaved,
     };
   }
 
@@ -122,6 +133,7 @@ class TermRecord {
       termIndex: parseInt(map['termIndex']),
       months: List<MonthRecord>.from((map['months'] as List? ?? []).map((x) => MonthRecord.fromMap(x as Map<String, dynamic>))),
       finalExam: parseDouble(map['finalExam']),
+      isFinalSaved: map['isFinalSaved'] == true,
     );
   }
 }

@@ -75,7 +75,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
         });
       }
     } catch (e) {
-      print('Error picking image: $e');
+      debugPrint('Error picking image: $e');
     } finally {
       setState(() => _isUploadingImage = false);
     }

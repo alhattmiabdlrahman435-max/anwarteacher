@@ -23,7 +23,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
   final _passwordFocusNode = FocusNode();
 
   bool _isLoading = false;
-  bool _obscurePassword = false;
+  bool _obscurePassword = true;
   UserRole _selectedRole = UserRole.teacher;
 
   AnimationController? _animationController;
@@ -439,7 +439,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                           TextFormField(
                                             controller: _passwordController,
                                             focusNode: _passwordFocusNode,
-                                            keyboardType: TextInputType.phone,
+                                            keyboardType: TextInputType.visiblePassword,
+                                            obscureText: _obscurePassword,
                                             style: TextStyle(
                                               color: isDark ? Colors.white : Colors.black,
                                               fontWeight: FontWeight.w600,
@@ -459,7 +460,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                                     ? activeColor 
                                                     : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
                                               ),
-
+                                              suffixIcon: IconButton(
+                                                icon: Icon(
+                                                  _obscurePassword
+                                                      ? Icons.visibility_off_outlined
+                                                      : Icons.visibility_outlined,
+                                                  color: _passwordFocusNode.hasFocus
+                                                      ? activeColor
+                                                      : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
+                                                  size: 20,
+                                                ),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    _obscurePassword = !_obscurePassword;
+                                                  });
+                                                },
+                                              ),
                                               filled: true,
                                               fillColor: isDark ? Colors.white.withValues(alpha: 0.02) : Colors.grey.withValues(alpha: 0.04),
                                               contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),

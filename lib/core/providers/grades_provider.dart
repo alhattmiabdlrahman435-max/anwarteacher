@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:dio/dio.dart';
 import '../models/academic_grade.dart';
@@ -14,10 +15,10 @@ class GradesData extends _$GradesData {
     final selectedClass = ref.watch(selectedClassProvider);
     final selectedSubject = ref.watch(selectedSubjectProvider);
 
-    print('GRADES_BUILD: selectedClass: "$selectedClass", selectedSubject: "$selectedSubject"');
+    debugPrint('GRADES_BUILD: selectedClass: "$selectedClass", selectedSubject: "$selectedSubject"');
 
     if (selectedClass.isEmpty || selectedSubject.isEmpty) {
-      print('GRADES_BUILD: Empty class or subject, returning empty grades list.');
+      debugPrint('GRADES_BUILD: Empty class or subject, returning empty grades list.');
       return const ClassSubjectGrades(
         classId: '',
         subjectName: '',
@@ -31,12 +32,12 @@ class GradesData extends _$GradesData {
     final classId = classesNotifier.nameToIdMap[selectedClass] ?? '';
     final subjectId = subjectsNotifier.nameToIdMap[selectedSubject] ?? '';
 
-    print('GRADES_BUILD: Resolved classId: "$classId", subjectId: "$subjectId"');
+    debugPrint('GRADES_BUILD: Resolved classId: "$classId", subjectId: "$subjectId"');
 
     if (classId.isNotEmpty && subjectId.isNotEmpty) {
       _fetch(classId, subjectId);
     } else {
-      print('GRADES_BUILD: Warning: Resolved classId or subjectId is empty!');
+      debugPrint('GRADES_BUILD: Warning: Resolved classId or subjectId is empty!');
     }
 
     return ClassSubjectGrades(
@@ -46,16 +47,30 @@ class GradesData extends _$GradesData {
     );
   }
 
+  Future<void> refresh() async {
+    final selectedClass = ref.read(selectedClassProvider);
+    final selectedSubject = ref.read(selectedSubjectProvider);
+    final classesNotifier = ref.read(classesProvider.notifier);
+    final subjectsNotifier = ref.read(subjectsProvider.notifier);
+
+    final classId = classesNotifier.nameToIdMap[selectedClass] ?? '';
+    final subjectId = subjectsNotifier.nameToIdMap[selectedSubject] ?? '';
+
+    if (classId.isNotEmpty && subjectId.isNotEmpty) {
+      await _fetch(classId, subjectId);
+    }
+  }
+
   Future<void> _fetch(String classId, String subjectId) async {
     try {
-      print('GRADES_FETCH: Fetching grades for classId: $classId, subjectId: $subjectId');
+      debugPrint('GRADES_FETCH: Fetching grades for classId: $classId, subjectId: $subjectId');
       final dio = ref.read(apiClientProvider);
       final response = await dio.get('grades/class/$classId/subject/$subjectId');
-      print('GRADES_FETCH: Response status: ${response.statusCode}, Data: ${response.data}');
+      debugPrint('GRADES_FETCH: Response status: ${response.statusCode}, Data: ${response.data}');
       if (response.data != null && response.data['success'] == true) {
         final List<dynamic> list = response.data['grades'] ?? [];
         final grades = list.map((x) => StudentSubjectGrade.fromMap(x)).toList();
-        print('GRADES_FETCH: Successfully parsed ${grades.length} student grades');
+        debugPrint('GRADES_FETCH: Successfully parsed ${grades.length} student grades');
         
         state = ClassSubjectGrades(
           classId: classId,
@@ -63,10 +78,10 @@ class GradesData extends _$GradesData {
           grades: grades,
         );
       } else {
-        print('GRADES_FETCH: API returned success: false or null data');
+        debugPrint('GRADES_FETCH: API returned success: false or null data');
       }
     } catch (e) {
-      print('GRADES_FETCH: Error fetching class subject grades: $e');
+      debugPrint('GRADES_FETCH: Error fetching class subject grades: $e');
     }
   }
 
@@ -95,7 +110,7 @@ class GradesData extends _$GradesData {
       await _saveTermChanges(dio, studentId, newGrade.subjectId, 2, oldGrade.secondTerm, newGrade.secondTerm);
 
     } catch (e) {
-      print('Error saving student grade to backend: $e');
+      debugPrint('Error saving student grade to backend: $e');
     }
   }
 

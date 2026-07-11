@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/providers/classes_provider.dart';
 import '../../../../core/widgets/app_sliver_header.dart';
@@ -226,28 +225,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       });
 
       if (response.data != null && response.data['success'] == true) {
-        final updatedTeacher = response.data['teacher'];
-        
-        const storage = FlutterSecureStorage();
-        await storage.write(key: 'userName', value: _nameController.text);
-        await storage.write(key: 'userPhone', value: _phoneController.text);
-        await storage.write(key: 'userAddress', value: _addressController.text);
-        
+        await ref.read(authProvider.notifier).updateProfile(
+          name: _nameController.text,
+          phone: _phoneController.text,
+          address: _addressController.text,
+        );
+
         setState(() {
           _teacherName = _nameController.text;
           _phone = _phoneController.text;
           _address = _addressController.text;
         });
-
-        // Trigger session reload to sync authState
-        // Since build() is keepAlive and _loadSession updates the state
-        // we can trigger loading manually or call a public reload function.
-        // Actually, we can update state copyWith:
-        ref.read(authProvider.notifier).state = authState.copyWith(
-          userName: _nameController.text,
-          userPhone: _phoneController.text,
-          userAddress: _addressController.text,
-        );
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

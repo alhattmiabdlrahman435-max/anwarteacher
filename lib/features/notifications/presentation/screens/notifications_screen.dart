@@ -9,73 +9,101 @@ import '../../../../core/widgets/app_drawer.dart';
 import '../../../../core/widgets/app_sliver_header.dart';
 import '../../../../core/widgets/modern_card.dart';
 import '../../../../core/providers/notifications_provider.dart';
+import '../../../../main.dart'; // Import to access global flutterLocalNotificationsPlugin
 
-class NotificationsScreen extends ConsumerWidget {
+class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Clear all active local notification alerts and badges on entry
+    Future.microtask(() {
+      try {
+        flutterLocalNotificationsPlugin.cancelAll();
+      } catch (e) {
+        debugPrint('Error canceling notifications: $e');
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final notifications = ref.watch(notificationsProvider);
 
     return Scaffold(
       drawer: const AppDrawer(),
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
-        slivers: [
-          AppSliverHeader(
-            title: context.loc.notifications,
-            trailing: notifications.any((n) => !n.isRead)
-                ? CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    child: Icon(
-                      Icons.done_all_rounded,
-                      color: isDark ? Colors.white : AppColors.primary,
-                      size: 24,
-                    ),
-                    onPressed: () {
-                      ref.read(notificationsProvider.notifier).markAllAsRead();
-                    },
-                  )
-                : null,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(notificationsProvider.notifier).refresh();
+        },
+        color: AppColors.primary,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
           ),
-          if (notifications.isEmpty)
-            const SliverFillRemaining(
-              child: Center(
-                child: Text('لا توجد إشعارات حالياً', style: TextStyle(color: Colors.grey)),
-              ),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final n = notifications[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                      child: _buildNotificationCard(
-                        context,
-                        title: n.title,
-                        message: n.message,
-                        time: _formatDate(n.date),
-                        icon: n.icon,
-                        iconColor: n.iconColor,
-                        isDark: isDark,
-                        isRead: n.isRead,
-                        onTap: () {
-                          ref.read(notificationsProvider.notifier).markAsRead(n.id);
-                        },
+          slivers: [
+            AppSliverHeader(
+              title: context.loc.notifications,
+              trailing: notifications.any((n) => !n.isRead)
+                  ? CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      child: Icon(
+                        Icons.done_all_rounded,
+                        color: isDark ? Colors.white : AppColors.primary,
+                        size: 24,
                       ),
-                    );
-                  },
-                  childCount: notifications.length,
+                      onPressed: () {
+                        ref.read(notificationsProvider.notifier).markAllAsRead();
+                        try {
+                          flutterLocalNotificationsPlugin.cancelAll();
+                        } catch (_) {}
+                      },
+                    )
+                  : null,
+            ),
+            if (notifications.isEmpty)
+              const SliverFillRemaining(
+                child: Center(
+                  child: Text('لا توجد إشعارات حالياً', style: TextStyle(color: Colors.grey)),
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final n = notifications[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                        child: _buildNotificationCard(
+                          context,
+                          title: n.title,
+                          message: n.message,
+                          time: _formatDate(n.date),
+                          icon: n.icon,
+                          iconColor: n.iconColor,
+                          isDark: isDark,
+                          isRead: n.isRead,
+                          onTap: () {
+                            ref.read(notificationsProvider.notifier).markAsRead(n.id);
+                          },
+                        ),
+                      );
+                    },
+                    childCount: notifications.length,
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

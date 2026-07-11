@@ -41,7 +41,7 @@ final class NotificationsProvider
   }
 }
 
-String _$notificationsHash() => r'd1114b8ab3760b7715d1bbf412be6f7103b61eef';
+String _$notificationsHash() => r'ede2e1debfd4799603e9813bda745cde6464fd4f';
 
 abstract class _$Notifications extends $Notifier<List<AppNotificationModel>> {
   List<AppNotificationModel> build();

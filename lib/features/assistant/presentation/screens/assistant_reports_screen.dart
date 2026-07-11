@@ -586,25 +586,46 @@ class _StudentAttendanceModalState extends State<_StudentAttendanceModal> {
     final monthName = intl.DateFormat.MMMM(languageCode).format(_focusedDay);
     final year = _focusedDay.year;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.chevron_left),
-          onPressed: () => setState(() => _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1)),
-        ),
-        Text(
-          '$monthName $year',
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
+            onPressed: () {
+              final isAr = Localizations.localeOf(context).languageCode == 'ar';
+              setState(() {
+                if (isAr) {
+                  _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1);
+                } else {
+                  _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1);
+                }
+              });
+            },
           ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.chevron_right),
-          onPressed: () => setState(() => _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1)),
-        ),
-      ],
+          Text(
+            '$monthName $year',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            onPressed: () {
+              final isAr = Localizations.localeOf(context).languageCode == 'ar';
+              setState(() {
+                if (isAr) {
+                  _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1);
+                } else {
+                  _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1);
+                }
+              });
+            },
+          ),
+        ],
+      ),
     );
   }
 

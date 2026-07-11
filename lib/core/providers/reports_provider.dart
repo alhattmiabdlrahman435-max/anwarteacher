@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:dio/dio.dart';
 import '../models/report.dart';
@@ -53,7 +54,7 @@ class Reports extends _$Reports {
         }).toList();
       }
     } catch (e) {
-      print('Error fetching teacher student reports: $e');
+      debugPrint('Error fetching teacher student reports: $e');
     }
   }
 
@@ -78,9 +79,9 @@ class Reports extends _$Reports {
 
       final formData = FormData.fromMap({
         'student_id': int.tryParse(studentId) ?? 0,
-        'type': type.name, // academic, behavioral, homework, psychological
+        'type': type.name,
         'description': description,
-        if (file != null) 'image': file,
+        'image': ?file,
       });
 
       final response = await dio.post('reports', data: formData);
@@ -89,7 +90,7 @@ class Reports extends _$Reports {
         await fetch();
       }
     } catch (e) {
-      print('Error submitting report to backend: $e');
+      debugPrint('Error submitting report to backend: $e');
       rethrow;
     }
   }

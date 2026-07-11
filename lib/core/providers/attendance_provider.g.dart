@@ -58,7 +58,7 @@ final class DailyAttendanceProvider
   }
 }
 
-String _$dailyAttendanceHash() => r'991c639ea96c1a61453cbf11b9a06b7fb6bbbce8';
+String _$dailyAttendanceHash() => r'e3376f5872280e72b5324f540fb7556e0bbc7ea5';
 
 final class DailyAttendanceFamily extends $Family
     with
@@ -166,7 +166,7 @@ final class StudentAttendanceHistoryProvider
 }
 
 String _$studentAttendanceHistoryHash() =>
-    r'b0cc580dec49d599770c6c36ae64c8f5fef859b2';
+    r'6e936bbce206e1f9ffbf2cfe3cb215ec913b89ee';
 
 final class StudentAttendanceHistoryFamily extends $Family
     with

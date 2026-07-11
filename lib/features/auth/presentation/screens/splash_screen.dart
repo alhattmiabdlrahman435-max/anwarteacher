@@ -17,6 +17,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  Timer? _navigationTimer;
 
   @override
   void initState() {
@@ -42,8 +43,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
 
     _controller.forward();
 
-    // Check login state and navigate accordingly after 2.5 seconds
-    Timer(const Duration(milliseconds: 2500), () {
+    // Check login state and navigate accordingly after 2.5 seconds.
+    // Timer is stored so it can be cancelled in dispose() if needed.
+    _navigationTimer = Timer(const Duration(milliseconds: 2500), () {
       if (mounted) {
         final authState = ref.read(authProvider);
         if (authState.isLoggedIn) {
@@ -61,6 +63,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
 
   @override
   void dispose() {
+    _navigationTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }

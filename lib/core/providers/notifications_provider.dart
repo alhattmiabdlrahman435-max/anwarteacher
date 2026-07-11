@@ -23,7 +23,7 @@ class Notifications extends _$Notifications {
       final response = await dio.get('notifications');
       if (response.data != null && response.data['success'] == true) {
         final List<dynamic> list = response.data['notifications'] ?? [];
-        state = list.map((item) {
+        final parsedList = list.map((item) {
           final String type = item['type']?.toString().toLowerCase() ?? 'general';
           
           IconData icon = CupertinoIcons.bell_fill;
@@ -47,9 +47,13 @@ class Notifications extends _$Notifications {
             isRead: item['is_read'] == 1 || item['is_read'] == true,
           );
         }).toList();
+
+        // Only keep notifications created within the last 7 days
+        final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+        state = parsedList.where((n) => n.date.isAfter(sevenDaysAgo)).toList();
       }
     } catch (e) {
-      print('Error fetching notifications: $e');
+      debugPrint('Error fetching notifications: $e');
     }
   }
 
@@ -84,7 +88,7 @@ class Notifications extends _$Notifications {
       final dio = ref.read(apiClientProvider);
       await dio.put('notifications/$id/read');
     } catch (e) {
-      print('Error marking notification as read in backend: $e');
+      debugPrint('Error marking notification as read in backend: $e');
     }
   }
 
@@ -98,7 +102,7 @@ class Notifications extends _$Notifications {
       final dio = ref.read(apiClientProvider);
       await dio.put('notifications/read-all');
     } catch (e) {
-      print('Error marking all notifications as read in backend: $e');
+      debugPrint('Error marking all notifications as read in backend: $e');
     }
   }
 }

@@ -56,6 +56,9 @@ class AuthState {
 
 @Riverpod(keepAlive: true)
 class Auth extends _$Auth {
+  // Single static instance to avoid repeated instantiation overhead.
+  static const _storage = FlutterSecureStorage();
+
   @override
   AuthState build() {
     _loadSession();
@@ -63,16 +66,15 @@ class Auth extends _$Auth {
   }
 
   Future<void> _loadSession() async {
-    const storage = FlutterSecureStorage();
-    final isLoggedInStr = await storage.read(key: 'isLoggedIn');
+    final isLoggedInStr = await _storage.read(key: 'isLoggedIn');
     final isLoggedIn = isLoggedInStr == 'true';
-    final roleStr = await storage.read(key: 'userRole');
-    final userName = await storage.read(key: 'userName') ?? '';
-    final userAvatar = await storage.read(key: 'userAvatar');
-    final userId = await storage.read(key: 'userId');
-    final userPhone = await storage.read(key: 'userPhone');
-    final userAddress = await storage.read(key: 'userAddress');
-    final userJobId = await storage.read(key: 'userJobId');
+    final roleStr = await _storage.read(key: 'userRole');
+    final userName = await _storage.read(key: 'userName') ?? '';
+    final userAvatar = await _storage.read(key: 'userAvatar');
+    final userId = await _storage.read(key: 'userId');
+    final userPhone = await _storage.read(key: 'userPhone');
+    final userAddress = await _storage.read(key: 'userAddress');
+    final userJobId = await _storage.read(key: 'userJobId');
 
     UserRole? role;
     if (roleStr != null) {
@@ -102,6 +104,32 @@ class Auth extends _$Auth {
   Future<void> syncFcmToken() async {
     try {
       final dio = ref.read(apiClientProvider);
+      
+      // On iOS, we must ensure APNS token is received before getting FCM token
+      String? apnsToken;
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+        
+        // On iOS simulators or debug configurations, the APNS token is always null.
+        // We skip the 5-second retry loop in debug/simulator to avoid slowing down.
+        if (apnsToken == null && !kReleaseMode) {
+          debugPrint('iOS Simulator/Debug detected: APNS token is null (Push Notifications are only supported on physical iOS devices).');
+        } else {
+          int retries = 0;
+          while (apnsToken == null && retries < 5) {
+            await Future.delayed(const Duration(seconds: 1));
+            apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+            retries++;
+          }
+        }
+      }
+
+      // Only attempt to get FCM token if we are not on iOS, or if we are on iOS and APNS token is available
+      if (defaultTargetPlatform == TargetPlatform.iOS && apnsToken == null) {
+        debugPrint('Skipped FCM token registration: APNS token is not available.');
+        return;
+      }
+
       final fcmToken = await FirebaseMessaging.instance.getToken();
       if (fcmToken != null) {
         await dio.post('user/fcm-token', data: {
@@ -115,7 +143,6 @@ class Auth extends _$Auth {
   }
 
   Future<void> login(String employeeId, String password, UserRole role) async {
-    const storage = FlutterSecureStorage();
     final dio = ref.read(apiClientProvider);
     
     debugPrint('🔵 LOGIN: Attempting login to ${AppConstants.baseUrl}login');
@@ -133,8 +160,8 @@ class Auth extends _$Auth {
         final token = response.data['token'];
         final userData = response.data['user'];
         
-        await storage.write(key: AppConstants.tokenKey, value: token);
-        await storage.write(key: 'isLoggedIn', value: 'true');
+        await _storage.write(key: AppConstants.tokenKey, value: token);
+        await _storage.write(key: 'isLoggedIn', value: 'true');
         
         final dbRole = userData['role'];
         UserRole mappedRole = UserRole.teacher;
@@ -149,13 +176,13 @@ class Auth extends _$Auth {
         final addressVal = userData['address'] ?? '';
         final jobIdVal = userData['job_id'] ?? '';
         
-        await storage.write(key: 'userRole', value: mappedRole.name);
-        await storage.write(key: 'userName', value: displayName);
-        await storage.write(key: 'userAvatar', value: displayAvatar);
-        await storage.write(key: 'userId', value: idVal);
-        await storage.write(key: 'userPhone', value: phoneVal);
-        await storage.write(key: 'userAddress', value: addressVal);
-        await storage.write(key: 'userJobId', value: jobIdVal);
+        await _storage.write(key: 'userRole', value: mappedRole.name);
+        await _storage.write(key: 'userName', value: displayName);
+        await _storage.write(key: 'userAvatar', value: displayAvatar);
+        await _storage.write(key: 'userId', value: idVal);
+        await _storage.write(key: 'userPhone', value: phoneVal);
+        await _storage.write(key: 'userAddress', value: addressVal);
+        await _storage.write(key: 'userJobId', value: jobIdVal);
         
         state = AuthState(
           isLoggedIn: true,
@@ -194,32 +221,46 @@ class Auth extends _$Auth {
   }
 
   Future<void> logout() async {
-    const storage = FlutterSecureStorage();
-    final token = await storage.read(key: AppConstants.tokenKey);
+    final token = await _storage.read(key: AppConstants.tokenKey);
     if (token != null) {
       try {
         final dio = ref.read(apiClientProvider);
         await dio.post('logout');
       } catch (_) {}
     }
-    await storage.delete(key: AppConstants.tokenKey);
-    await storage.delete(key: 'isLoggedIn');
-    await storage.delete(key: 'userRole');
-    await storage.delete(key: 'userName');
-    await storage.delete(key: 'userAvatar');
-    await storage.delete(key: 'userId');
-    await storage.delete(key: 'userPhone');
-    await storage.delete(key: 'userAddress');
-    await storage.delete(key: 'userJobId');
+    await _storage.delete(key: AppConstants.tokenKey);
+    await _storage.delete(key: 'isLoggedIn');
+    await _storage.delete(key: 'userRole');
+    await _storage.delete(key: 'userName');
+    await _storage.delete(key: 'userAvatar');
+    await _storage.delete(key: 'userId');
+    await _storage.delete(key: 'userPhone');
+    await _storage.delete(key: 'userAddress');
+    await _storage.delete(key: 'userJobId');
 
     state = const AuthState();
   }
 
+  /// Updates the user's profile info both locally and in storage.
+  /// Use this instead of accessing [state] directly from the UI layer.
+  Future<void> updateProfile({
+    required String name,
+    required String phone,
+    required String address,
+  }) async {
+    await _storage.write(key: 'userName', value: name);
+    await _storage.write(key: 'userPhone', value: phone);
+    await _storage.write(key: 'userAddress', value: address);
+    state = state.copyWith(
+      userName: name,
+      userPhone: phone,
+      userAddress: address,
+    );
+  }
+
   Future<void> updateAvatar(String newAvatarPath) async {
-    const storage = FlutterSecureStorage();
-    
     // Save locally first for instant UI response
-    await storage.write(key: 'userAvatar', value: newAvatarPath);
+    await _storage.write(key: 'userAvatar', value: newAvatarPath);
     state = state.copyWith(userAvatar: newAvatarPath);
 
     try {
@@ -237,7 +278,7 @@ class Auth extends _$Auth {
       final response = await dio.post('user/update-photo', data: formData);
       if (response.data != null && response.data['success'] == true) {
         final serverUrl = response.data['photo_url'];
-        await storage.write(key: 'userAvatar', value: serverUrl);
+        await _storage.write(key: 'userAvatar', value: serverUrl);
         state = state.copyWith(userAvatar: serverUrl);
       }
     } catch (e) {

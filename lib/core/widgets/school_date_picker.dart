@@ -252,26 +252,43 @@ class _SchoolDatePickerDialogState extends State<_SchoolDatePickerDialog> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.chevron_left),
-                        onPressed: () {
-                          setDialogState(() => selectedYear--);
-                        },
-                      ),
-                      Text(
-                        selectedYear.toString(),
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.chevron_right),
-                        onPressed: () {
-                          setDialogState(() => selectedYear++);
-                        },
-                      ),
-                    ],
+                  Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.chevron_left),
+                          onPressed: () {
+                            final isAr = Localizations.localeOf(context).languageCode == 'ar';
+                            setDialogState(() {
+                              if (isAr) {
+                                selectedYear++;
+                              } else {
+                                selectedYear--;
+                              }
+                            });
+                          },
+                        ),
+                        Text(
+                          selectedYear.toString(),
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.chevron_right),
+                          onPressed: () {
+                            final isAr = Localizations.localeOf(context).languageCode == 'ar';
+                            setDialogState(() {
+                              if (isAr) {
+                                selectedYear--;
+                              } else {
+                                selectedYear++;
+                              }
+                            });
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                   const Divider(),
                   SizedBox(
@@ -471,26 +488,39 @@ class _SchoolDatePickerDialogState extends State<_SchoolDatePickerDialog> {
                       ),
                     ),
                     // Chevron navigation buttons on the left in RTL
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.chevron_left_rounded),
-                          onPressed: () {
-                            setState(() {
-                              _currentMonth = DateTime(year, month - 1);
-                            });
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.chevron_right_rounded),
-                          onPressed: () {
-                            setState(() {
-                              _currentMonth = DateTime(year, month + 1);
-                            });
-                          },
-                        ),
-                      ],
+                    Directionality(
+                      textDirection: TextDirection.ltr,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.chevron_left_rounded),
+                            onPressed: () {
+                              final isAr = Localizations.localeOf(context).languageCode == 'ar';
+                              setState(() {
+                                if (isAr) {
+                                  _currentMonth = DateTime(year, month + 1);
+                                } else {
+                                  _currentMonth = DateTime(year, month - 1);
+                                }
+                              });
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.chevron_right_rounded),
+                            onPressed: () {
+                              final isAr = Localizations.localeOf(context).languageCode == 'ar';
+                              setState(() {
+                                if (isAr) {
+                                  _currentMonth = DateTime(year, month - 1);
+                                } else {
+                                  _currentMonth = DateTime(year, month + 1);
+                                }
+                              });
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
