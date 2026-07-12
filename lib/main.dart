@@ -90,6 +90,11 @@ void main() async {
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(highImportanceChannel);
 
+    // Request runtime notification permission on Android 13+
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+
     // Listen to foreground FCM messages to show a local notification banner.
     // NOTE: Data-refresh is handled in TeacherApp to avoid duplicate listeners.
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
