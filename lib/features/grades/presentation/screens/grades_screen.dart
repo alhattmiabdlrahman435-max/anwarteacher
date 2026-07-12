@@ -562,7 +562,14 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(context.loc.monthlyTotal, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: widget.primaryColor)),
+              Flexible(
+                child: Text(
+                  context.loc.monthlyTotal,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: widget.primaryColor),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
               Text(
                 _currentMonth.total.toStringAsFixed(1),
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900, color: widget.primaryColor),
@@ -601,7 +608,14 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(context.loc.totalGrade, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: widget.primaryColor)),
+              Flexible(
+                child: Text(
+                  context.loc.totalGrade,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: widget.primaryColor),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
               Text(
                 _currentTerm.termTotal.toStringAsFixed(1),
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900, color: widget.primaryColor),
