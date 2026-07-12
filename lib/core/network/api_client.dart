@@ -53,7 +53,9 @@ Dio apiClient(Ref ref) {
         ref.read(serverErrorProvider.notifier).setHasError(false);
       }
 
-      if (e.response?.statusCode == 401 && !e.requestOptions.path.contains('login')) {
+      if (e.response?.statusCode == 401 &&
+          !e.requestOptions.path.contains('login') &&
+          !e.requestOptions.path.contains('logout')) {
         ref.read(authProvider.notifier).logout();
         return handler.reject(
           DioException(

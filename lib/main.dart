@@ -21,6 +21,7 @@ import 'core/providers/grades_provider.dart';
 import 'core/providers/exams_provider.dart';
 import 'core/providers/schedule_provider.dart';
 import 'core/widgets/connectivity_overlay.dart';
+import 'core/network/pusher_service.dart';
 import 'firebase_options.dart';
 
 // Global plugin instance for notifications (used in both main() and TeacherApp).
@@ -156,6 +157,10 @@ void main() async {
   } catch (e) {
     debugPrint('Firebase initialization failed: $e');
   }
+
+  // Initialize Pusher Client connection to Reverb
+  PusherService().init();
+  PusherService().connect();
 
   runApp(const ProviderScope(child: TeacherApp()));
 }
