@@ -59,6 +59,10 @@ class AssignmentsData extends _$AssignmentsData {
     }
   }
 
+  Future<void> refresh() async {
+    await _fetch();
+  }
+
   Future<void> addAssignment(Assignment assignment, String? attachmentPath) async {
     try {
       final dio = ref.read(apiClientProvider);

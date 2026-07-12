@@ -27,6 +27,16 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
   String _searchQuery = '';
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      if (mounted) {
+        ref.read(gradesDataProvider.notifier).refresh();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final classGrades = ref.watch(gradesDataProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;

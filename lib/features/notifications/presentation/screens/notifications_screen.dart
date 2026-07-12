@@ -29,6 +29,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       } catch (e) {
         debugPrint('Error canceling notifications: $e');
       }
+      if (mounted) {
+        ref.read(notificationsProvider.notifier).refresh();
+      }
     });
   }
 

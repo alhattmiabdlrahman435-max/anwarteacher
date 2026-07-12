@@ -70,4 +70,8 @@ class Exams extends _$Exams {
     // Return all schedules to be flexible and avoid empty screens
     return state;
   }
+
+  Future<void> refresh() async {
+    await _fetch();
+  }
 }

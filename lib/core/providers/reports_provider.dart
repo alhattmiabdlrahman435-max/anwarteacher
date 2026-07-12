@@ -58,6 +58,10 @@ class Reports extends _$Reports {
     }
   }
 
+  Future<void> refresh() async {
+    await fetch();
+  }
+
   Future<void> addReport({
     required String studentId,
     required String studentName,

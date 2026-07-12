@@ -26,6 +26,11 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    Future.microtask(() {
+      if (mounted) {
+        ref.read(reportsProvider.notifier).refresh();
+      }
+    });
   }
 
   @override

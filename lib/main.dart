@@ -20,6 +20,9 @@ import 'core/providers/assignments_provider.dart';
 import 'core/providers/grades_provider.dart';
 import 'core/providers/exams_provider.dart';
 import 'core/providers/schedule_provider.dart';
+import 'core/providers/reports_provider.dart';
+import 'core/providers/classes_provider.dart';
+import 'core/providers/subjects_provider.dart';
 import 'core/widgets/connectivity_overlay.dart';
 import 'core/network/pusher_service.dart';
 import 'firebase_options.dart';
@@ -172,7 +175,7 @@ class TeacherApp extends ConsumerStatefulWidget {
   ConsumerState<TeacherApp> createState() => _TeacherAppState();
 }
 
-class _TeacherAppState extends ConsumerState<TeacherApp> {
+class _TeacherAppState extends ConsumerState<TeacherApp> with WidgetsBindingObserver {
   // Store subscriptions to cancel them properly and prevent memory leaks.
   StreamSubscription<RemoteMessage>? _onMessageSub;
   StreamSubscription<RemoteMessage>? _onMessageOpenedAppSub;
@@ -180,11 +183,38 @@ class _TeacherAppState extends ConsumerState<TeacherApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _listenToFcmForDataRefresh();
+    // Fetch initial data immediately on launch
+    Future.microtask(() => _refreshAllData());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshAllData();
+    }
+  }
+
+  void _refreshAllData() {
+    try {
+      debugPrint('[TeacherApp] Refreshing all data in background...');
+      ref.read(notificationsProvider.notifier).refresh();
+      ref.read(assignmentsDataProvider.notifier).refresh();
+      ref.read(gradesDataProvider.notifier).refresh();
+      ref.read(examsProvider.notifier).refresh();
+      ref.read(teacherScheduleStateProvider.notifier).refresh();
+      ref.read(reportsProvider.notifier).refresh();
+      ref.read(classesProvider.notifier).refresh();
+      ref.read(subjectsProvider.notifier).refresh();
+    } catch (e) {
+      debugPrint('[TeacherApp] Error during background refresh: $e');
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _onMessageSub?.cancel();
     _onMessageOpenedAppSub?.cancel();
     super.dispose();

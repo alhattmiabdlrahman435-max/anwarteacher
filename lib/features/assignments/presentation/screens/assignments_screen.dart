@@ -11,11 +11,26 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/modern_card.dart';
 import '../../../../core/extensions/localization_extension.dart';
 
-class AssignmentsScreen extends ConsumerWidget {
+class AssignmentsScreen extends ConsumerStatefulWidget {
   const AssignmentsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AssignmentsScreen> createState() => _AssignmentsScreenState();
+}
+
+class _AssignmentsScreenState extends ConsumerState<AssignmentsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      if (mounted) {
+        ref.read(assignmentsDataProvider.notifier).refresh();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final assignments = ref.watch(assignmentsDataProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
