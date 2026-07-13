@@ -40,6 +40,12 @@ const AndroidNotificationChannel highImportanceChannel = AndroidNotificationChan
   enableVibration: true,
 );
 
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  debugPrint('Handling a background message: ${message.messageId}');
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -48,6 +54,7 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
 
     // Request permission for push notifications
@@ -227,6 +234,9 @@ class _TeacherAppState extends ConsumerState<TeacherApp> with WidgetsBindingObse
 
   /// Invalidates the relevant Riverpod provider based on the FCM message type.
   void _invalidateProviderForType(String type) {
+    // Always invalidate notificationsProvider to ensure the notifications list updates instantly
+    ref.invalidate(notificationsProvider);
+
     switch (type) {
       case 'attendance':
       case 'absence':
