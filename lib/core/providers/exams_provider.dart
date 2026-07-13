@@ -17,6 +17,7 @@ class Exams extends _$Exams {
     try {
       final dio = ref.read(apiClientProvider);
       final response = await dio.get('exam-schedules');
+      if (!ref.mounted) return;
       if (response.data != null && response.data['success'] == true) {
         final List<dynamic> list = response.data['exam_schedules'] ?? [];
         state = list.map((item) {

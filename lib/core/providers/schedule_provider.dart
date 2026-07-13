@@ -19,6 +19,7 @@ class TeacherScheduleState extends _$TeacherScheduleState {
     try {
       final dio = ref.read(apiClientProvider);
       final response = await dio.get('teacher/schedule');
+      if (!ref.mounted) return {};
 
       if (response.data != null && response.data['success'] == true) {
         final Map<String, dynamic> apiData = response.data['schedule'] ?? {};

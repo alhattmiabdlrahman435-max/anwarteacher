@@ -29,6 +29,7 @@ class Classes extends _$Classes {
     try {
       final dio = ref.read(apiClientProvider);
       final response = await dio.get('teacher/classes');
+      if (!ref.mounted) return;
       if (response.data != null && response.data['success'] == true) {
         final List<dynamic> list = response.data['classes'];
         final Map<String, String> newMap = {};

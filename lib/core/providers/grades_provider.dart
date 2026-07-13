@@ -67,6 +67,7 @@ class GradesData extends _$GradesData {
       final dio = ref.read(apiClientProvider);
       final response = await dio.get('grades/class/$classId/subject/$subjectId');
       debugPrint('GRADES_FETCH: Response status: ${response.statusCode}, Data: ${response.data}');
+      if (!ref.mounted) return;
       if (response.data != null && response.data['success'] == true) {
         final List<dynamic> list = response.data['grades'] ?? [];
         final grades = list.map((x) => StudentSubjectGrade.fromMap(x)).toList();

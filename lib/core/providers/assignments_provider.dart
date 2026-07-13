@@ -18,6 +18,7 @@ class AssignmentsData extends _$AssignmentsData {
     try {
       final dio = ref.read(apiClientProvider);
       final response = await dio.get('assignments');
+      if (!ref.mounted) return;
       if (response.data != null && response.data['success'] == true) {
         final List<dynamic> list = response.data['assignments'] ?? [];
         state = list.map((item) {
@@ -85,7 +86,7 @@ class AssignmentsData extends _$AssignmentsData {
       });
 
       await dio.post('assignments', data: formData);
-
+      if (!ref.mounted) return;
       // Refresh local list
       await _fetch();
     } catch (e) {

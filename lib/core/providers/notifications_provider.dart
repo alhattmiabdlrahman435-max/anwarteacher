@@ -21,6 +21,7 @@ class Notifications extends _$Notifications {
     try {
       final dio = ref.read(apiClientProvider);
       final response = await dio.get('notifications');
+      if (!ref.mounted) return;
       if (response.data != null && response.data['success'] == true) {
         final List<dynamic> list = response.data['notifications'] ?? [];
         final parsedList = list.map((item) {

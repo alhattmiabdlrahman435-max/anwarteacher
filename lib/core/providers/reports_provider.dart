@@ -18,6 +18,7 @@ class Reports extends _$Reports {
     try {
       final dio = ref.read(apiClientProvider);
       final response = await dio.get('reports');
+      if (!ref.mounted) return;
       if (response.data != null && response.data['success'] == true) {
         final List<dynamic> list = response.data['reports'] ?? [];
         state = list.map((item) {
@@ -89,6 +90,7 @@ class Reports extends _$Reports {
       });
 
       final response = await dio.post('reports', data: formData);
+      if (!ref.mounted) return;
       if (response.data != null && response.data['success'] == true) {
         // Refresh reports list
         await fetch();
