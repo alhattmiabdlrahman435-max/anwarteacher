@@ -32,7 +32,7 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
 const AndroidNotificationChannel highImportanceChannel = AndroidNotificationChannel(
-  'high_importance_channel',
+  'high_importance_channel_v2',
   'High Importance Notifications',
   description: 'This channel is used for important notifications.',
   importance: Importance.max,
