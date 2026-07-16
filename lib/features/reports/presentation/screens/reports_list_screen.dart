@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import '../../../../core/widgets/app_sliver_header.dart';
 import '../../../../core/widgets/app_drawer.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/extensions/localization_extension.dart';
 import '../widgets/report_create_sheet.dart';
 
 class ReportsListScreen extends ConsumerStatefulWidget {
@@ -26,6 +28,9 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
     Future.microtask(() {
       if (mounted) {
         ref.read(reportsProvider.notifier).refresh();
@@ -78,7 +83,7 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             AppSliverHeader(
-              title: 'البلاغات',
+              title: context.loc.reports,
               automaticallyImplyLeading: true,
               trailing: CupertinoButton(
                 padding: EdgeInsets.zero,
@@ -148,10 +153,10 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
                       ),
                       padding: const EdgeInsets.all(4),
                       tabs: [
-                        _buildTab('الكل', reports.length),
-                        _buildTab('انتظار', pendingReports.length, color: Colors.orange),
-                        _buildTab('مقبول', approvedReports.length, color: Colors.green),
-                        _buildTab('مرفوض', rejectedReports.length, color: Colors.red),
+                        _buildTab(0, context.loc.all, reports.length),
+                        _buildTab(1, context.loc.pending, pendingReports.length, color: Colors.orange),
+                        _buildTab(2, context.loc.approved, approvedReports.length, color: Colors.green),
+                        _buildTab(3, context.loc.rejected, rejectedReports.length, color: Colors.red),
                       ],
                     ),
                   ),
@@ -173,20 +178,34 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
     );
   }
 
-  Widget _buildTab(String label, int count, {Color? color}) {
+  Widget _buildTab(int index, String label, int count, {Color? color}) {
+    final isSelected = _tabController.index == index;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final labelTextColor = isSelected
+        ? Colors.white
+        : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight);
+
     return Tab(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label),
+          Text(
+            label,
+            style: TextStyle(
+              color: labelTextColor,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            ),
+          ),
           if (count > 0) ...[
             const SizedBox(width: 4),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
               decoration: BoxDecoration(
-                color: color?.withValues(alpha: 0.15) ??
-                    Colors.white.withValues(alpha: 0.2),
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : (color?.withValues(alpha: 0.15) ??
+                        (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05))),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
@@ -194,7 +213,9 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
-                  color: color ?? Colors.white,
+                  color: isSelected
+                      ? Colors.white
+                      : (color ?? (isDark ? Colors.white70 : Colors.black54)),
                 ),
               ),
             ),
@@ -211,7 +232,9 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
           await ref.read(reportsProvider.notifier).fetch();
         },
         child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
           child: Container(
             height: MediaQuery.of(context).size.height - 250,
             alignment: Alignment.center,
@@ -242,7 +265,7 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'لا توجد بلاغات',
+                  context.loc.noReports,
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
@@ -252,7 +275,7 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'اضغط + لإضافة بلاغ جديد',
+                  context.loc.clickAddReport,
                   style: TextStyle(
                     fontSize: 13,
                     color: isDark ? Colors.white38 : Colors.grey[400],
@@ -270,7 +293,9 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
         await ref.read(reportsProvider.notifier).fetch();
       },
       child: ListView.builder(
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         itemCount: reportsList.length,
         itemBuilder: (context, index) {
@@ -288,25 +313,26 @@ class _ReportsListScreenState extends ConsumerState<ReportsListScreen>
         const Color(0xFFF59E0B),
         const Color(0xFFFFF8E1),
         Icons.hourglass_top_rounded,
-        'قيد الانتظار',
+        context.loc.pending,
       ),
       ReportStatus.approved => (
         const Color(0xFF10B981),
         const Color(0xFFE8F5E9),
         Icons.check_circle_rounded,
-        'مقبول',
+        context.loc.approved,
       ),
       ReportStatus.rejected => (
         const Color(0xFFEF4444),
         const Color(0xFFFFEBEE),
         Icons.cancel_rounded,
-        'مرفوض',
+        context.loc.rejected,
       ),
     };
 
     final typeColor = report.type.color;
     final typeIcon = report.type.icon;
-    final typeName = report.type.nameAr;
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final typeName = isArabic ? report.type.nameAr : report.type.nameEn;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -580,7 +606,7 @@ Uint8List? _bytesFromBase64(String? base64Str) {
 
 ImageProvider? _getImageProvider(String? photoUrl) {
   if (_isNetworkUrl(photoUrl)) {
-    return NetworkImage(photoUrl!);
+    return CachedNetworkImageProvider(photoUrl!);
   }
   if (_isBase64Image(photoUrl)) {
     final bytes = _bytesFromBase64(photoUrl);

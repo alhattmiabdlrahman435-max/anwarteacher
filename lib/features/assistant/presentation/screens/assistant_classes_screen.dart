@@ -25,7 +25,9 @@ class AssistantClassesScreen extends ConsumerWidget {
           await ref.read(assistantClassesProvider.notifier).refresh();
         },
         child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
           slivers: [
             AdaptiveSliverAppBar(
               title: context.loc.assistantClasses,

@@ -19,8 +19,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  bool notificationsEnabled = true;
-
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
@@ -117,17 +115,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       _Divider(),
                       _SettingsTile(
+                        icon: PhosphorIcons.textAa(
+                          PhosphorIconsStyle.duotone,
+                        ),
+                        title: isArabic ? 'حجم الخط' : 'Font Size',
+                        subtitle: settings.fontSize.getLabel(context),
+                        trailing: _FontSizeToggle(
+                          value: settings.fontSize,
+                          onChanged: (newSize) {
+                            ref.read(settingsProvider.notifier).setFontSize(newSize);
+                          },
+                        ),
+                      ),
+                      _Divider(),
+                      _SettingsTile(
                         icon: PhosphorIcons.bellSimple(
                           PhosphorIconsStyle.duotone,
                         ),
                         title: context.loc.notifications,
                         subtitle: context.loc.activitiesAndMessages,
                         trailing: Switch.adaptive(
-                          value: notificationsEnabled,
+                          value: settings.notificationsEnabled,
                           activeThumbColor: Colors.white,
                           activeTrackColor: AppColors.primary,
-                          onChanged: (v) =>
-                              setState(() => notificationsEnabled = v),
+                          onChanged: (v) {
+                            ref.read(settingsProvider.notifier).toggleNotifications(v);
+                          },
                         ),
                       ),
                     ],
@@ -144,7 +157,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           PhosphorIconsStyle.duotone,
                         ),
                         title: context.loc.helpCenter,
-                        onTap: () {},
+                        onTap: () {
+                          context.push('/settings/help_center');
+                        },
                       ),
                       _Divider(),
                       _SettingsTile(
@@ -508,6 +523,87 @@ class _SegmentedToggle extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _FontSizeToggle extends StatelessWidget {
+  final AppFontSize value;
+  final ValueChanged<AppFontSize> onChanged;
+
+  const _FontSizeToggle({
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.black.withValues(alpha: 0.3)
+            : const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: AppFontSize.values.map((size) {
+          final isSelected = value == size;
+          String label;
+          switch (size) {
+            case AppFontSize.small:
+              label = isArabic ? 'صغير' : 'Small';
+              break;
+            case AppFontSize.medium:
+              label = isArabic ? 'متوسط' : 'Medium';
+              break;
+            case AppFontSize.large:
+              label = isArabic ? 'كبير' : 'Large';
+              break;
+          }
+          
+          return GestureDetector(
+            onTap: () => onChanged(size),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.fastOutSlowIn,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? (isDark ? const Color(0xFF475569) : Colors.white)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: isSelected && !isDark
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 2,
+                          offset: const Offset(0, 1),
+                        ),
+                      ]
+                    : [],
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                  color: isSelected
+                      ? (isDark ? Colors.white : AppColors.primary)
+                      : (isDark ? AppColors.textSecondaryDark : Colors.grey),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

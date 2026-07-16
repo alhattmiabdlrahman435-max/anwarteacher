@@ -9,6 +9,7 @@ part 'classes_provider.g.dart';
 class Classes extends _$Classes {
   Map<String, String> _nameToIdMap = {};
   Map<String, List<String>> _classToSubjectsMap = {};
+  bool _isFetching = false;
   
   Map<String, String> get nameToIdMap => _nameToIdMap;
   Map<String, List<String>> get classToSubjectsMap => _classToSubjectsMap;
@@ -52,6 +53,8 @@ class Classes extends _$Classes {
       }
     } catch (e) {
       debugPrint('Error fetching teacher classes: $e');
+    } finally {
+      _isFetching = false;
     }
   }
   

@@ -14,7 +14,11 @@ class AssignmentsData extends _$AssignmentsData {
     return const [];
   }
 
+  bool _isFetching = false;
+
   Future<void> _fetch() async {
+    if (_isFetching) return;
+    _isFetching = true;
     try {
       final dio = ref.read(apiClientProvider);
       final response = await dio.get('assignments');
@@ -57,6 +61,8 @@ class AssignmentsData extends _$AssignmentsData {
       }
     } catch (e) {
       debugPrint('Error fetching assignments: $e');
+    } finally {
+      _isFetching = false;
     }
   }
 
@@ -78,7 +84,7 @@ class AssignmentsData extends _$AssignmentsData {
 
       final formData = FormData.fromMap({
         'class_id': int.tryParse(assignment.classId) ?? 0,
-        'subject_id': int.tryParse(assignment.subjectName) ?? 0,
+        'subject_id': int.tryParse(assignment.id) ?? 0, // Use actual ID, not subject name
         'title': assignment.title,
         'content': assignment.content,
         'due_date': '${assignment.dueDate.year}-${assignment.dueDate.month.toString().padLeft(2, '0')}-${assignment.dueDate.day.toString().padLeft(2, '0')}',
@@ -96,6 +102,9 @@ class AssignmentsData extends _$AssignmentsData {
   }
 
   Future<void> updateSubmission(String assignmentId, String studentId, SubmissionStatus newStatus, String? newNote) async {
+    // Save previous state for rollback
+    final previousState = state;
+
     // 1. Update local state immediately
     state = state.map((assignment) {
       if (assignment.id == assignmentId) {
@@ -130,6 +139,10 @@ class AssignmentsData extends _$AssignmentsData {
         ]
       });
     } catch (e) {
+      // Rollback on failure
+      if (ref.mounted) {
+        state = previousState;
+      }
       debugPrint('Error updating assignment submission: $e');
     }
   }

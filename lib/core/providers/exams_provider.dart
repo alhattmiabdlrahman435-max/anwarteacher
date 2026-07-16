@@ -13,7 +13,11 @@ class Exams extends _$Exams {
     return const [];
   }
 
+  bool _isFetching = false;
+
   Future<void> _fetch() async {
+    if (_isFetching) return;
+    _isFetching = true;
     try {
       final dio = ref.read(apiClientProvider);
       final response = await dio.get('exam-schedules');
@@ -64,6 +68,8 @@ class Exams extends _$Exams {
       }
     } catch (e) {
       debugPrint('Error fetching exam schedules: $e');
+    } finally {
+      _isFetching = false;
     }
   }
 

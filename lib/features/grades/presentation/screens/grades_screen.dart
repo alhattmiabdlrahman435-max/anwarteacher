@@ -53,7 +53,9 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
       body: RefreshIndicator(
         onRefresh: () => ref.read(gradesDataProvider.notifier).refresh(),
         child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
           slivers: [
             AppSliverHeader(
             title: context.loc.gradesRecord,

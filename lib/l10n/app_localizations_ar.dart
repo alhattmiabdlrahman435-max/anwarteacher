@@ -728,7 +728,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get absentToday => 'غائبون اليوم';
 
   @override
-  String get pending => 'غير محدد';
+  String get pending => 'قيد الانتظار';
 
   @override
   String get scanQr => 'مسح الكود (QR)';
@@ -845,4 +845,89 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get simScanBtn => 'محاكاة مسح الكود للطالب المختار';
+
+  @override
+  String get studySchedule => 'الجدول الدراسي';
+
+  @override
+  String get weeklySchedule => 'الجدول الدراسي الأسبوعي';
+
+  @override
+  String get reports => 'البلاغات';
+
+  @override
+  String get newReport => 'بلاغ جديد';
+
+  @override
+  String get approved => 'مقبول';
+
+  @override
+  String get rejected => 'مرفوض';
+
+  @override
+  String get noReports => 'لا توجد بلاغات';
+
+  @override
+  String get clickAddReport => 'اضغط + لإضافة بلاغ جديد';
+
+  @override
+  String get addReport => 'إرسال البلاغ للإدارة';
+
+  @override
+  String get reportDetails => 'تفاصيل البلاغ';
+
+  @override
+  String get reportType => 'نوع البلاغ';
+
+  @override
+  String get studentInfo => 'معلومات الطالب';
+
+  @override
+  String get classSelectHint => 'اختر الفصل الدراسي...';
+
+  @override
+  String get studentSelectHint => 'اختر الطالب...';
+
+  @override
+  String get reportDetailsLabel => 'اكتب تفاصيل البلاغ...';
+
+  @override
+  String get reportDetailsHint =>
+      'صف الموقف بالتفصيل لمساعدة الإدارة في اتخاذ القرار المناسب';
+
+  @override
+  String get attachImageLabel => 'إرفاق صورة إثبات';
+
+  @override
+  String get attachImageHint => 'اختياري — اضغط هنا لإرفاق صورة توضيحية';
+
+  @override
+  String get attachImageCamera => 'التقاط صورة';
+
+  @override
+  String get attachImageGallery => 'من المعرض';
+
+  @override
+  String get imageAttachedSuccess => 'تم إرفاق الصورة بنجاح';
+
+  @override
+  String get clickDeleteToCancel => 'اضغط على حذف لإلغاء الإرفاق';
+
+  @override
+  String get delete => 'حذف';
+
+  @override
+  String get uploadingImage => 'جارٍ رفع الصورة...';
+
+  @override
+  String get successReportSent => 'تم إرسال البلاغ بنجاح';
+
+  @override
+  String get awaitingAdminApproval => 'بانتظار مراجعة واعتماد الإدارة';
+
+  @override
+  String get errorSending => 'حدث خطأ أثناء الإرسال';
+
+  @override
+  String get errorLoadingSchedule => 'حدث خطأ أثناء تحميل الجدول';
 }

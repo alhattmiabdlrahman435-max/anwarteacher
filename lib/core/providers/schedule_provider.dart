@@ -40,7 +40,7 @@ class TeacherScheduleState extends _$TeacherScheduleState {
   }
 
   Future<void> refresh() async {
-    if (!ref.mounted) return;
+    if (!ref.mounted || state.isLoading) return;
     if (state.hasValue) {
       final result = await AsyncValue.guard(() => _loadSchedule());
       if (ref.mounted) {

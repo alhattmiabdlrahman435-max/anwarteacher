@@ -58,7 +58,7 @@ final class DailyAttendanceProvider
   }
 }
 
-String _$dailyAttendanceHash() => r'e3376f5872280e72b5324f540fb7556e0bbc7ea5';
+String _$dailyAttendanceHash() => r'b2d3fcb9b40cd847c49ec28344ab7b4b8fc835ad';
 
 final class DailyAttendanceFamily extends $Family
     with

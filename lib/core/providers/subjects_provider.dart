@@ -24,7 +24,11 @@ class Subjects extends _$Subjects {
     return const [];
   }
   
+  bool _isFetching = false;
+  
   Future<void> _fetchForClass(String classId) async {
+    if (_isFetching) return;
+    _isFetching = true;
     try {
       final dio = ref.read(apiClientProvider);
       final response = await dio.get('teacher/classes/$classId/subjects');
@@ -46,6 +50,8 @@ class Subjects extends _$Subjects {
       }
     } catch (e) {
       debugPrint('Error fetching subjects: $e');
+    } finally {
+      _isFetching = false;
     }
   }
 

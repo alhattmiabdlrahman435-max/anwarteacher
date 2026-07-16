@@ -29,6 +29,7 @@ class DailyAttendance extends _$DailyAttendance {
         'teacher/classes/$classId/students',
         queryParameters: {'date': date},
       );
+      if (!ref.mounted) return;
       if (response.data != null) {
         final List<dynamic> data = response.data;
         state = data.map((json) {
@@ -50,8 +51,12 @@ class DailyAttendance extends _$DailyAttendance {
       debugPrint('Error fetching teacher class students: $e');
     }
   }
+
   Future<void> updateStatus(String studentId, AttendanceStatus newStatus) async {
-    // 1. Update state immediately
+    // Save previous state for rollback
+    final previousState = state;
+
+    // 1. Update state immediately (optimistic)
     state = [
       for (final record in state)
         if (record.studentId == studentId)
@@ -60,7 +65,7 @@ class DailyAttendance extends _$DailyAttendance {
           record
     ];
 
-    // 2. Put attendance update to backend
+    // 2. Send to backend
     try {
       final dio = ref.read(apiClientProvider);
       final statusStr = newStatus.name; // present, absent
@@ -68,27 +73,39 @@ class DailyAttendance extends _$DailyAttendance {
         'status': statusStr,
       });
     } catch (e) {
+      // Rollback on failure
+      if (ref.mounted) {
+        state = previousState;
+      }
       debugPrint('Error updating teacher student attendance: $e');
     }
   }
 
   Future<void> markAllPresent() async {
+    // Save previous state for rollback
+    final previousState = state;
+
     // Update local state
     state = [
       for (final record in state)
         record.copyWith(status: AttendanceStatus.present)
     ];
     
-    // Send updates to backend for each student in the list
-    final dio = ref.read(apiClientProvider);
-    for (final record in state) {
-      try {
-        await dio.put('teacher/students/${record.studentId}/attendance', data: {
-          'status': 'present',
-        });
-      } catch (e) {
-        debugPrint('Error marking student ${record.studentId} present: $e');
+    // Send updates to backend in parallel instead of sequentially
+    try {
+      final dio = ref.read(apiClientProvider);
+      await Future.wait(
+        state.map((record) => dio.put(
+          'teacher/students/${record.studentId}/attendance',
+          data: {'status': 'present'},
+        )),
+      );
+    } catch (e) {
+      // Rollback on failure
+      if (ref.mounted) {
+        state = previousState;
       }
+      debugPrint('Error marking all present: $e');
     }
   }
 }

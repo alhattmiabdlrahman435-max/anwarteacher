@@ -71,8 +71,8 @@ class _AssistantAttendanceHistoryScreenState extends ConsumerState<AssistantAtte
             await ref.read(assistantAttendanceHistoryProvider.notifier).refresh();
           },
           child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
             ),
             slivers: [
               AdaptiveSliverAppBar(

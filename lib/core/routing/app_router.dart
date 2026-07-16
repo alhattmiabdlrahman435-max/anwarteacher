@@ -20,6 +20,7 @@ import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/settings/presentation/screens/contact_us_screen.dart';
 import '../../features/settings/presentation/screens/about_app_screen.dart';
 import '../../features/settings/presentation/screens/privacy_policy_screen.dart';
+import '../../features/settings/presentation/screens/help_center_screen.dart';
 
 // Assistant Screens
 import '../../features/assistant/presentation/screens/assistant_dashboard_screen.dart';
@@ -68,6 +69,21 @@ GoRouter appRouter(Ref ref) {
         return authState.role == UserRole.teacher
             ? '/dashboard'
             : '/assistant/dashboard';
+      }
+
+      // Role-based route guards
+      if (isLoggedIn) {
+        final isAssistantRoute = location.startsWith('/assistant');
+        final isCommonRoute = location.startsWith('/settings') || 
+                              location.startsWith('/profile') || 
+                              location.startsWith('/notifications');
+
+        if (authState.role == UserRole.assistant && !isAssistantRoute && !isCommonRoute) {
+          return '/assistant/dashboard';
+        }
+        if (authState.role == UserRole.teacher && isAssistantRoute) {
+          return '/dashboard';
+        }
       }
 
       return null;
@@ -133,6 +149,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/settings/privacy_policy',
         builder: (context, state) => const PrivacyPolicyScreen(),
+      ),
+      GoRoute(
+        path: '/settings/help_center',
+        builder: (context, state) => const HelpCenterScreen(),
       ),
 
       // Assistant Flow Routes

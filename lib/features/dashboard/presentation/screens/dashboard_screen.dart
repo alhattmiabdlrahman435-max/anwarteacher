@@ -1,4 +1,4 @@
-import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +11,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_drawer.dart';
 import '../../../../core/widgets/app_sliver_header.dart';
 import '../../../../core/widgets/modern_card.dart';
+import '../../../../core/widgets/user_avatar.dart';
 import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/classes_provider.dart';
@@ -93,7 +94,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               await ref.read(notificationsProvider.notifier).refresh();
             },
             child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
               slivers: [
                 AppSliverHeader(title: context.loc.home),
                 SliverPadding(
@@ -179,47 +182,23 @@ class _WelcomeHeader extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.3),
-                width: 2,
+          GestureDetector(
+            onTap: () => context.push('/profile'),
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  width: 2,
+                ),
+              ),
+              child: UserAvatar(
+                avatarUrl: authState.userAvatar,
+                fallbackName: teacherName,
+                radius: 30,
               ),
             ),
-            child: authState.userAvatar != null && authState.userAvatar!.startsWith('http')
-                ? CircleAvatar(
-                    radius: 30,
-                    backgroundImage: NetworkImage(authState.userAvatar!),
-                  )
-                : authState.userAvatar != null && (authState.userAvatar!.contains('/') || authState.userAvatar!.contains('\\') || File(authState.userAvatar!).existsSync())
-                    ? CircleAvatar(
-                        radius: 30,
-                        backgroundImage: FileImage(File(authState.userAvatar!)),
-                      )
-                : (authState.userAvatar != null && authState.userAvatar!.runes.length <= 4)
-                    ? CircleAvatar(
-                        radius: 30,
-                        backgroundColor: Colors.white.withValues(alpha: 0.2),
-                        child: Text(
-                          authState.userAvatar!,
-                          style: const TextStyle(fontSize: 26),
-                        ),
-                      )
-                    : CircleAvatar(
-                        radius: 30,
-                        backgroundColor: Colors.white.withValues(alpha: 0.2),
-                        child: Text(
-                          teacherName.isNotEmpty ? teacherName.substring(0, 1) : '?',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            fontFamily: AppTypography.fontFamily,
-                          ),
-                        ),
-                      ),
           ),
           const SizedBox(width: 16),
           Expanded(

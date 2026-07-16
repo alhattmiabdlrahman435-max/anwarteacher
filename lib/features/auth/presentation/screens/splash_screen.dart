@@ -88,10 +88,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        width: 130,
-                        height: 130,
+                        width: 120,
+                        height: 120,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
+                          color: Colors.white,
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
@@ -101,10 +102,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
                           ],
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(65),
-                          child: Image.asset(
-                            'assets/icons/app_icon.jpeg',
-                            fit: BoxFit.cover,
+                          borderRadius: BorderRadius.circular(60),
+                          child: Padding(
+                            padding: const EdgeInsets.all(14.0),
+                            child: Image.asset(
+                              'assets/icons/app_icon.jpeg',
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ),
                       ),

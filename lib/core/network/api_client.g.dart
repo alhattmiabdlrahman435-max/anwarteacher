@@ -47,4 +47,4 @@ final class ApiClientProvider extends $FunctionalProvider<Dio, Dio, Dio>
   }
 }
 
-String _$apiClientHash() => r'5b0a2b178e3f500326821f3f7e84c4d2a41347f7';
+String _$apiClientHash() => r'4530d5bd4c35968f991d067dab7857d6e5ba417e';

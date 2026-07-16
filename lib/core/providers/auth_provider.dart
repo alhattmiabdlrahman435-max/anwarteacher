@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../network/api_client.dart';
+import '../network/pusher_service.dart';
 import '../utils/constants.dart';
 
 part 'auth_provider.g.dart';
@@ -228,6 +229,21 @@ class Auth extends _$Auth {
         await dio.post('logout');
       } catch (_) {}
     }
+
+    // Clear FCM registration token on the device
+    try {
+      await FirebaseMessaging.instance.deleteToken();
+    } catch (e) {
+      debugPrint('Error deleting FCM token on logout: $e');
+    }
+    
+    // Disconnect Pusher to prevent unwanted messages and battery drain
+    try {
+      PusherService().disconnect();
+    } catch (e) {
+      debugPrint('Error disconnecting Pusher on logout: $e');
+    }
+
     await _storage.delete(key: AppConstants.tokenKey);
     await _storage.delete(key: 'isLoggedIn');
     await _storage.delete(key: 'userRole');

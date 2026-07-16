@@ -11,6 +11,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/modern_text_field.dart';
 import '../../../../core/widgets/app_notification.dart';
+import '../../../../core/extensions/localization_extension.dart';
 
 class ReportCreateSheet extends ConsumerStatefulWidget {
   final bool isDark;
@@ -97,7 +98,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'إرفاق صورة إثبات',
+                context.loc.attachImageLabel,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
@@ -129,7 +130,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
                         color: isDark ? AppColors.accent : AppColors.primary,
                       ),
                       label: Text(
-                        'التقاط صورة',
+                        context.loc.attachImageCamera,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: isDark ? Colors.white : AppColors.textPrimaryLight,
@@ -159,7 +160,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
                         color: isDark ? AppColors.accent : AppColors.primary,
                       ),
                       label: Text(
-                        'من المعرض',
+                        context.loc.attachImageGallery,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: isDark ? Colors.white : AppColors.textPrimaryLight,
@@ -226,8 +227,8 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
         AppNotification.show(
           context,
           type: AppNotificationType.success,
-          title: 'تم إرسال البلاغ بنجاح',
-          message: 'بانتظار مراجعة واعتماد الإدارة',
+          title: context.loc.successReportSent,
+          message: context.loc.awaitingAdminApproval,
         );
         widget.onSuccess();
       }
@@ -236,7 +237,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
         AppNotification.show(
           context,
           type: AppNotificationType.error,
-          title: 'حدث خطأ أثناء الإرسال',
+          title: context.loc.errorSending,
           message: e.toString(),
         );
       }
@@ -329,7 +330,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'بلاغ جديد',
+                              context.loc.newReport,
                               style: theme.textTheme.titleLarge?.copyWith(
                                 fontWeight: FontWeight.w800,
                                 fontFamily: AppTypography.fontFamily,
@@ -338,7 +339,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'إرسال بلاغ جديد لإدارة المدرسة',
+                              context.loc.localeName == 'en' ? 'Send a new report to school administration' : 'إرسال بلاغ جديد لإدارة المدرسة',
                               style: theme.textTheme.labelMedium?.copyWith(
                                 color: widget.isDark
                                     ? AppColors.textSecondaryDark
@@ -362,7 +363,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
                   const SizedBox(height: 24),
 
                   // Labeled section for Student Info
-                  _buildSectionLabel('معلومات الطالب', Icons.person_pin_rounded, widget.isDark),
+                  _buildSectionLabel(context.loc.studentInfo, Icons.person_pin_rounded, widget.isDark),
                   const SizedBox(height: 10),
                   _buildClassDropdown(classes, widget.isDark, textColor),
                   const SizedBox(height: 10),
@@ -370,25 +371,26 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
                   const SizedBox(height: 20),
 
                   // Labeled section for type selector
-                  _buildSectionLabel('نوع البلاغ', Icons.category_rounded, widget.isDark),
+                  _buildSectionLabel(context.loc.reportType, Icons.category_rounded, widget.isDark),
                   const SizedBox(height: 10),
                   _buildTypeSelector(widget.isDark),
                   const SizedBox(height: 20),
 
                   // Labeled section for details text field
-                  _buildSectionLabel('تفاصيل البلاغ', Icons.notes_rounded, widget.isDark),
+                  _buildSectionLabel(context.loc.reportDetails, Icons.notes_rounded, widget.isDark),
                   const SizedBox(height: 10),
                   _buildDetailsField(widget.isDark),
                   const SizedBox(height: 20),
 
                   // Labeled section for image attachment
-                  _buildSectionLabel('إرفاق صورة إثبات', Icons.photo_camera_rounded, widget.isDark),
+                  _buildSectionLabel(context.loc.attachImageLabel, Icons.photo_camera_rounded, widget.isDark),
                   const SizedBox(height: 10),
                   _buildImageSection(widget.isDark),
                   const SizedBox(height: 28),
 
                   // Submit Button
                   _buildSubmitButton(widget.isDark),
+                  const SizedBox(height: 16), // Padding to prevent cutoff
                 ],
               ),
             ),
@@ -430,7 +432,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
         child: DropdownButton<String>(
           isExpanded: true,
           value: (classes.contains(_selectedClass)) ? _selectedClass : null,
-          hint: Text('اختر الفصل الدراسي...', style: TextStyle(color: isDark ? Colors.white54 : AppColors.textSecondaryLight, fontFamily: AppTypography.fontFamily, fontSize: 13)),
+          hint: Text(context.loc.classSelectHint, style: TextStyle(color: isDark ? Colors.white54 : AppColors.textSecondaryLight, fontFamily: AppTypography.fontFamily, fontSize: 13)),
           icon: Icon(Icons.keyboard_arrow_down_rounded, color: widget.primaryColor, size: 20),
           dropdownColor: isDark ? AppColors.surfaceAltDark : Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -475,7 +477,7 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
         child: DropdownButton<AttendanceRecord>(
           isExpanded: true,
           value: (students.contains(_selectedStudent)) ? _selectedStudent : null,
-          hint: Text('اختر الطالب...', style: TextStyle(color: isDark ? Colors.white54 : AppColors.textSecondaryLight, fontFamily: AppTypography.fontFamily, fontSize: 13)),
+          hint: Text(context.loc.studentSelectHint, style: TextStyle(color: isDark ? Colors.white54 : AppColors.textSecondaryLight, fontFamily: AppTypography.fontFamily, fontSize: 13)),
           icon: Icon(Icons.keyboard_arrow_down_rounded, color: widget.primaryColor, size: 20),
           dropdownColor: isDark ? AppColors.surfaceAltDark : Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -511,14 +513,15 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
       physics: const NeverScrollableScrollPhysics(),
       children: ReportType.values.map((type) {
         final isSelected = _selectedType == type;
+        final isArabic = Localizations.localeOf(context).languageCode == 'ar';
         return GestureDetector(
           onTap: () => setState(() => _selectedType = type),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             decoration: BoxDecoration(
               color: isSelected
-                  ? type.color
-                  : (isDark ? AppColors.surfaceAltDark : Colors.white),
+                  ? type.color.withValues(alpha: 0.15)
+                  : (isDark ? AppColors.backgroundDark : const Color(0xFFF8FAFC)),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
@@ -526,14 +529,14 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
                     : (isDark
                         ? Colors.white.withValues(alpha: 0.08)
                         : const Color(0xFFE2E8F0)),
-                width: isSelected ? 0 : 1.5,
+                width: 1.5,
               ),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: type.color.withValues(alpha: 0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
+                        color: type.color.withValues(alpha: 0.15),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
                       ),
                     ]
                   : null,
@@ -545,17 +548,17 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
                   type.icon,
                   size: 18,
                   color: isSelected
-                      ? Colors.white
+                      ? type.color
                       : (isDark ? Colors.white60 : AppColors.textSecondaryLight),
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  type.nameAr,
+                  isArabic ? type.nameAr : type.nameEn,
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: isSelected
-                        ? Colors.white
+                        ? type.color
                         : (isDark ? Colors.white70 : AppColors.textPrimaryLight),
                     fontFamily: AppTypography.fontFamily,
                   ),
@@ -569,31 +572,22 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
   }
 
   Widget _buildDetailsField(bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.02) : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE2E8F0),
-        ),
-      ),
-      child: ModernTextField(
-        controller: _descriptionController,
-        label: 'اكتب تفاصيل البلاغ...',
-        hint: 'صف الموقف بالتفصيل لمساعدة الإدارة في اتخاذ القرار المناسب',
-        icon: Icons.edit_note_rounded,
-        maxLines: 4,
-        isDark: isDark,
-        validator: (value) {
-          if (value == null || value.trim().isEmpty) {
-            return 'يرجى كتابة تفاصيل البلاغ';
-          }
-          if (value.trim().length < 10) {
-            return 'يرجى كتابة وصف أكثر تفصيلاً';
-          }
-          return null;
-        },
-      ),
+    return ModernTextField(
+      controller: _descriptionController,
+      label: context.loc.reportDetailsLabel,
+      hint: context.loc.reportDetailsHint,
+      icon: Icons.edit_note_rounded,
+      maxLines: 4,
+      isDark: isDark,
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return context.loc.localeName == 'en' ? 'Please write report details' : 'يرجى كتابة تفاصيل البلاغ';
+        }
+        if (value.trim().length < 10) {
+          return context.loc.localeName == 'en' ? 'Please write a more detailed description' : 'يرجى كتابة وصف أكثر تفصيلاً';
+        }
+        return null;
+      },
     );
   }
 
@@ -608,19 +602,19 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
             color: AppColors.primary.withValues(alpha: 0.3),
           ),
         ),
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(
+              const SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
-              SizedBox(height: 6),
+              const SizedBox(height: 6),
               Text(
-                'جارٍ رفع الصورة...',
-                style: TextStyle(
+                context.loc.uploadingImage,
+                style: const TextStyle(
                   fontSize: 11,
                   color: Colors.grey,
                   fontFamily: AppTypography.fontFamily,
@@ -651,13 +645,13 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
               child: const Icon(Icons.check_rounded, color: Colors.green, size: 20),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'تم إرفاق الصورة بنجاح',
-                    style: TextStyle(
+                    context.loc.imageAttachedSuccess,
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.green,
                       fontSize: 13,
@@ -665,15 +659,15 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
                     ),
                   ),
                   Text(
-                    'اضغط على حذف لإلغاء الإرفاق',
-                    style: TextStyle(fontSize: 10, color: Colors.grey, fontFamily: AppTypography.fontFamily),
+                    context.loc.clickDeleteToCancel,
+                    style: const TextStyle(fontSize: 10, color: Colors.grey, fontFamily: AppTypography.fontFamily),
                   ),
                 ],
               ),
             ),
             TextButton(
               onPressed: () => setState(() => _attachedImagePath = null),
-              child: const Text('حذف', style: TextStyle(color: Colors.red, fontSize: 13, fontFamily: AppTypography.fontFamily)),
+              child: Text(context.loc.delete, style: const TextStyle(color: Colors.red, fontSize: 13, fontFamily: AppTypography.fontFamily)),
             ),
           ],
         ),
@@ -697,28 +691,28 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
+                color: widget.primaryColor.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.add_photo_alternate_outlined,
                 size: 24,
-                color: AppColors.primary,
+                color: widget.primaryColor,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'إرفاق صورة إثبات',
+            Text(
+              context.loc.attachImageLabel,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
-                color: AppColors.primary,
+                color: widget.primaryColor,
                 fontFamily: AppTypography.fontFamily,
               ),
             ),
             const SizedBox(height: 2),
             Text(
-              'اختياري — اضغط هنا لإرفاق صورة توضيحية',
+              context.loc.attachImageHint,
               style: TextStyle(
                 fontSize: 10.5,
                 color: isDark ? Colors.white38 : Colors.grey[500],
@@ -755,14 +749,14 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: const Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.send_rounded, size: 18),
-            SizedBox(width: 8),
+            const Icon(Icons.send_rounded, size: 18),
+            const SizedBox(width: 8),
             Text(
-              'إرسال البلاغ للإدارة',
-              style: TextStyle(
+              context.loc.addReport,
+              style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
                 fontFamily: AppTypography.fontFamily,

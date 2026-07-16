@@ -40,7 +40,7 @@ final class ReportsProvider extends $NotifierProvider<Reports, List<Report>> {
   }
 }
 
-String _$reportsHash() => r'f7e3d53612cf2d16eea3b5b672658c955975335e';
+String _$reportsHash() => r'85a8e8922010c186c2e5852780877bffe8d0873a';
 
 abstract class _$Reports extends $Notifier<List<Report>> {
   List<Report> build();

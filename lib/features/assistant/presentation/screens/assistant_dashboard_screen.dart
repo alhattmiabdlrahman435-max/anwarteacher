@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -68,7 +69,9 @@ class _AssistantDashboardScreenState extends ConsumerState<AssistantDashboardScr
           );
         },
         child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
           slivers: [
             AdaptiveSliverAppBar(
               title: context.loc.home,
@@ -161,43 +164,46 @@ class _WelcomeHeader extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.3),
-                width: 2,
+          GestureDetector(
+            onTap: () => context.push('/profile'),
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  width: 2,
+                ),
               ),
+              child: authState.userAvatar != null && authState.userAvatar!.startsWith('http')
+                  ? CircleAvatar(
+                      radius: 32,
+                      backgroundImage: CachedNetworkImageProvider(authState.userAvatar!),
+                    )
+                  : authState.userAvatar != null && (authState.userAvatar!.contains('/') || authState.userAvatar!.contains('\\') || File(authState.userAvatar!).existsSync())
+                      ? CircleAvatar(
+                          radius: 32,
+                          backgroundImage: FileImage(File(authState.userAvatar!)),
+                        )
+                  : (authState.userAvatar != null && authState.userAvatar!.runes.length <= 4)
+                      ? CircleAvatar(
+                          radius: 32,
+                          backgroundColor: Colors.white.withValues(alpha: 0.2),
+                          child: Text(
+                            authState.userAvatar!,
+                            style: const TextStyle(fontSize: 26),
+                          ),
+                        )
+                      : CircleAvatar(
+                          radius: 32,
+                          backgroundColor: Colors.white.withValues(alpha: 0.2),
+                          child: const Icon(
+                            Icons.verified_rounded,
+                            size: 38,
+                            color: Colors.white,
+                          ),
+                        ),
             ),
-            child: authState.userAvatar != null && authState.userAvatar!.startsWith('http')
-                ? CircleAvatar(
-                    radius: 32,
-                    backgroundImage: NetworkImage(authState.userAvatar!),
-                  )
-                : authState.userAvatar != null && (authState.userAvatar!.contains('/') || authState.userAvatar!.contains('\\') || File(authState.userAvatar!).existsSync())
-                    ? CircleAvatar(
-                        radius: 32,
-                        backgroundImage: FileImage(File(authState.userAvatar!)),
-                      )
-                : (authState.userAvatar != null && authState.userAvatar!.runes.length <= 4)
-                    ? CircleAvatar(
-                        radius: 32,
-                        backgroundColor: Colors.white.withValues(alpha: 0.2),
-                        child: Text(
-                          authState.userAvatar!,
-                          style: const TextStyle(fontSize: 26),
-                        ),
-                      )
-                    : CircleAvatar(
-                        radius: 32,
-                        backgroundColor: Colors.white.withValues(alpha: 0.2),
-                        child: const Icon(
-                          Icons.verified_rounded,
-                          size: 38,
-                          color: Colors.white,
-                        ),
-                      ),
           ),
           const SizedBox(width: 16),
           Expanded(

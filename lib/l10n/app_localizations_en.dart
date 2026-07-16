@@ -851,4 +851,91 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get simScanBtn => 'Simulate QR scan for selected student';
+
+  @override
+  String get studySchedule => 'Study Schedule';
+
+  @override
+  String get weeklySchedule => 'Weekly Schedule';
+
+  @override
+  String get reports => 'Reports';
+
+  @override
+  String get newReport => 'New Report';
+
+  @override
+  String get approved => 'Approved';
+
+  @override
+  String get rejected => 'Rejected';
+
+  @override
+  String get noReports => 'No reports found';
+
+  @override
+  String get clickAddReport => 'Click + to add a new report';
+
+  @override
+  String get addReport => 'Send Report to Admin';
+
+  @override
+  String get reportDetails => 'Report Details';
+
+  @override
+  String get reportType => 'Report Type';
+
+  @override
+  String get studentInfo => 'Student Info';
+
+  @override
+  String get classSelectHint => 'Select Class...';
+
+  @override
+  String get studentSelectHint => 'Select Student...';
+
+  @override
+  String get reportDetailsLabel => 'Write report details...';
+
+  @override
+  String get reportDetailsHint =>
+      'Describe the situation in detail to help the administration take the appropriate action';
+
+  @override
+  String get attachImageLabel => 'Attach Supporting Image';
+
+  @override
+  String get attachImageHint =>
+      'Optional — tap here to attach a supporting image';
+
+  @override
+  String get attachImageCamera => 'Take a Photo';
+
+  @override
+  String get attachImageGallery => 'From Gallery';
+
+  @override
+  String get imageAttachedSuccess => 'Image attached successfully';
+
+  @override
+  String get clickDeleteToCancel => 'Tap Delete to cancel attachment';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get uploadingImage => 'Uploading image...';
+
+  @override
+  String get successReportSent => 'Report sent successfully';
+
+  @override
+  String get awaitingAdminApproval =>
+      'Awaiting administration review and approval';
+
+  @override
+  String get errorSending => 'An error occurred while sending';
+
+  @override
+  String get errorLoadingSchedule => 'Error loading schedule';
 }

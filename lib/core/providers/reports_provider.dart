@@ -14,7 +14,11 @@ class Reports extends _$Reports {
     return const [];
   }
 
+  bool _isFetching = false;
+
   Future<void> fetch() async {
+    if (_isFetching) return;
+    _isFetching = true;
     try {
       final dio = ref.read(apiClientProvider);
       final response = await dio.get('reports');
@@ -56,6 +60,8 @@ class Reports extends _$Reports {
       }
     } catch (e) {
       debugPrint('Error fetching teacher student reports: $e');
+    } finally {
+      _isFetching = false;
     }
   }
 

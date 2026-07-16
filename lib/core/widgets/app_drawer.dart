@@ -1,4 +1,4 @@
-import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +7,7 @@ import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/notifications_provider.dart';
+import '../../../../core/widgets/user_avatar.dart';
 
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
@@ -64,49 +65,29 @@ class AppDrawer extends ConsumerWidget {
               bottom: false,
               child: Column(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isDark
-                            ? Colors.white24
-                            : primaryColor.withValues(alpha: 0.2),
-                        width: 2,
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      context.push('/profile');
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white24
+                              : primaryColor.withValues(alpha: 0.2),
+                          width: 2,
+                        ),
+                      ),
+                      child: UserAvatar(
+                        avatarUrl: authState.userAvatar,
+                        fallbackName: displayName,
+                        radius: 42,
+                        isAssistant: isAssistant,
                       ),
                     ),
-                    child: authState.userAvatar != null && authState.userAvatar!.startsWith('http')
-                        ? CircleAvatar(
-                            radius: 42,
-                            backgroundImage: NetworkImage(authState.userAvatar!),
-                          )
-                        : authState.userAvatar != null && (authState.userAvatar!.contains('/') || authState.userAvatar!.contains('\\') || File(authState.userAvatar!).existsSync())
-                            ? CircleAvatar(
-                                radius: 42,
-                                backgroundImage: FileImage(File(authState.userAvatar!)),
-                              )
-                            : (authState.userAvatar != null && authState.userAvatar!.runes.length <= 4)
-                                ? CircleAvatar(
-                                    radius: 42,
-                                    backgroundColor: isDark
-                                        ? Colors.white.withValues(alpha: 0.1)
-                                        : primaryColor.withValues(alpha: 0.2),
-                                    child: Text(
-                                      authState.userAvatar!,
-                                      style: const TextStyle(fontSize: 35),
-                                    ),
-                                  )
-                                : CircleAvatar(
-                                    radius: 42,
-                                    backgroundColor: isDark
-                                        ? Colors.white.withValues(alpha: 0.1)
-                                        : primaryColor.withValues(alpha: 0.2),
-                                    child: Icon(
-                                      isAssistant ? CupertinoIcons.checkmark_seal_fill : CupertinoIcons.person_solid,
-                                      size: 45,
-                                      color: isDark ? Colors.white : primaryColor,
-                                    ),
-                                  ),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -241,7 +222,7 @@ class AppDrawer extends ConsumerWidget {
                         onTap: () => _navigate(context, currentRoute, '/attendance'),
                       ),
                       _DrawerItem(
-                        title: context.translateMock('الجدول الدراسي'),
+                        title: context.loc.studySchedule,
                         icon: CupertinoIcons.calendar,
                         route: '/schedule',
                         currentRoute: currentRoute,
@@ -260,7 +241,7 @@ class AppDrawer extends ConsumerWidget {
                         badgeCount: unreadNotificationsCount,
                       ),
                       _DrawerItem(
-                        title: context.translateMock('البلاغات'),
+                        title: context.loc.reports,
                         icon: CupertinoIcons.doc_text_viewfinder,
                         route: '/reports',
                         currentRoute: currentRoute,

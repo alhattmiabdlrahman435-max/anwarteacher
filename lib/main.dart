@@ -310,13 +310,18 @@ class _TeacherAppState extends ConsumerState<TeacherApp> with WidgetsBindingObse
           locale: settings.locale,
           builder: (context, child) {
             final easyLoadingBuilder = EasyLoading.init();
-            return ConnectivityOverlay(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  FocusManager.instance.primaryFocus?.unfocus();
-                },
-                child: easyLoadingBuilder(context, child),
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: TextScaler.linear(settings.fontSize.scaleFactor),
+              ),
+              child: ConnectivityOverlay(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    FocusManager.instance.primaryFocus?.unfocus();
+                  },
+                  child: easyLoadingBuilder(context, child),
+                ),
               ),
             );
           },

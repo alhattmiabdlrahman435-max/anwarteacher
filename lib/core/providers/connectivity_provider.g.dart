@@ -42,7 +42,7 @@ final class ConnectivityNotifierProvider
 }
 
 String _$connectivityNotifierHash() =>
-    r'11f271bdfe03beb5ebc662bd1b6ed8b22b8c7053';
+    r'1d64db71bdb50f2ab893ccb6242abbe9ea3d3021';
 
 abstract class _$ConnectivityNotifier extends $Notifier<ConnectivityStatus> {
   ConnectivityStatus build();

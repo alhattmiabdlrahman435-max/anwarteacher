@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -24,7 +25,7 @@ Uint8List? bytesFromBase64(String? base64Str) {
 
 ImageProvider? getImageProvider(String? photoUrl) {
   if (isNetworkUrl(photoUrl)) {
-    return NetworkImage(photoUrl!);
+    return CachedNetworkImageProvider(photoUrl!);
   }
   if (isBase64Image(photoUrl)) {
     final bytes = bytesFromBase64(photoUrl);

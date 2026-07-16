@@ -1445,7 +1445,7 @@ abstract class AppLocalizations {
   /// No description provided for @pending.
   ///
   /// In ar, this message translates to:
-  /// **'غير محدد'**
+  /// **'قيد الانتظار'**
   String get pending;
 
   /// No description provided for @scanQr.
@@ -1657,6 +1657,174 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'محاكاة مسح الكود للطالب المختار'**
   String get simScanBtn;
+
+  /// No description provided for @studySchedule.
+  ///
+  /// In ar, this message translates to:
+  /// **'الجدول الدراسي'**
+  String get studySchedule;
+
+  /// No description provided for @weeklySchedule.
+  ///
+  /// In ar, this message translates to:
+  /// **'الجدول الدراسي الأسبوعي'**
+  String get weeklySchedule;
+
+  /// No description provided for @reports.
+  ///
+  /// In ar, this message translates to:
+  /// **'البلاغات'**
+  String get reports;
+
+  /// No description provided for @newReport.
+  ///
+  /// In ar, this message translates to:
+  /// **'بلاغ جديد'**
+  String get newReport;
+
+  /// No description provided for @approved.
+  ///
+  /// In ar, this message translates to:
+  /// **'مقبول'**
+  String get approved;
+
+  /// No description provided for @rejected.
+  ///
+  /// In ar, this message translates to:
+  /// **'مرفوض'**
+  String get rejected;
+
+  /// No description provided for @noReports.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا توجد بلاغات'**
+  String get noReports;
+
+  /// No description provided for @clickAddReport.
+  ///
+  /// In ar, this message translates to:
+  /// **'اضغط + لإضافة بلاغ جديد'**
+  String get clickAddReport;
+
+  /// No description provided for @addReport.
+  ///
+  /// In ar, this message translates to:
+  /// **'إرسال البلاغ للإدارة'**
+  String get addReport;
+
+  /// No description provided for @reportDetails.
+  ///
+  /// In ar, this message translates to:
+  /// **'تفاصيل البلاغ'**
+  String get reportDetails;
+
+  /// No description provided for @reportType.
+  ///
+  /// In ar, this message translates to:
+  /// **'نوع البلاغ'**
+  String get reportType;
+
+  /// No description provided for @studentInfo.
+  ///
+  /// In ar, this message translates to:
+  /// **'معلومات الطالب'**
+  String get studentInfo;
+
+  /// No description provided for @classSelectHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'اختر الفصل الدراسي...'**
+  String get classSelectHint;
+
+  /// No description provided for @studentSelectHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'اختر الطالب...'**
+  String get studentSelectHint;
+
+  /// No description provided for @reportDetailsLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'اكتب تفاصيل البلاغ...'**
+  String get reportDetailsLabel;
+
+  /// No description provided for @reportDetailsHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'صف الموقف بالتفصيل لمساعدة الإدارة في اتخاذ القرار المناسب'**
+  String get reportDetailsHint;
+
+  /// No description provided for @attachImageLabel.
+  ///
+  /// In ar, this message translates to:
+  /// **'إرفاق صورة إثبات'**
+  String get attachImageLabel;
+
+  /// No description provided for @attachImageHint.
+  ///
+  /// In ar, this message translates to:
+  /// **'اختياري — اضغط هنا لإرفاق صورة توضيحية'**
+  String get attachImageHint;
+
+  /// No description provided for @attachImageCamera.
+  ///
+  /// In ar, this message translates to:
+  /// **'التقاط صورة'**
+  String get attachImageCamera;
+
+  /// No description provided for @attachImageGallery.
+  ///
+  /// In ar, this message translates to:
+  /// **'من المعرض'**
+  String get attachImageGallery;
+
+  /// No description provided for @imageAttachedSuccess.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم إرفاق الصورة بنجاح'**
+  String get imageAttachedSuccess;
+
+  /// No description provided for @clickDeleteToCancel.
+  ///
+  /// In ar, this message translates to:
+  /// **'اضغط على حذف لإلغاء الإرفاق'**
+  String get clickDeleteToCancel;
+
+  /// No description provided for @delete.
+  ///
+  /// In ar, this message translates to:
+  /// **'حذف'**
+  String get delete;
+
+  /// No description provided for @uploadingImage.
+  ///
+  /// In ar, this message translates to:
+  /// **'جارٍ رفع الصورة...'**
+  String get uploadingImage;
+
+  /// No description provided for @successReportSent.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم إرسال البلاغ بنجاح'**
+  String get successReportSent;
+
+  /// No description provided for @awaitingAdminApproval.
+  ///
+  /// In ar, this message translates to:
+  /// **'بانتظار مراجعة واعتماد الإدارة'**
+  String get awaitingAdminApproval;
+
+  /// No description provided for @errorSending.
+  ///
+  /// In ar, this message translates to:
+  /// **'حدث خطأ أثناء الإرسال'**
+  String get errorSending;
+
+  /// No description provided for @errorLoadingSchedule.
+  ///
+  /// In ar, this message translates to:
+  /// **'حدث خطأ أثناء تحميل الجدول'**
+  String get errorLoadingSchedule;
 }
 
 class _AppLocalizationsDelegate

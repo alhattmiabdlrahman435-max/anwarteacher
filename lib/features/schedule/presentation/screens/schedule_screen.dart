@@ -140,7 +140,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
           ),
           slivers: [
             AppSliverHeader(
-              title: context.translateMock('الجدول الدراسي الأسبوعي'),
+              title: context.loc.weeklySchedule,
               trailing: CupertinoButton(
                 padding: EdgeInsets.zero,
                 onPressed: () {

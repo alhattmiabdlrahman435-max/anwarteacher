@@ -61,7 +61,11 @@ class GradesData extends _$GradesData {
     }
   }
 
+  bool _isFetching = false;
+
   Future<void> _fetch(String classId, String subjectId) async {
+    if (_isFetching) return;
+    _isFetching = true;
     try {
       debugPrint('GRADES_FETCH: Fetching grades for classId: $classId, subjectId: $subjectId');
       final dio = ref.read(apiClientProvider);
@@ -83,6 +87,8 @@ class GradesData extends _$GradesData {
       }
     } catch (e) {
       debugPrint('GRADES_FETCH: Error fetching class subject grades: $e');
+    } finally {
+      _isFetching = false;
     }
   }
 
@@ -91,6 +97,9 @@ class GradesData extends _$GradesData {
       (g) => g.studentId == studentId,
       orElse: () => newGrade,
     );
+
+    // Save previous state for rollback
+    final previousState = state;
 
     // 1. Update local state immediately for fast response
     state = state.copyWith(
@@ -111,6 +120,10 @@ class GradesData extends _$GradesData {
       await _saveTermChanges(dio, studentId, newGrade.subjectId, 2, oldGrade.secondTerm, newGrade.secondTerm);
 
     } catch (e) {
+      // Rollback on failure
+      if (ref.mounted) {
+        state = previousState;
+      }
       debugPrint('Error saving student grade to backend: $e');
     }
   }

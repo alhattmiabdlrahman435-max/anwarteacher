@@ -13,16 +13,23 @@ class AssistantClassDetails extends _$AssistantClassDetails {
     return const [];
   }
 
+  bool _isFetching = false;
+
   Future<void> _fetch(String classId) async {
+    if (_isFetching) return;
+    _isFetching = true;
     try {
       final dio = ref.read(apiClientProvider);
       final response = await dio.get('supervisor/classes/$classId/students');
+      if (!ref.mounted) return;
       if (response.data != null) {
         final List<dynamic> data = response.data;
         state = data.map((json) => StudentEntity.fromJson(json)).toList();
       }
     } catch (e) {
       debugPrint('Error fetching students: $e');
+    } finally {
+      _isFetching = false;
     }
   }
 
@@ -31,6 +38,9 @@ class AssistantClassDetails extends _$AssistantClassDetails {
   }
 
   Future<void> markAttendance(String studentId, AttendanceStatus status) async {
+    // Save previous state for rollback
+    final previousState = state;
+
     // 1. Update local state immediately for instant feedback
     state = [
       for (final student in state)
@@ -48,16 +58,44 @@ class AssistantClassDetails extends _$AssistantClassDetails {
         'status': statusStr,
       });
     } catch (e) {
+      // Rollback on failure
+      if (ref.mounted) {
+        state = previousState;
+      }
       debugPrint('Error marking attendance: $e');
     }
   }
 
   Future<bool> submitDailyReport() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    state = [
-      for (final student in state)
-        student.copyWith(isLocked: true)
-    ];
-    return true;
+    // Save previous state for rollback
+    final previousState = state;
+
+    try {
+      final dio = ref.read(apiClientProvider);
+      final response = await dio.post('supervisor/daily-report', data: {
+        'students': state.map((s) => {
+          'id': s.id,
+          'status': s.status.name,
+        }).toList(),
+      });
+
+      if (!ref.mounted) return false;
+
+      if (response.data != null && response.data['success'] == true) {
+        state = [
+          for (final student in state)
+            student.copyWith(isLocked: true)
+        ];
+        return true;
+      }
+      return false;
+    } catch (e) {
+      // Rollback on failure
+      if (ref.mounted) {
+        state = previousState;
+      }
+      debugPrint('Error submitting daily report: $e');
+      return false;
+    }
   }
 }

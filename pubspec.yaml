@@ -82,8 +82,6 @@ flutter_launcher_icons:
 
 flutter_native_splash:
   color: "#F8FAFC"
-  image: "assets/icons/app_icon.jpeg"
   color_dark: "#0F172A"
-  image_dark: "assets/icons/app_icon.jpeg"
   android: true
   ios: true

@@ -16,16 +16,23 @@ class AssistantClasses extends _$AssistantClasses {
     return const [];
   }
 
+  bool _isFetching = false;
+
   Future<void> _fetch() async {
+    if (_isFetching) return;
+    _isFetching = true;
     try {
       final dio = ref.read(apiClientProvider);
       final response = await dio.get('supervisor/classes');
+      if (!ref.mounted) return;
       if (response.data != null && response.data['success'] == true) {
         final List<dynamic> data = response.data['classes'];
         state = data.map((json) => ClassroomEntity.fromJson(json)).toList();
       }
     } catch (e) {
       debugPrint('Error fetching classes: $e');
+    } finally {
+      _isFetching = false;
     }
   }
 

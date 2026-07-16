@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -270,6 +271,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final cardColor = isDark ? AppColors.surfaceAltDark : Colors.white;
     final textColor = isDark ? Colors.white : AppColors.textPrimaryLight;
     final subTextColor = isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
+    final authState = ref.watch(authProvider);
     
     final teacherClasses = ref.watch(classesProvider);
 
@@ -362,8 +364,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                               radius: 54,
                                               backgroundColor: Colors.grey[200],
                                               backgroundImage: (ref.watch(authProvider).userAvatar != null && ref.watch(authProvider).userAvatar!.startsWith('http'))
-                                                  ? NetworkImage(ref.watch(authProvider).userAvatar!) as ImageProvider
-                                                  : const NetworkImage('https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=200') as ImageProvider,
+                                                  ? CachedNetworkImageProvider(ref.watch(authProvider).userAvatar!) as ImageProvider
+                                                  : const CachedNetworkImageProvider('https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=200') as ImageProvider,
                                             ),
                                 ),
                                 Positioned(
@@ -397,7 +399,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'معلم',
+                            authState.role == UserRole.assistant
+                                ? context.loc.prepAssistant
+                                : 'معلم',
                             style: TextStyle(
                               fontSize: 13,
                               color: subTextColor,
@@ -569,108 +573,110 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     const SizedBox(height: 32),
 
-                    // Classes Section
-                    _buildSectionLabel('الصفوف والشعب المسندة', isDark),
-                    const SizedBox(height: 12),
-                    teacherClasses.isEmpty
-                        ? Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: cardColor,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: isDark ? Colors.white10 : AppColors.border,
-                              ),
-                            ),
-                            child: const Center(
-                              child: Text(
-                                'لا توجد صفوف مسندة حالياً',
-                                style: TextStyle(fontFamily: 'GoogleSans'),
-                              ),
-                            ),
-                          )
-                        : Column(
-                            children: teacherClasses.map((className) {
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: cardColor,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: isDark ? Colors.white10 : AppColors.border,
-                                  ),
-                                  boxShadow: isDark
-                                      ? []
-                                      : [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.01),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
+                    if (authState.role != UserRole.assistant) ...[
+                      // Classes Section
+                      _buildSectionLabel('الصفوف والشعب المسندة', isDark),
+                      const SizedBox(height: 12),
+                      teacherClasses.isEmpty
+                          ? Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: cardColor,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isDark ? Colors.white10 : AppColors.border,
                                 ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: isDark ? Colors.white10 : AppColors.primary.withValues(alpha: 0.06),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        PhosphorIcons.chalkboard(PhosphorIconsStyle.duotone),
-                                        color: isDark ? AppColors.accent : AppColors.primary,
-                                        size: 22,
-                                      ),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  'لا توجد صفوف مسندة حالياً',
+                                  style: TextStyle(fontFamily: 'GoogleSans'),
+                                ),
+                              ),
+                            )
+                          : Column(
+                              children: teacherClasses.map((className) {
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: cardColor,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: isDark ? Colors.white10 : AppColors.border,
                                     ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            className,
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                              color: textColor,
-                                              fontFamily: 'GoogleSans',
+                                    boxShadow: isDark
+                                        ? []
+                                        : [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(alpha: 0.01),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
                                             ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            'الصف الدراسي المسند للمعلم',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: subTextColor,
-                                              fontFamily: 'GoogleSans',
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.success.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: const Text(
-                                        'نشط',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.success,
-                                          fontFamily: 'GoogleSans',
+                                          ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: isDark ? Colors.white10 : AppColors.primary.withValues(alpha: 0.06),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          PhosphorIcons.chalkboard(PhosphorIconsStyle.duotone),
+                                          color: isDark ? AppColors.accent : AppColors.primary,
+                                          size: 22,
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              className,
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                                color: textColor,
+                                                fontFamily: 'GoogleSans',
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              'الصف الدراسي المسند للمعلم',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: subTextColor,
+                                                fontFamily: 'GoogleSans',
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.success.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        child: const Text(
+                                          'نشط',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.success,
+                                            fontFamily: 'GoogleSans',
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                    ],
                   ],
                 ),
               ),
