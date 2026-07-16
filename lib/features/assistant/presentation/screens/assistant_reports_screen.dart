@@ -10,6 +10,8 @@ import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/widgets/student_avatar.dart';
 import '../../models/assistant_models.dart';
 import '../../providers/assistant_reports_provider.dart';
+import '../../../../core/providers/attendance_provider.dart' as core_prov;
+import '../../../../core/models/attendance.dart' as core_model;
 
 /// Returns true only if [url] is a real network URL (starts with http/https).
 class AssistantReportsScreen extends ConsumerStatefulWidget {
@@ -432,7 +434,7 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-class _StudentAttendanceModal extends StatefulWidget {
+class _StudentAttendanceModal extends ConsumerStatefulWidget {
   final StudentReportEntity student;
 
   const _StudentAttendanceModal({required this.student});
@@ -447,30 +449,18 @@ class _StudentAttendanceModal extends StatefulWidget {
   }
 
   @override
-  State<_StudentAttendanceModal> createState() => _StudentAttendanceModalState();
+  ConsumerState<_StudentAttendanceModal> createState() => _StudentAttendanceModalState();
 }
 
-class _StudentAttendanceModalState extends State<_StudentAttendanceModal> {
+class _StudentAttendanceModalState extends ConsumerState<_StudentAttendanceModal> {
   DateTime _focusedDay = DateTime.now();
-  
-  bool _isPresent(DateTime day) {
-    if (day.isAfter(DateTime.now())) return false;
-    if (day.weekday == DateTime.thursday || day.weekday == DateTime.friday) return false;
-    
-    final hash = (day.day * 31 + day.month * 7 + widget.student.name.hashCode) % 10;
-    return hash > 2; // ~70% attendance
-  }
-
-  bool _isAbsent(DateTime day) {
-    if (day.isAfter(DateTime.now())) return false;
-    if (day.weekday == DateTime.thursday || day.weekday == DateTime.friday) return false;
-    return !_isPresent(day);
-  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+
+    final historyAsync = ref.watch(core_prov.studentAttendanceHistoryProvider(widget.student.id));
 
     return Container(
       decoration: BoxDecoration(
@@ -527,57 +517,127 @@ class _StudentAttendanceModalState extends State<_StudentAttendanceModal> {
           ),
           
           const SizedBox(height: 20),
-          
-          // Summary Rows
-          Row(
-            children: [
-              Expanded(
-                child: _ModalSummaryBox(
-                  label: context.loc.attendanceDaysLabel,
-                  value: '${widget.student.presentCount}',
-                  color: const Color(0xFF10B981),
-                  icon: PhosphorIconsFill.checkCircle,
+
+          historyAsync.when(
+            loading: () => _buildContent(
+              context: context,
+              isDark: isDark,
+              theme: theme,
+              presentCount: 0,
+              absentCount: 0,
+              calendarChild: const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(40.0),
+                  child: CircularProgressIndicator(),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _ModalSummaryBox(
-                  label: context.loc.absenceDaysLabel,
-                  value: '${widget.student.absentCount}',
-                  color: const Color(0xFFEF4444),
-                  icon: PhosphorIconsFill.xCircle,
+            ),
+            error: (err, stack) => _buildContent(
+              context: context,
+              isDark: isDark,
+              theme: theme,
+              presentCount: 0,
+              absentCount: 0,
+              calendarChild: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Text(
+                    'خطأ في تحميل البيانات: $err',
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 ),
               ),
-            ],
-          ),
-          
-          const SizedBox(height: 24),
-          
-          // Calendar
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF334155).withValues(alpha: 0.5) : Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: isDark ? [] : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+            ),
+            data: (history) {
+              final yearMonthPrefix = intl.DateFormat('yyyy-MM').format(_focusedDay);
+              
+              int presentCount = 0;
+              int absentCount = 0;
+              
+              history.forEach((dateStr, status) {
+                if (dateStr.startsWith(yearMonthPrefix)) {
+                  if (status == core_model.AttendanceStatus.present) {
+                    presentCount++;
+                  } else if (status == core_model.AttendanceStatus.absent) {
+                    absentCount++;
+                  }
+                }
+              });
+
+              return _buildContent(
+                context: context,
+                isDark: isDark,
+                theme: theme,
+                presentCount: presentCount,
+                absentCount: absentCount,
+                calendarChild: Column(
+                  children: [
+                    _buildCalendarHeader(),
+                    const SizedBox(height: 16),
+                    _buildCustomCalendar(history),
+                  ],
                 ),
-              ],
-              border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
-            ),
-            child: Column(
-              children: [
-                _buildCalendarHeader(),
-                const SizedBox(height: 16),
-                _buildCustomCalendar(),
-              ],
-            ),
+              );
+            },
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildContent({
+    required BuildContext context,
+    required bool isDark,
+    required ThemeData theme,
+    required int presentCount,
+    required int absentCount,
+    required Widget calendarChild,
+  }) {
+    return Column(
+      children: [
+        // Summary Rows
+        Row(
+          children: [
+            Expanded(
+              child: _ModalSummaryBox(
+                label: context.loc.attendanceDaysLabel,
+                value: '$presentCount',
+                color: const Color(0xFF10B981),
+                icon: PhosphorIconsFill.checkCircle,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _ModalSummaryBox(
+                label: context.loc.absenceDaysLabel,
+                value: '$absentCount',
+                color: const Color(0xFFEF4444),
+                icon: PhosphorIconsFill.xCircle,
+              ),
+            ),
+          ],
+        ),
+        
+        const SizedBox(height: 24),
+        
+        // Calendar
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF334155).withValues(alpha: 0.5) : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: isDark ? [] : [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+          ),
+          child: calendarChild,
+        ),
+      ],
     );
   }
 
@@ -629,7 +689,7 @@ class _StudentAttendanceModalState extends State<_StudentAttendanceModal> {
     );
   }
 
-  Widget _buildCustomCalendar() {
+  Widget _buildCustomCalendar(Map<String, core_model.AttendanceStatus> history) {
     final daysInMonth = DateTime(_focusedDay.year, _focusedDay.month + 1, 0).day;
     
     int getColumnIndex(int weekday) {
@@ -692,9 +752,12 @@ class _StudentAttendanceModalState extends State<_StudentAttendanceModal> {
             final day = gridDays[index];
             if (day == null) return const SizedBox();
             
-            if (_isPresent(day)) {
+            final dateStr = intl.DateFormat('yyyy-MM-dd').format(day);
+            final status = history[dateStr];
+            
+            if (status == core_model.AttendanceStatus.present) {
               return _buildCalendarDay(day, const Color(0xFF10B981));
-            } else if (_isAbsent(day)) {
+            } else if (status == core_model.AttendanceStatus.absent) {
               return _buildCalendarDay(day, const Color(0xFFEF4444));
             }
             

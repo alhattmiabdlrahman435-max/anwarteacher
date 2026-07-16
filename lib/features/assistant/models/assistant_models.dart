@@ -158,6 +158,7 @@ class ReportEntity {
 }
 
 class StudentReportEntity {
+  final String id;
   final String name;
   final String? nameEn;
   final String? civilId;
@@ -166,6 +167,7 @@ class StudentReportEntity {
   final String? photoUrl;
 
   const StudentReportEntity({
+    required this.id,
     required this.name,
     this.nameEn,
     this.civilId,
@@ -176,6 +178,7 @@ class StudentReportEntity {
 
   factory StudentReportEntity.fromJson(Map<String, dynamic> json) {
     return StudentReportEntity(
+      id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
       nameEn: json['nameEn'],
       civilId: json['civilId']?.toString(),
