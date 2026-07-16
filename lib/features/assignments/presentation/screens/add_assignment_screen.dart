@@ -97,7 +97,15 @@ class _AddAssignmentScreenState extends ConsumerState<AddAssignmentScreen> {
                           label: context.loc.classLabel,
                           value: _selectedClass,
                           items: classes,
-                          onChanged: (val) => setState(() => _selectedClass = val),
+                          onChanged: (val) {
+                            setState(() {
+                              _selectedClass = val;
+                              _selectedSubject = null;
+                            });
+                            if (val != null) {
+                              ref.read(selectedClassProvider.notifier).setClass(val);
+                            }
+                          },
                           icon: Icons.school_rounded,
                           isDark: isDark,
                           itemLabelBuilder: (item) => context.translateMock(item),
