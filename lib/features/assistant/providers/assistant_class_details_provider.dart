@@ -38,10 +38,7 @@ class AssistantClassDetails extends _$AssistantClassDetails {
   }
 
   Future<void> markAttendance(String studentId, AttendanceStatus status) async {
-    // Save previous state for rollback
-    final previousState = state;
-
-    // 1. Update local state immediately for instant feedback
+    // Update local state immediately for instant feedback (no API request here!)
     state = [
       for (final student in state)
         if (student.id == studentId)
@@ -49,21 +46,6 @@ class AssistantClassDetails extends _$AssistantClassDetails {
         else
           student
     ];
-
-    // 2. Send request to backend
-    try {
-      final dio = ref.read(apiClientProvider);
-      final statusStr = status.name; // present, absent, late, excused
-      await dio.put('supervisor/students/$studentId/attendance', data: {
-        'status': statusStr,
-      });
-    } catch (e) {
-      // Rollback on failure
-      if (ref.mounted) {
-        state = previousState;
-      }
-      debugPrint('Error marking attendance: $e');
-    }
   }
 
   Future<bool> submitDailyReport() async {
@@ -71,17 +53,23 @@ class AssistantClassDetails extends _$AssistantClassDetails {
     final previousState = state;
 
     try {
+      final attendancePayload = state.map((s) => {
+        'student_id': int.tryParse(s.id) ?? 0,
+        'status': s.status == AttendanceStatus.present ? 'present' : 'absent',
+      }).toList();
+
       final dio = ref.read(apiClientProvider);
-      final response = await dio.post('supervisor/daily-report', data: {
-        'students': state.map((s) => {
-          'id': s.id,
-          'status': s.status.name,
-        }).toList(),
-      });
+      final response = await dio.post(
+        'supervisor/classes/$classId/submit-attendance',
+        data: {
+          'attendance': attendancePayload,
+        },
+      );
 
       if (!ref.mounted) return false;
 
       if (response.data != null && response.data['success'] == true) {
+        // Lock the state locally
         state = [
           for (final student in state)
             student.copyWith(isLocked: true)
