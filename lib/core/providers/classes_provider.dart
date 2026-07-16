@@ -27,6 +27,8 @@ class Classes extends _$Classes {
   }
   
   Future<void> _fetch() async {
+    if (_isFetching) return;
+    _isFetching = true;
     try {
       final dio = ref.read(apiClientProvider);
       final response = await dio.get('teacher/classes');

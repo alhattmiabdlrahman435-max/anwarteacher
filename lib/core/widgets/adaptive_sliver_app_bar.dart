@@ -68,7 +68,7 @@ class AdaptiveSliverAppBar extends StatelessWidget {
                         child: Icon(
                           CupertinoIcons.bars,
                           color: textColor,
-                          size: 28,
+                          size: 34,
                         ),
                         onPressed: () => scaffold.openDrawer(),
                       );

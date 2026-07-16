@@ -141,7 +141,7 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
             height: 54,
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceAltDark : AppColors.surfaceLight,
+              color: isDark ? Colors.black26 : AppColors.surfaceLight,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -186,10 +186,10 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
               ? (isDark ? AppColors.surfaceAltDark : Colors.white) 
               : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: isSelected && !isDark
+          boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   )
@@ -212,6 +212,7 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
 
   Widget _buildFilterChip(int value, String label, bool isDark, Color primaryColor) {
     final isSelected = _selectedView == value;
+    final activeColor = isDark ? AppColors.uiPalettePrimary : primaryColor;
     
     return GestureDetector(
       onTap: () => setState(() => _selectedView = value),
@@ -220,13 +221,13 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected 
-              ? primaryColor 
-              : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
+              ? activeColor 
+              : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isSelected 
-                ? primaryColor 
-                : (isDark ? Colors.white12 : AppColors.border),
+                ? activeColor 
+                : (isDark ? Colors.white24 : AppColors.border),
           ),
           boxShadow: !isSelected && !isDark
               ? [
@@ -236,10 +237,10 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
                     offset: const Offset(0, 2),
                   )
                 ]
-              : (isSelected && !isDark
+              : (isSelected
                   ? [
                       BoxShadow(
-                        color: primaryColor.withValues(alpha: 0.3),
+                        color: activeColor.withValues(alpha: isDark ? 0.4 : 0.3),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       )
@@ -248,11 +249,12 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
         ),
         child: Text(
           label,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          style: TextStyle(
             color: isSelected 
-                ? (isDark ? AppColors.surfaceDark : Colors.white) 
-                : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
-            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                ? Colors.white 
+                : (isDark ? Colors.white70 : AppColors.textSecondaryLight),
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+            fontSize: 14,
           ),
         ),
       ),
