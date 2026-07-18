@@ -6,6 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import '../network/api_client.dart';
 import '../network/pusher_service.dart';
 import '../utils/constants.dart';
+import '../services/badge_service.dart';
 
 part 'auth_provider.g.dart';
 
@@ -62,8 +63,26 @@ class Auth extends _$Auth {
 
   @override
   AuthState build() {
+    FirebaseMessaging.instance.onTokenRefresh.listen((fcmToken) {
+      _syncToken(fcmToken);
+    });
     _loadSession();
     return const AuthState();
+  }
+
+  Future<void> _syncToken(String fcmToken) async {
+    try {
+      final isLoggedIn = state.isLoggedIn;
+      if (!isLoggedIn) return;
+
+      final dio = ref.read(apiClientProvider);
+      await dio.post('user/fcm-token', data: {
+        'fcm_token': fcmToken,
+      });
+      debugPrint('Teacher/Supervisor FCM Token synced to backend successfully via refresh: $fcmToken');
+    } catch (e) {
+      debugPrint('Error syncing Teacher/Supervisor FCM Token to backend on refresh: $e');
+    }
   }
 
   Future<void> _loadSession() async {
@@ -226,7 +245,12 @@ class Auth extends _$Auth {
     if (token != null) {
       try {
         final dio = ref.read(apiClientProvider);
-        await dio.post('logout');
+        final fcmToken = await FirebaseMessaging.instance.getToken();
+        final Map<String, dynamic> logoutData = {};
+        if (fcmToken != null) {
+          logoutData['fcm_token'] = fcmToken;
+        }
+        await dio.post('logout', data: logoutData);
       } catch (_) {}
     }
 
@@ -235,6 +259,13 @@ class Auth extends _$Auth {
       await FirebaseMessaging.instance.deleteToken();
     } catch (e) {
       debugPrint('Error deleting FCM token on logout: $e');
+    }
+
+    // Clear cached badge count
+    try {
+      await BadgeService.clearBadge();
+    } catch (e) {
+      debugPrint('Error clearing badge: $e');
     }
     
     // Disconnect Pusher to prevent unwanted messages and battery drain
