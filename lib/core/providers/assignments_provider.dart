@@ -84,7 +84,7 @@ class AssignmentsData extends _$AssignmentsData {
 
       final formData = FormData.fromMap({
         'class_id': int.tryParse(assignment.classId) ?? 0,
-        'subject_id': int.tryParse(assignment.id) ?? 0, // Use actual ID, not subject name
+        'subject_id': int.tryParse(assignment.subjectName) ?? int.tryParse(assignment.id) ?? 0,
         'title': assignment.title,
         'content': assignment.content,
         'due_date': '${assignment.dueDate.year}-${assignment.dueDate.month.toString().padLeft(2, '0')}-${assignment.dueDate.day.toString().padLeft(2, '0')}',

@@ -53,7 +53,12 @@ Dio apiClient(Ref ref) {
         ref.read(serverErrorProvider.notifier).setHasError(false);
       }
 
+      final hasAuthHeader = e.requestOptions.headers.containsKey('Authorization') &&
+          e.requestOptions.headers['Authorization'] != null &&
+          (e.requestOptions.headers['Authorization'] as String).isNotEmpty;
+
       if (e.response?.statusCode == 401 &&
+          hasAuthHeader &&
           !e.requestOptions.path.contains('login') &&
           !e.requestOptions.path.contains('logout')) {
         ref.read(authProvider.notifier).logout();

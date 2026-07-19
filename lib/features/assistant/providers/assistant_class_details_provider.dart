@@ -48,6 +48,16 @@ class AssistantClassDetails extends _$AssistantClassDetails {
     ];
   }
 
+  void markAll(AttendanceStatus status) {
+    state = [
+      for (final student in state)
+        if (!student.isLocked)
+          student.copyWith(status: status)
+        else
+          student
+    ];
+  }
+
   Future<bool> submitDailyReport() async {
     // Save previous state for rollback
     final previousState = state;
