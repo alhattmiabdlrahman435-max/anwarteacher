@@ -11,6 +11,7 @@ part 'attendance_provider.g.dart';
 class DailyAttendance extends _$DailyAttendance {
   String? _loadedClassId;
   String? _loadedDate;
+  List<AttendanceRecord> _cache = const [];
 
   @override
   List<AttendanceRecord> build(String date) {
@@ -18,6 +19,7 @@ class DailyAttendance extends _$DailyAttendance {
     if (selectedClass.isEmpty) {
       _loadedClassId = null;
       _loadedDate = null;
+      _cache = const [];
       return const [];
     }
     
@@ -26,17 +28,18 @@ class DailyAttendance extends _$DailyAttendance {
     if (classId == null) {
       _loadedClassId = null;
       _loadedDate = null;
+      _cache = const [];
       return const [];
     }
     
-    if (_loadedClassId == classId && _loadedDate == date) {
-      return state;
+    if (_loadedClassId != classId || _loadedDate != date) {
+      _loadedClassId = classId;
+      _loadedDate = date;
+      _cache = const [];
+      Future.microtask(() => _fetch(classId, date));
     }
-    _loadedClassId = classId;
-    _loadedDate = date;
     
-    Future.microtask(() => _fetch(classId, date));
-    return state;
+    return _cache;
   }
 
   Future<void> _fetch(String classId, String date) async {
@@ -63,6 +66,7 @@ class DailyAttendance extends _$DailyAttendance {
             studentPhotoUrl: AppConstants.normalizeUrl(json['photoUrl'] ?? json['photo_url']),
           );
         }).toList();
+        _cache = state;
       }
     } catch (e) {
       debugPrint('Error fetching teacher class students: $e');
@@ -81,6 +85,7 @@ class DailyAttendance extends _$DailyAttendance {
         else
           record
     ];
+    _cache = state;
 
     // 2. Send to backend
     try {
@@ -93,6 +98,7 @@ class DailyAttendance extends _$DailyAttendance {
       // Rollback on failure
       if (ref.mounted) {
         state = previousState;
+        _cache = state;
       }
       debugPrint('Error updating teacher student attendance: $e');
     }
@@ -107,6 +113,7 @@ class DailyAttendance extends _$DailyAttendance {
       for (final record in state)
         record.copyWith(status: AttendanceStatus.present)
     ];
+    _cache = state;
     
     // Send updates to backend in parallel instead of sequentially
     try {
@@ -121,6 +128,7 @@ class DailyAttendance extends _$DailyAttendance {
       // Rollback on failure
       if (ref.mounted) {
         state = previousState;
+        _cache = state;
       }
       debugPrint('Error marking all present: $e');
     }

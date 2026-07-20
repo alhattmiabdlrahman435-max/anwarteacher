@@ -10,6 +10,7 @@ class Classes extends _$Classes {
   Map<String, String> _nameToIdMap = {};
   Map<String, List<String>> _classToSubjectsMap = {};
   bool _isFetching = false;
+  List<String> _cache = const [];
   
   Map<String, String> get nameToIdMap => _nameToIdMap;
   Map<String, List<String>> get classToSubjectsMap => _classToSubjectsMap;
@@ -23,14 +24,15 @@ class Classes extends _$Classes {
       _loadedUserId = null;
       _nameToIdMap = {};
       _classToSubjectsMap = {};
+      _cache = const [];
       return const [];
     }
-    if (_loadedUserId == authState.userId) {
-      return state;
+    if (_loadedUserId != authState.userId) {
+      _loadedUserId = authState.userId;
+      _cache = const [];
+      Future.microtask(() => _fetch());
     }
-    _loadedUserId = authState.userId;
-    Future.microtask(() => _fetch());
-    return state;
+    return _cache;
   }
   
   Future<void> _fetch() async {
@@ -59,6 +61,7 @@ class Classes extends _$Classes {
         _nameToIdMap = newMap;
         _classToSubjectsMap = newSubjectsMap;
         state = names;
+        _cache = names;
       }
     } catch (e) {
       debugPrint('Error fetching teacher classes: $e');

@@ -12,6 +12,11 @@ part 'grades_provider.g.dart';
 class GradesData extends _$GradesData {
   String? _loadedClassId;
   String? _loadedSubjectId;
+  ClassSubjectGrades _cache = const ClassSubjectGrades(
+    classId: '',
+    subjectName: '',
+    grades: [],
+  );
 
   @override
   ClassSubjectGrades build() {
@@ -21,11 +26,12 @@ class GradesData extends _$GradesData {
     if (selectedClass.isEmpty || selectedSubject.isEmpty) {
       _loadedClassId = null;
       _loadedSubjectId = null;
-      return const ClassSubjectGrades(
+      _cache = const ClassSubjectGrades(
         classId: '',
         subjectName: '',
         grades: [],
       );
+      return _cache;
     }
 
     final classesNotifier = ref.read(classesProvider.notifier);
@@ -37,22 +43,26 @@ class GradesData extends _$GradesData {
     if (classId.isEmpty || subjectId.isEmpty) {
       _loadedClassId = null;
       _loadedSubjectId = null;
-      return ClassSubjectGrades(
+      _cache = ClassSubjectGrades(
         classId: classId,
         subjectName: selectedSubject,
         grades: const [],
       );
+      return _cache;
     }
 
-    if (_loadedClassId == classId && _loadedSubjectId == subjectId) {
-      return state;
+    if (_loadedClassId != classId || _loadedSubjectId != subjectId) {
+      _loadedClassId = classId;
+      _loadedSubjectId = subjectId;
+      _cache = ClassSubjectGrades(
+        classId: classId,
+        subjectName: selectedSubject,
+        grades: const [],
+      );
+      Future.microtask(() => _fetch(classId, subjectId));
     }
 
-    _loadedClassId = classId;
-    _loadedSubjectId = subjectId;
-    Future.microtask(() => _fetch(classId, subjectId));
-
-    return state;
+    return _cache;
   }
 
   Future<void> refresh() async {
@@ -96,6 +106,7 @@ class GradesData extends _$GradesData {
           subjectName: ref.read(selectedSubjectProvider),
           grades: grades,
         );
+        _cache = state;
       } else {
         if (kDebugMode) {
           debugPrint('GRADES_FETCH: API returned success: false or null data');
@@ -126,6 +137,7 @@ class GradesData extends _$GradesData {
           if (g.studentId == studentId) newGrade else g
       ],
     );
+    _cache = state;
 
     // 2. Detect changes and call POST grades/detailed
     try {
@@ -141,6 +153,7 @@ class GradesData extends _$GradesData {
       // Rollback on failure
       if (ref.mounted) {
         state = previousState;
+        _cache = state;
       }
       debugPrint('Error saving student grade to backend: $e');
     }

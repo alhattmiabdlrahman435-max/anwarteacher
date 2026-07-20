@@ -12,6 +12,7 @@ class Subjects extends _$Subjects {
   Map<String, String> get nameToIdMap => _nameToIdMap;
   
   String? _loadedClassId;
+  List<String> _cache = const [];
 
   @override
   List<String> build() {
@@ -19,6 +20,7 @@ class Subjects extends _$Subjects {
     if (selectedClass.isEmpty) {
       _loadedClassId = null;
       _nameToIdMap = {};
+      _cache = const [];
       return const [];
     }
     final classesNotifier = ref.read(classesProvider.notifier);
@@ -26,14 +28,15 @@ class Subjects extends _$Subjects {
     if (classId == null) {
       _loadedClassId = null;
       _nameToIdMap = {};
+      _cache = const [];
       return const [];
     }
-    if (_loadedClassId == classId) {
-      return state;
+    if (_loadedClassId != classId) {
+      _loadedClassId = classId;
+      _cache = const [];
+      Future.microtask(() => _fetchForClass(classId));
     }
-    _loadedClassId = classId;
-    Future.microtask(() => _fetchForClass(classId));
-    return state;
+    return _cache;
   }
   
   bool _isFetching = false;
@@ -59,6 +62,7 @@ class Subjects extends _$Subjects {
         }
         _nameToIdMap = newMap;
         state = names;
+        _cache = names;
       }
     } catch (e) {
       debugPrint('Error fetching subjects: $e');

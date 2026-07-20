@@ -9,6 +9,7 @@ part 'reports_provider.g.dart';
 
 @riverpod
 class Reports extends _$Reports {
+  List<Report> _cache = const [];
   String? _loadedUserId;
 
   @override
@@ -16,14 +17,15 @@ class Reports extends _$Reports {
     final authState = ref.watch(authProvider);
     if (!authState.isLoggedIn) {
       _loadedUserId = null;
+      _cache = const [];
       return const [];
     }
-    if (_loadedUserId == authState.userId) {
-      return state;
+    if (_loadedUserId != authState.userId) {
+      _loadedUserId = authState.userId;
+      _cache = const [];
+      Future.microtask(() => fetch());
     }
-    _loadedUserId = authState.userId;
-    Future.microtask(() => fetch());
-    return state;
+    return _cache;
   }
 
   bool _isFetching = false;
@@ -69,6 +71,7 @@ class Reports extends _$Reports {
             createdAt: DateTime.tryParse(item['createdAt']?.toString() ?? '') ?? DateTime.now(),
           );
         }).toList();
+        _cache = state;
       }
     } catch (e) {
       debugPrint('Error fetching teacher student reports: $e');

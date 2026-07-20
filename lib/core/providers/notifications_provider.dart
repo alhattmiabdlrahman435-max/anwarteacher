@@ -10,6 +10,7 @@ part 'notifications_provider.g.dart';
 
 @riverpod
 class Notifications extends _$Notifications {
+  List<AppNotificationModel> _cache = const [];
   String? _loadedUserId;
 
   @override
@@ -17,14 +18,15 @@ class Notifications extends _$Notifications {
     final authState = ref.watch(authProvider);
     if (!authState.isLoggedIn) {
       _loadedUserId = null;
+      _cache = const [];
       return const [];
     }
-    if (_loadedUserId == authState.userId) {
-      return state;
+    if (_loadedUserId != authState.userId) {
+      _loadedUserId = authState.userId;
+      _cache = const [];
+      Future.microtask(() => _fetch());
     }
-    _loadedUserId = authState.userId;
-    Future.microtask(() => _fetch());
-    return state;
+    return _cache;
   }
 
   bool _isFetching = false;
@@ -66,6 +68,7 @@ class Notifications extends _$Notifications {
         // Only keep notifications created within the last 7 days
         final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
         state = parsedList.where((n) => n.date.isAfter(sevenDaysAgo)).toList();
+        _cache = state;
 
         final unreadCount = state.where((n) => !n.isRead).length;
         BadgeService.setBadge(unreadCount);
@@ -96,6 +99,7 @@ class Notifications extends _$Notifications {
       iconColor: iconColor,
     );
     state = [newNotification, ...state];
+    _cache = state;
     final unreadCount = state.where((n) => !n.isRead).length;
     BadgeService.setBadge(unreadCount);
   }
@@ -108,6 +112,7 @@ class Notifications extends _$Notifications {
       for (final n in state)
         if (n.id == id) n.copyWith(isRead: true) else n
     ];
+    _cache = state;
 
     final unreadCount = state.where((n) => !n.isRead).length;
     BadgeService.setBadge(unreadCount);
@@ -119,6 +124,7 @@ class Notifications extends _$Notifications {
       // Rollback on failure
       if (ref.mounted) {
         state = previousState;
+        _cache = state;
         final rollbackUnread = previousState.where((n) => !n.isRead).length;
         BadgeService.setBadge(rollbackUnread);
       }
@@ -134,6 +140,7 @@ class Notifications extends _$Notifications {
       for (final n in state)
         n.copyWith(isRead: true)
     ];
+    _cache = state;
 
     BadgeService.clearBadge();
 
@@ -144,6 +151,7 @@ class Notifications extends _$Notifications {
       // Rollback on failure
       if (ref.mounted) {
         state = previousState;
+        _cache = state;
         final rollbackUnread = previousState.where((n) => !n.isRead).length;
         BadgeService.setBadge(rollbackUnread);
       }

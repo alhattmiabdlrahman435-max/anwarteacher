@@ -9,6 +9,7 @@ part 'assignments_provider.g.dart';
 
 @riverpod
 class AssignmentsData extends _$AssignmentsData {
+  List<Assignment> _cache = const [];
   String? _loadedUserId;
 
   @override
@@ -16,14 +17,15 @@ class AssignmentsData extends _$AssignmentsData {
     final authState = ref.watch(authProvider);
     if (!authState.isLoggedIn) {
       _loadedUserId = null;
+      _cache = const [];
       return const [];
     }
-    if (_loadedUserId == authState.userId) {
-      return state;
+    if (_loadedUserId != authState.userId) {
+      _loadedUserId = authState.userId;
+      _cache = const [];
+      Future.microtask(() => _fetch());
     }
-    _loadedUserId = authState.userId;
-    Future.microtask(() => _fetch());
-    return state;
+    return _cache;
   }
 
   bool _isFetching = false;
@@ -70,6 +72,7 @@ class AssignmentsData extends _$AssignmentsData {
             submissions: submissions,
           );
         }).toList();
+        _cache = state;
       }
     } catch (e) {
       debugPrint('Error fetching assignments: $e');
@@ -130,6 +133,7 @@ class AssignmentsData extends _$AssignmentsData {
       }
       return assignment;
     }).toList();
+    _cache = state;
 
     // 2. Put submission changes to backend
     try {
@@ -154,6 +158,7 @@ class AssignmentsData extends _$AssignmentsData {
       // Rollback on failure
       if (ref.mounted) {
         state = previousState;
+        _cache = state;
       }
       debugPrint('Error updating assignment submission: $e');
     }

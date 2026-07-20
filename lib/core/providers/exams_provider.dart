@@ -8,6 +8,7 @@ part 'exams_provider.g.dart';
 
 @riverpod
 class Exams extends _$Exams {
+  List<ExamSchedule> _cache = const [];
   String? _loadedUserId;
 
   @override
@@ -15,14 +16,15 @@ class Exams extends _$Exams {
     final authState = ref.watch(authProvider);
     if (!authState.isLoggedIn) {
       _loadedUserId = null;
+      _cache = const [];
       return const [];
     }
-    if (_loadedUserId == authState.userId) {
-      return state;
+    if (_loadedUserId != authState.userId) {
+      _loadedUserId = authState.userId;
+      _cache = const [];
+      Future.microtask(() => _fetch());
     }
-    _loadedUserId = authState.userId;
-    Future.microtask(() => _fetch());
-    return state;
+    return _cache;
   }
 
   bool _isFetching = false;
@@ -77,6 +79,7 @@ class Exams extends _$Exams {
             subjects: subjects,
           );
         }).toList();
+        _cache = state;
       }
     } catch (e) {
       debugPrint('Error fetching exam schedules: $e');
@@ -87,7 +90,7 @@ class Exams extends _$Exams {
 
   List<ExamSchedule> getExamsForStudent(String studentId) {
     // Return all schedules to be flexible and avoid empty screens
-    return state;
+    return _cache;
   }
 
   Future<void> refresh() async {
