@@ -2,15 +2,27 @@ import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/exam_schedule.dart';
 import '../network/api_client.dart';
+import 'auth_provider.dart';
 
 part 'exams_provider.g.dart';
 
 @riverpod
 class Exams extends _$Exams {
+  String? _loadedUserId;
+
   @override
   List<ExamSchedule> build() {
-    _fetch();
-    return const [];
+    final authState = ref.watch(authProvider);
+    if (!authState.isLoggedIn) {
+      _loadedUserId = null;
+      return const [];
+    }
+    if (_loadedUserId == authState.userId) {
+      return state;
+    }
+    _loadedUserId = authState.userId;
+    Future.microtask(() => _fetch());
+    return state;
   }
 
   bool _isFetching = false;

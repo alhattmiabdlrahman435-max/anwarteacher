@@ -3,15 +3,27 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:dio/dio.dart';
 import '../models/report.dart';
 import '../network/api_client.dart';
+import 'auth_provider.dart';
 
 part 'reports_provider.g.dart';
 
 @riverpod
 class Reports extends _$Reports {
+  String? _loadedUserId;
+
   @override
   List<Report> build() {
-    fetch();
-    return const [];
+    final authState = ref.watch(authProvider);
+    if (!authState.isLoggedIn) {
+      _loadedUserId = null;
+      return const [];
+    }
+    if (_loadedUserId == authState.userId) {
+      return state;
+    }
+    _loadedUserId = authState.userId;
+    Future.microtask(() => fetch());
+    return state;
   }
 
   bool _isFetching = false;
@@ -92,7 +104,7 @@ class Reports extends _$Reports {
         'student_id': int.tryParse(studentId) ?? 0,
         'type': type.name,
         'description': description,
-        'image': ?file,
+        'image': file,
       });
 
       final response = await dio.post('reports', data: formData);

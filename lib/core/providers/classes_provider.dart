@@ -14,16 +14,23 @@ class Classes extends _$Classes {
   Map<String, String> get nameToIdMap => _nameToIdMap;
   Map<String, List<String>> get classToSubjectsMap => _classToSubjectsMap;
   
+  String? _loadedUserId;
+
   @override
   List<String> build() {
     final authState = ref.watch(authProvider);
     if (!authState.isLoggedIn) {
+      _loadedUserId = null;
       _nameToIdMap = {};
       _classToSubjectsMap = {};
       return const [];
     }
-    _fetch();
-    return const [];
+    if (_loadedUserId == authState.userId) {
+      return state;
+    }
+    _loadedUserId = authState.userId;
+    Future.microtask(() => _fetch());
+    return state;
   }
   
   Future<void> _fetch() async {

@@ -8,10 +8,19 @@ part 'schedule_provider.g.dart';
 
 @Riverpod(keepAlive: true)
 class TeacherScheduleState extends _$TeacherScheduleState {
+  String? _loadedUserId;
+
   @override
   FutureOr<Map<String, List<TeacherPeriod>>> build() async {
     final authState = ref.watch(authProvider);
-    if (!authState.isLoggedIn) return const {};
+    if (!authState.isLoggedIn) {
+      _loadedUserId = null;
+      return const {};
+    }
+    if (_loadedUserId == authState.userId && state.hasValue) {
+      return state.requireValue;
+    }
+    _loadedUserId = authState.userId;
     return _loadSchedule();
   }
 

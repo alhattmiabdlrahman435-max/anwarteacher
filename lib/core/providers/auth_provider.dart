@@ -79,9 +79,14 @@ class Auth extends _$Auth {
       await dio.post('user/fcm-token', data: {
         'fcm_token': fcmToken,
       });
-      debugPrint('Teacher/Supervisor FCM Token synced to backend successfully via refresh: $fcmToken');
+      if (kDebugMode) {
+        final maskedToken = fcmToken.length > 10 ? '${fcmToken.substring(0, 10)}...' : '***';
+        debugPrint('Teacher/Supervisor FCM Token synced to backend successfully via refresh: $maskedToken');
+      }
     } catch (e) {
-      debugPrint('Error syncing Teacher/Supervisor FCM Token to backend on refresh: $e');
+      if (kDebugMode) {
+        debugPrint('Error syncing Teacher/Supervisor FCM Token to backend on refresh: $e');
+      }
     }
   }
 
@@ -155,10 +160,15 @@ class Auth extends _$Auth {
         await dio.post('user/fcm-token', data: {
           'fcm_token': fcmToken,
         });
-        debugPrint('Teacher/Supervisor FCM Token synced to backend successfully: $fcmToken');
+        if (kDebugMode) {
+          final maskedToken = fcmToken.length > 10 ? '${fcmToken.substring(0, 10)}...' : '***';
+          debugPrint('Teacher/Supervisor FCM Token synced to backend successfully: $maskedToken');
+        }
       }
     } catch (e) {
-      debugPrint('Error syncing Teacher/Supervisor FCM Token to backend: $e');
+      if (kDebugMode) {
+        debugPrint('Error syncing Teacher/Supervisor FCM Token to backend: $e');
+      }
     }
   }
 
@@ -334,13 +344,33 @@ class Auth extends _$Auth {
   }
 
   Future<void> updatePassword(String currentPassword, String newPassword) async {
-    final dio = ref.read(apiClientProvider);
-    final response = await dio.post('user/update-password', data: {
-      'current_password': currentPassword,
-      'new_password': newPassword,
-    });
-    if (response.data == null || response.data['success'] != true) {
-      throw Exception(response.data?['message'] ?? 'فشل تغيير كلمة المرور');
+    try {
+      final dio = ref.read(apiClientProvider);
+      final response = await dio.post('user/update-password', data: {
+        'current_password': currentPassword,
+        'new_password': newPassword,
+      });
+      if (response.data == null || response.data['success'] != true) {
+        throw Exception(response.data?['message'] ?? 'فشل تغيير كلمة المرور');
+      }
+    } catch (e) {
+      String errorMessage = 'كلمة المرور الحالية غير صحيحة';
+      if (e is DioException) {
+        final data = e.response?.data;
+        if (data != null && data is Map) {
+          if (data['errors'] != null && data['errors'] is Map) {
+            final errors = data['errors'] as Map;
+            errorMessage = errors.values.map((v) => v is List ? v.join(', ') : v.toString()).join('\n');
+          } else {
+            errorMessage = data['message'] ?? errorMessage;
+          }
+        } else {
+          errorMessage = e.message ?? errorMessage;
+        }
+      } else if (e is Exception) {
+        errorMessage = e.toString().replaceAll('Exception: ', '');
+      }
+      throw Exception(errorMessage);
     }
   }
 }

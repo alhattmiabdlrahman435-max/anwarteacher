@@ -11,17 +11,29 @@ class Subjects extends _$Subjects {
   
   Map<String, String> get nameToIdMap => _nameToIdMap;
   
+  String? _loadedClassId;
+
   @override
   List<String> build() {
     final selectedClass = ref.watch(selectedClassProvider);
-    if (selectedClass.isNotEmpty) {
-      final classesNotifier = ref.read(classesProvider.notifier);
-      final classId = classesNotifier.nameToIdMap[selectedClass];
-      if (classId != null) {
-        _fetchForClass(classId);
-      }
+    if (selectedClass.isEmpty) {
+      _loadedClassId = null;
+      _nameToIdMap = {};
+      return const [];
     }
-    return const [];
+    final classesNotifier = ref.read(classesProvider.notifier);
+    final classId = classesNotifier.nameToIdMap[selectedClass];
+    if (classId == null) {
+      _loadedClassId = null;
+      _nameToIdMap = {};
+      return const [];
+    }
+    if (_loadedClassId == classId) {
+      return state;
+    }
+    _loadedClassId = classId;
+    Future.microtask(() => _fetchForClass(classId));
+    return state;
   }
   
   bool _isFetching = false;

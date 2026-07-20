@@ -3,15 +3,27 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:dio/dio.dart';
 import '../models/assignment.dart';
 import '../network/api_client.dart';
+import 'auth_provider.dart';
 
 part 'assignments_provider.g.dart';
 
 @riverpod
 class AssignmentsData extends _$AssignmentsData {
+  String? _loadedUserId;
+
   @override
   List<Assignment> build() {
-    _fetch();
-    return const [];
+    final authState = ref.watch(authProvider);
+    if (!authState.isLoggedIn) {
+      _loadedUserId = null;
+      return const [];
+    }
+    if (_loadedUserId == authState.userId) {
+      return state;
+    }
+    _loadedUserId = authState.userId;
+    Future.microtask(() => _fetch());
+    return state;
   }
 
   bool _isFetching = false;

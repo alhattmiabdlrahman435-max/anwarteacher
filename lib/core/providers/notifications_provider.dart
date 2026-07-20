@@ -10,12 +10,21 @@ part 'notifications_provider.g.dart';
 
 @riverpod
 class Notifications extends _$Notifications {
+  String? _loadedUserId;
+
   @override
   List<AppNotificationModel> build() {
     final authState = ref.watch(authProvider);
-    if (!authState.isLoggedIn) return const [];
-    _fetch();
-    return const [];
+    if (!authState.isLoggedIn) {
+      _loadedUserId = null;
+      return const [];
+    }
+    if (_loadedUserId == authState.userId) {
+      return state;
+    }
+    _loadedUserId = authState.userId;
+    Future.microtask(() => _fetch());
+    return state;
   }
 
   bool _isFetching = false;

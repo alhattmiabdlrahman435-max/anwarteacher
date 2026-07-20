@@ -44,7 +44,7 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Graphify
-graphify-out/
-.graphifyignore
+# Android build artifacts
+/android/build/
+
 

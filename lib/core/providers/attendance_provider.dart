@@ -9,17 +9,34 @@ part 'attendance_provider.g.dart';
 
 @riverpod
 class DailyAttendance extends _$DailyAttendance {
+  String? _loadedClassId;
+  String? _loadedDate;
+
   @override
   List<AttendanceRecord> build(String date) {
     final selectedClass = ref.watch(selectedClassProvider);
-    if (selectedClass.isEmpty) return const [];
+    if (selectedClass.isEmpty) {
+      _loadedClassId = null;
+      _loadedDate = null;
+      return const [];
+    }
     
     final classesNotifier = ref.read(classesProvider.notifier);
     final classId = classesNotifier.nameToIdMap[selectedClass];
-    if (classId == null) return const [];
+    if (classId == null) {
+      _loadedClassId = null;
+      _loadedDate = null;
+      return const [];
+    }
     
-    _fetch(classId, date);
-    return const [];
+    if (_loadedClassId == classId && _loadedDate == date) {
+      return state;
+    }
+    _loadedClassId = classId;
+    _loadedDate = date;
+    
+    Future.microtask(() => _fetch(classId, date));
+    return state;
   }
 
   Future<void> _fetch(String classId, String date) async {
