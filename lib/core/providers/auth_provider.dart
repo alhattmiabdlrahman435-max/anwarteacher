@@ -127,6 +127,7 @@ class Auth extends _$Auth {
   }
 
   Future<void> syncFcmToken() async {
+    if (!state.isLoggedIn) return;
     try {
       final dio = ref.read(apiClientProvider);
       

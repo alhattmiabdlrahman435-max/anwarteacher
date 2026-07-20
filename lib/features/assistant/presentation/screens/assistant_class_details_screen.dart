@@ -59,7 +59,16 @@ class AssistantClassDetailsScreen extends ConsumerWidget {
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
-                        final student = students[index];
+                        if (index == 0) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                            child: _SelectAllCard(
+                              classId: classId,
+                              students: students,
+                            ),
+                          );
+                        }
+                        final student = students[index - 1];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: AppSpacing.md),
                           child: _StudentCard(
@@ -69,7 +78,7 @@ class AssistantClassDetailsScreen extends ConsumerWidget {
                           ),
                         );
                       },
-                      childCount: students.length,
+                      childCount: students.length + 1,
                     ),
                   ),
                 ),
@@ -710,6 +719,160 @@ class _ConfirmationDialog extends StatelessWidget {
               color: isDark ? Colors.white60 : AppColors.textSecondary,
               fontWeight: FontWeight.w600,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SelectAllCard extends ConsumerWidget {
+  final String classId;
+  final List<StudentEntity> students;
+
+  const _SelectAllCard({
+    required this.classId,
+    required this.students,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final allPresent = students.isNotEmpty && students.every((s) => s.status == AttendanceStatus.present);
+    final allAbsent = students.isNotEmpty && students.every((s) => s.status == AttendanceStatus.absent);
+    final isAnyLocked = students.any((s) => s.isLocked);
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF1E293B).withValues(alpha: 0.7)
+            : Colors.white.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.grey.withValues(alpha: 0.2),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                PhosphorIconsRegular.checks,
+                size: 20,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'تحديد الكل (التحضير السريع)',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: isAnyLocked
+                      ? null
+                      : () {
+                          ref.read(assistantClassDetailsProvider(classId).notifier).markAll(AttendanceStatus.present);
+                        },
+                  borderRadius: BorderRadius.circular(14),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: allPresent
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFF10B981).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          PhosphorIconsBold.checkCircle,
+                          size: 18,
+                          color: allPresent ? Colors.white : const Color(0xFF10B981),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'حضور الكل',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: allPresent ? Colors.white : const Color(0xFF10B981),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: InkWell(
+                  onTap: isAnyLocked
+                      ? null
+                      : () {
+                          ref.read(assistantClassDetailsProvider(classId).notifier).markAll(AttendanceStatus.absent);
+                        },
+                  borderRadius: BorderRadius.circular(14),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: allAbsent
+                          ? const Color(0xFFEF4444)
+                          : const Color(0xFFEF4444).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: const Color(0xFFEF4444).withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          PhosphorIconsBold.xCircle,
+                          size: 18,
+                          color: allAbsent ? Colors.white : const Color(0xFFEF4444),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'غياب الكل',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: allAbsent ? Colors.white : const Color(0xFFEF4444),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
