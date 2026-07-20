@@ -1,4 +1,4 @@
-package com.example.anwarteacher
+package com.alhattami.anwarteacher
 
 import io.flutter.embedding.android.FlutterActivity
 

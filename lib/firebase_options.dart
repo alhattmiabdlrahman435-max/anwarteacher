@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCwpV4ucnGxCurng58lGeC7jzbU5gf8c-0',
-    appId: '1:462180354655:android:865518c0e1dd82d0a1e9ea',
+    appId: '1:462180354655:android:8845a7c5ac471220a1e9ea',
     messagingSenderId: '462180354655',
     projectId: 'anwaralola',
     storageBucket: 'anwaralola.firebasestorage.app',
@@ -59,10 +59,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyBf5RRhnAnGKPVBph_BI__KbmE_CWMsnS0',
-    appId: '1:462180354655:ios:ff4bbdab3a1f582ea1e9ea',
+    appId: '1:462180354655:ios:611dae991795577ba1e9ea',
     messagingSenderId: '462180354655',
     projectId: 'anwaralola',
     storageBucket: 'anwaralola.firebasestorage.app',
-    iosBundleId: 'com.example.anwarteacher',
+    iosBundleId: 'com.alhattami.anwarteacher',
   );
 }
