@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:dio/dio.dart';
 import '../models/report.dart';
 import '../network/api_client.dart';
+import '../services/image_compress_service.dart';
 import 'auth_provider.dart';
 
 part 'reports_provider.g.dart';
@@ -94,12 +96,18 @@ class Reports extends _$Reports {
   }) async {
     try {
       final dio = ref.read(apiClientProvider);
-      
+
       MultipartFile? file;
       if (imageUrl != null && imageUrl.isNotEmpty) {
+        // Compress before upload
+        final result = await ImageCompressService.compress(
+          File(imageUrl),
+          maxWidth:  1920,
+          maxHeight: 1920,
+        );
         file = await MultipartFile.fromFile(
-          imageUrl,
-          filename: imageUrl.split('/').last,
+          result.file.path,
+          filename: 'report_image.jpg',
         );
       }
 
@@ -116,6 +124,9 @@ class Reports extends _$Reports {
         // Refresh reports list
         await fetch();
       }
+    } on ImageValidationException catch (e) {
+      debugPrint('[addReport] Image validation: ${e.message}');
+      rethrow;
     } catch (e) {
       debugPrint('Error submitting report to backend: $e');
       rethrow;

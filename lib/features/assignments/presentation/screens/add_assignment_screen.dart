@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +16,7 @@ import '../../../../core/widgets/modern_dropdown.dart';
 import '../../../../core/widgets/school_date_picker.dart';
 import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/widgets/app_notification.dart';
+import '../../../../core/services/image_compress_service.dart';
 
 class AddAssignmentScreen extends ConsumerStatefulWidget {
   const AddAssignmentScreen({super.key});
@@ -429,16 +431,37 @@ class _AddAssignmentScreenState extends ConsumerState<AddAssignmentScreen> {
 
   Future<void> _pickFromSource(ImageSource source) async {
     try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
+      final result = await ImageCompressService.pickAndCompress(
         source: source,
-        imageQuality: 80,
+        maxWidth: 1920,
+        maxHeight: 1920,
       );
-      if (image != null) {
-        setState(() => _pickedImagePath = image.path);
+      if (result != null) {
+        setState(() => _pickedImagePath = result.file.path);
+      }
+    } on ImageValidationException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('فشل في اختيار الصورة: $e'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
     }
   }
 
@@ -449,10 +472,40 @@ class _AddAssignmentScreenState extends ConsumerState<AddAssignmentScreen> {
         allowMultiple: false,
       );
       if (result != null && result.files.single.path != null) {
-        setState(() => _pickedImagePath = result.files.single.path);
+        final path = result.files.single.path!;
+        final file = File(path);
+        
+        // Enforce 10 MB limit for non-image attachments
+        final size = await file.length();
+        if (size > 10 * 1024 * 1024) {
+          final mb = (size / 1_048_576).toStringAsFixed(1);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('حجم الملف ($mb MB) يتجاوز الحد المسموح (10 MB).'),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            );
+          }
+          return;
+        }
+
+        setState(() => _pickedImagePath = path);
       }
     } catch (e) {
       debugPrint('Error picking file: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('فشل في اختيار الملف: $e'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
     }
   }
 

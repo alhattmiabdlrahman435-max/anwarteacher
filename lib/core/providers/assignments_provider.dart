@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:dio/dio.dart';
 import '../models/assignment.dart';
 import '../network/api_client.dart';
+import '../services/image_compress_service.dart';
 import 'auth_provider.dart';
 
 part 'assignments_provider.g.dart';
@@ -88,13 +90,30 @@ class AssignmentsData extends _$AssignmentsData {
   Future<void> addAssignment(Assignment assignment, String? attachmentPath) async {
     try {
       final dio = ref.read(apiClientProvider);
-      
+
       MultipartFile? file;
       if (attachmentPath != null && attachmentPath.isNotEmpty) {
-        file = await MultipartFile.fromFile(
-          attachmentPath,
-          filename: attachmentPath.split('/').last,
-        );
+        final ext = attachmentPath.split('.').last.toLowerCase();
+        const imageExts = {'jpg', 'jpeg', 'png', 'webp'};
+
+        if (imageExts.contains(ext)) {
+          // Image attachment → compress before upload
+          final result = await ImageCompressService.compress(
+            File(attachmentPath),
+            maxWidth:  1920,
+            maxHeight: 1920,
+          );
+          file = await MultipartFile.fromFile(
+            result.file.path,
+            filename: 'attachment.jpg',
+          );
+        } else {
+          // Non-image (PDF, DOC, etc.) → upload as-is
+          file = await MultipartFile.fromFile(
+            attachmentPath,
+            filename: attachmentPath.split('/').last,
+          );
+        }
       }
 
       final formData = FormData.fromMap({

@@ -12,6 +12,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/modern_text_field.dart';
 import '../../../../core/widgets/app_notification.dart';
 import '../../../../core/extensions/localization_extension.dart';
+import '../../../../core/services/image_compress_service.dart';
 
 class ReportCreateSheet extends ConsumerStatefulWidget {
   final bool isDark;
@@ -62,21 +63,40 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
   Future<void> _pickImage(ImageSource source) async {
     setState(() => _isUploadingImage = true);
     try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
+      final result = await ImageCompressService.pickAndCompress(
         source: source,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 85,
+        maxWidth: 1920,
+        maxHeight: 1920,
       );
       
-      if (image != null) {
+      if (result != null) {
         setState(() {
-          _attachedImagePath = image.path;
+          _attachedImagePath = result.file.path;
         });
+      }
+    } on ImageValidationException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('فشل في اختيار الصورة: $e'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
     } finally {
       setState(() => _isUploadingImage = false);
     }

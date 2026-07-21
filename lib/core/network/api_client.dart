@@ -15,12 +15,25 @@ Dio apiClient(Ref ref) {
       baseUrl: AppConstants.baseUrl,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 15),
+      sendTimeout: const Duration(seconds: 15),
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
     ),
   );
+
+  // Upload timeout interceptor: extend timeouts for multipart (file upload) requests.
+  dio.interceptors.add(InterceptorsWrapper(
+    onRequest: (options, handler) {
+      final isMultipart = options.data is FormData;
+      if (isMultipart) {
+        options.receiveTimeout = const Duration(seconds: 120);
+        options.sendTimeout    = const Duration(seconds: 120);
+      }
+      handler.next(options);
+    },
+  ));
 
   // Auth token interceptor: attaches Bearer token, handles connectivity/server error states, and session expiry.
   dio.interceptors.add(InterceptorsWrapper(

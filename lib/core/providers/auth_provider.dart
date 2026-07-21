@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -7,6 +8,7 @@ import '../network/api_client.dart';
 import '../network/pusher_service.dart';
 import '../utils/constants.dart';
 import '../services/badge_service.dart';
+import '../services/image_compress_service.dart';
 
 part 'auth_provider.g.dart';
 
@@ -316,31 +318,55 @@ class Auth extends _$Auth {
     );
   }
 
-  Future<void> updateAvatar(String newAvatarPath) async {
-    // Save locally first for instant UI response
+  bool _isUploadingAvatar = false; // debounce guard
+
+  /// [onProgress] is called with values 0.0 → 1.0 during upload.
+  Future<void> updateAvatar(
+    String newAvatarPath, {
+    void Function(double progress)? onProgress,
+  }) async {
+    if (_isUploadingAvatar) return;
+    _isUploadingAvatar = true;
+
+    // Optimistic local update for instant UI response
     await _storage.write(key: 'userAvatar', value: newAvatarPath);
     state = state.copyWith(userAvatar: newAvatarPath);
 
     try {
+      // ── 1. Compress & validate ────────────────────────────────────────────
+      final result = await ImageCompressService.compress(File(newAvatarPath));
+
+      // ── 2. Upload ─────────────────────────────────────────────────────────
       final dio = ref.read(apiClientProvider);
-      
+
       final file = await MultipartFile.fromFile(
-        newAvatarPath,
-        filename: newAvatarPath.split('/').last,
+        result.file.path,
+        filename: '${state.userId ?? 'user'}_avatar.jpg',
       );
-      
-      final formData = FormData.fromMap({
-        'photo': file,
-      });
-      
-      final response = await dio.post('user/update-photo', data: formData);
+
+      final formData = FormData.fromMap({'photo': file});
+
+      final response = await dio.post(
+        'user/update-photo',
+        data: formData,
+        onSendProgress: (sent, total) {
+          if (total > 0) onProgress?.call(sent / total);
+        },
+      );
+
       if (response.data != null && response.data['success'] == true) {
-        final serverUrl = response.data['photo_url'];
+        final serverUrl = response.data['photo_url'] as String;
         await _storage.write(key: 'userAvatar', value: serverUrl);
         state = state.copyWith(userAvatar: serverUrl);
       }
+    } on ImageValidationException catch (e) {
+      debugPrint('[updateAvatar] Validation error: ${e.message}');
+      rethrow;
     } catch (e) {
-      debugPrint('Error uploading profile photo to backend: $e');
+      debugPrint('[updateAvatar] Upload error: $e');
+      rethrow;
+    } finally {
+      _isUploadingAvatar = false;
     }
   }
 

@@ -11,6 +11,7 @@ import '../../../../core/widgets/app_sliver_header.dart';
 import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/services/image_compress_service.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -28,6 +29,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   
   // Real picked image path
   String? _pickedImagePath;
+  
+  // Upload progress and retry states
+  double? _uploadProgress;
   
   bool _isEditing = false;
   final _formKey = GlobalKey<FormState>();
@@ -164,45 +168,86 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
+  Future<void> _uploadAvatar(File imageFile) async {
+    setState(() {
+      _uploadProgress = 0.0;
+    });
+
+    try {
+      await ref.read(authProvider.notifier).updateAvatar(
+        imageFile.path,
+        onProgress: (p) {
+          if (mounted) setState(() => _uploadProgress = p);
+        },
+      );
+
+      if (!mounted) return;
+      setState(() => _uploadProgress = null);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('تم تحديث صورة الملف الشخصي بنجاح'),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _uploadProgress = null);
+
+      final errorStr = e.toString().replaceAll('Exception: ', '');
+      final isRetryable = errorStr.contains('الاتصال') || errorStr.contains('غير متوقع');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorStr),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          action: isRetryable
+              ? SnackBarAction(
+                  label: 'إعادة المحاولة',
+                  textColor: Colors.white,
+                  onPressed: () => _uploadAvatar(imageFile),
+                )
+              : null,
+        ),
+      );
+    }
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: source,
-        maxWidth: 500,
-        maxHeight: 500,
-        imageQuality: 85,
+      final result = await ImageCompressService.pickAndCompress(source: source);
+      if (result == null) return; // user cancelled
+
+      if (!mounted) return;
+      setState(() {
+        _pickedImagePath = result.file.path;
+      });
+
+      await _uploadAvatar(result.file);
+    } on ImageValidationException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
       );
-      
-      if (image != null) {
-        setState(() {
-          _pickedImagePath = image.path;
-        });
-        
-        await ref.read(authProvider.notifier).updateAvatar(image.path);
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('تم تحديث صورة الملف الشخصي بنجاح'),
-              backgroundColor: AppColors.success,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          );
-        }
-      }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('فشل في الحصول على الصورة: $e'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تعذّر فتح الصورة: $e'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
     }
   }
 
@@ -326,7 +371,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       child: Column(
                         children: [
                           GestureDetector(
-                            onTap: _showAvatarPicker,
+                            onTap: _uploadProgress != null ? null : _showAvatarPicker,
                             child: Stack(
                               children: [
                                 Container(
@@ -346,44 +391,49 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                       ),
                                     ],
                                   ),
-                                  child: _pickedImagePath != null
-                                      ? CircleAvatar(
-                                          radius: 54,
-                                          backgroundImage: FileImage(File(_pickedImagePath!)),
-                                        )
-                                      : (ref.watch(authProvider).userAvatar != null && ref.watch(authProvider).userAvatar!.runes.length <= 4)
-                                          ? CircleAvatar(
-                                              radius: 54,
-                                              backgroundColor: Colors.grey[200],
-                                              child: Text(
-                                                ref.watch(authProvider).userAvatar!,
-                                                style: const TextStyle(fontSize: 45),
-                                              ),
-                                            )
-                                          : CircleAvatar(
-                                              radius: 54,
-                                              backgroundColor: Colors.grey[200],
-                                              backgroundImage: (ref.watch(authProvider).userAvatar != null && ref.watch(authProvider).userAvatar!.startsWith('http'))
-                                                  ? CachedNetworkImageProvider(ref.watch(authProvider).userAvatar!) as ImageProvider
-                                                  : const CachedNetworkImageProvider('https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=200') as ImageProvider,
+                                  child: CircleAvatar(
+                                    radius: 54,
+                                    backgroundColor: Colors.grey[200],
+                                    backgroundImage: _pickedImagePath != null
+                                        ? FileImage(File(_pickedImagePath!)) as ImageProvider
+                                        : (ref.watch(authProvider).userAvatar != null && ref.watch(authProvider).userAvatar!.startsWith('http'))
+                                            ? CachedNetworkImageProvider(ref.watch(authProvider).userAvatar!) as ImageProvider
+                                            : const CachedNetworkImageProvider('https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=200') as ImageProvider,
+                                    child: _uploadProgress != null
+                                        ? Container(
+                                            decoration: const BoxDecoration(
+                                              color: Colors.black54,
+                                              shape: BoxShape.circle,
                                             ),
-                                ),
-                                Positioned(
-                                  bottom: 0,
-                                  right: 0,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: const BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: AppColors.primary,
-                                    ),
-                                    child: const Icon(
-                                      Icons.camera_alt_rounded,
-                                      color: Colors.white,
-                                      size: 18,
-                                    ),
+                                            child: Center(
+                                              child: CircularProgressIndicator(
+                                                value: _uploadProgress,
+                                                color: Colors.white,
+                                                backgroundColor: Colors.white30,
+                                                strokeWidth: 3,
+                                              ),
+                                            ),
+                                          )
+                                        : null,
                                   ),
                                 ),
+                                if (_uploadProgress == null)
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: AppColors.primary,
+                                      ),
+                                      child: const Icon(
+                                        Icons.camera_alt_rounded,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ),
                               ],
                             ),
                           ),
