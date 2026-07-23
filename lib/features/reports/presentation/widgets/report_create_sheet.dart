@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:dio/dio.dart';
 import '../../../../core/models/report.dart';
 import '../../../../core/models/attendance.dart';
 import '../../../../core/providers/reports_provider.dart';
@@ -254,11 +255,21 @@ class _ReportCreateSheetState extends ConsumerState<ReportCreateSheet> {
       }
     } catch (e) {
       if (mounted) {
+        String errorMessage = e.toString();
+        if (e is DioException) {
+          if (e.response?.data is Map && e.response?.data['message'] != null) {
+            errorMessage = e.response?.data['message'].toString() ?? '';
+          } else if (e.response?.statusCode == 403) {
+            errorMessage = 'عذراً، ليس لديك الصلاحية لإرسال هذا البلاغ أو لم يتم منح حسابك الإذن الفعلي من الإدارة.';
+          } else if (e.response?.statusCode == 401) {
+            errorMessage = 'انتهت فترة الجلسة. يرجى تسجيل الدخول مجدداً.';
+          }
+        }
         AppNotification.show(
           context,
           type: AppNotificationType.error,
           title: context.loc.errorSending,
-          message: e.toString(),
+          message: errorMessage,
         );
       }
     } finally {
