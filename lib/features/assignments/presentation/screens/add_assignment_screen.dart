@@ -17,6 +17,8 @@ import '../../../../core/widgets/school_date_picker.dart';
 import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/widgets/app_notification.dart';
 import '../../../../core/services/image_compress_service.dart';
+import 'package:dio/dio.dart';
+import '../../../../core/network/api_client.dart';
 
 class AddAssignmentScreen extends ConsumerStatefulWidget {
   const AddAssignmentScreen({super.key});
@@ -654,10 +656,13 @@ class _AddAssignmentScreenState extends ConsumerState<AddAssignmentScreen> {
       // Close loading dialog
       if (mounted) {
         Navigator.of(context).pop();
+        final String errorMsg = (e is DioException)
+            ? e.userFriendlyMessage
+            : 'فشل حفظ وإرسال الواجب. يرجى المحاولة مرة أخرى.';
         AppNotification.show(
           context,
           type: AppNotificationType.error,
-          title: 'فشل حفظ وإرسال الواجب. يرجى التحقق من الاتصال بالشبكة.',
+          title: errorMsg,
         );
       }
     }

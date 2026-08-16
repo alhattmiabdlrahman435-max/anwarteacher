@@ -51,18 +51,19 @@ Dio apiClient(Ref ref) {
       return handler.next(response);
     },
     onError: (DioException e, handler) {
-      // If error is connection timeout, connection error, or 5xx server status
       final isConnectionError = e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout ||
           e.type == DioExceptionType.connectionError;
       
       final isServerError = e.response != null && e.response!.statusCode != null && e.response!.statusCode! >= 500;
+      final isGetRequest  = e.requestOptions.method.toUpperCase() == 'GET';
       
-      if (isConnectionError || isServerError) {
+      // Only show full-screen server error overlay for data-fetching GET requests.
+      // Form actions (POST/PUT/DELETE) should fail gracefully to let screen-level error handlers display a toast.
+      if (isGetRequest && (isConnectionError || isServerError)) {
         ref.read(serverErrorProvider.notifier).setHasError(true);
       } else {
-        // Clear if it's another client-side error (like 400, 422, etc.) meaning server is reachable
         ref.read(serverErrorProvider.notifier).setHasError(false);
       }
 
@@ -94,3 +95,19 @@ Dio apiClient(Ref ref) {
 
   return dio;
 }
+
+extension DioExceptionHelper on DioException {
+  String get userFriendlyMessage {
+    if (response?.data != null && response!.data is Map && response!.data['message'] != null) {
+      return response!.data['message'].toString();
+    }
+    if (type == DioExceptionType.connectionTimeout ||
+        type == DioExceptionType.receiveTimeout ||
+        type == DioExceptionType.sendTimeout ||
+        type == DioExceptionType.connectionError) {
+      return 'تعذر الاتصال بالخادم، يرجى التحقق من اتصال الإنترنت والمحاولة مجدداً.';
+    }
+    return 'حدث خطأ أثناء معالجة الطلب، يرجى المحاولة مرة أخرى.';
+  }
+}
+

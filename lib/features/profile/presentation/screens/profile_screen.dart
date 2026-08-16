@@ -12,6 +12,7 @@ import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/services/image_compress_service.dart';
+import 'package:dio/dio.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -297,9 +298,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     } catch (e) {
       debugPrint('Error updating teacher profile: $e');
       if (mounted) {
+        final String errorMsg = (e is DioException) ? e.userFriendlyMessage : e.toString();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('حدث خطأ أثناء حفظ التغييرات: $e'),
+            content: Text('حدث خطأ أثناء حفظ التغييرات: $errorMsg'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

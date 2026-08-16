@@ -6,6 +6,7 @@ import '../models/assignment.dart';
 import '../network/api_client.dart';
 import '../services/image_compress_service.dart';
 import 'auth_provider.dart';
+import 'subjects_provider.dart';
 
 part 'assignments_provider.g.dart';
 
@@ -116,9 +117,18 @@ class AssignmentsData extends _$AssignmentsData {
         }
       }
 
+      int? parsedSubjectId = int.tryParse(assignment.subjectName) ?? int.tryParse(assignment.id);
+      if (parsedSubjectId == null) {
+        final subjectsNotifier = ref.read(subjectsProvider.notifier);
+        final mappedId = subjectsNotifier.nameToIdMap[assignment.subjectName];
+        if (mappedId != null) {
+          parsedSubjectId = int.tryParse(mappedId);
+        }
+      }
+
       final formData = FormData.fromMap({
         'class_id': int.tryParse(assignment.classId) ?? 0,
-        'subject_id': int.tryParse(assignment.subjectName) ?? int.tryParse(assignment.id) ?? 0,
+        'subject_id': parsedSubjectId ?? 0,
         'title': assignment.title,
         'content': assignment.content,
         'due_date': '${assignment.dueDate.year}-${assignment.dueDate.month.toString().padLeft(2, '0')}-${assignment.dueDate.day.toString().padLeft(2, '0')}',
