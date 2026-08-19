@@ -1825,6 +1825,30 @@ abstract class AppLocalizations {
   /// In ar, this message translates to:
   /// **'حدث خطأ أثناء تحميل الجدول'**
   String get errorLoadingSchedule;
+
+  /// No description provided for @cardView.
+  ///
+  /// In ar, this message translates to:
+  /// **'عرض البطاقات'**
+  String get cardView;
+
+  /// No description provided for @tableView.
+  ///
+  /// In ar, this message translates to:
+  /// **'عرض الجدول'**
+  String get tableView;
+
+  /// No description provided for @studentNameColumn.
+  ///
+  /// In ar, this message translates to:
+  /// **'اسم الطالب'**
+  String get studentNameColumn;
+
+  /// No description provided for @total.
+  ///
+  /// In ar, this message translates to:
+  /// **'المجموع'**
+  String get total;
 }
 
 class _AppLocalizationsDelegate

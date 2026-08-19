@@ -938,4 +938,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorLoadingSchedule => 'Error loading schedule';
+
+  @override
+  String get cardView => 'Card View';
+
+  @override
+  String get tableView => 'Table View';
+
+  @override
+  String get studentNameColumn => 'Student Name';
+
+  @override
+  String get total => 'Total';
 }

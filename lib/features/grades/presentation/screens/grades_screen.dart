@@ -25,6 +25,11 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
   int _selectedTermIndex = 1; // 1 or 2
   int _selectedView = 1; // 1, 2, 3 for months, 4 for final/summary
   String _searchQuery = '';
+  bool _isTableView = false;
+  final ScrollController _tableVerticalController = ScrollController();
+  final ScrollController _tableHorizontalController = ScrollController();
+  // Track controllers for table cells: key = "studentId_field"
+  final Map<String, TextEditingController> _cellControllers = {};
 
   @override
   void initState() {
@@ -34,6 +39,26 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
         ref.read(gradesDataProvider.notifier).refresh();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _tableVerticalController.dispose();
+    _tableHorizontalController.dispose();
+    for (final c in _cellControllers.values) {
+      c.dispose();
+    }
+    _cellControllers.clear();
+    super.dispose();
+  }
+
+  TextEditingController _getController(String key, double value) {
+    if (!_cellControllers.containsKey(key)) {
+      _cellControllers[key] = TextEditingController(
+        text: value == 0 ? '' : value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1),
+      );
+    }
+    return _cellControllers[key]!;
   }
 
   @override
@@ -60,6 +85,7 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
             AppSliverHeader(
             title: context.loc.gradesRecord,
             automaticallyImplyLeading: true,
+            trailing: _buildHeaderViewToggle(isDark, primaryColor),
           ),
           const ClassSubjectSelector(),
           SliverToBoxAdapter(
@@ -91,15 +117,19 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
                       ),
                     ),
                   )
-                : SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final grade = filteredGrades[index];
-                        return _buildStudentCard(grade, isDark, primaryColor);
-                      },
-                      childCount: filteredGrades.length,
-                    ),
-                  ),
+                : _isTableView
+                    ? SliverToBoxAdapter(
+                        child: _buildTableView(filteredGrades, isDark, primaryColor),
+                      )
+                    : SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final grade = filteredGrades[index];
+                            return _buildStudentCard(grade, isDark, primaryColor);
+                          },
+                          childCount: filteredGrades.length,
+                        ),
+                      ),
           ),
           ],
         ),
@@ -259,6 +289,442 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildHeaderViewToggle(bool isDark, Color primaryColor) {
+    final activeColor = isDark ? AppColors.uiPalettePrimary : primaryColor;
+    return Container(
+      height: 38,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.1) : AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? Colors.white12 : AppColors.border,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Card View
+          GestureDetector(
+            onTap: () => setState(() => _isTableView = false),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: !_isTableView ? activeColor : Colors.transparent,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(
+                CupertinoIcons.square_list,
+                size: 20,
+                color: !_isTableView
+                    ? Colors.white
+                    : (isDark ? Colors.white54 : AppColors.textSecondaryLight),
+              ),
+            ),
+          ),
+          const SizedBox(width: 2),
+          // Table View
+          GestureDetector(
+            onTap: () {
+              for (final c in _cellControllers.values) {
+                c.dispose();
+              }
+              _cellControllers.clear();
+              setState(() => _isTableView = true);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: _isTableView ? activeColor : Colors.transparent,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(
+                CupertinoIcons.table,
+                size: 20,
+                color: _isTableView
+                    ? Colors.white
+                    : (isDark ? Colors.white54 : AppColors.textSecondaryLight),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTableView(List<StudentSubjectGrade> grades, bool isDark, Color primaryColor) {
+    final bool isMonthView = _selectedView <= 3;
+    final theme = Theme.of(context);
+
+    // Define columns based on view
+    final List<_TableColumn> columns = isMonthView
+        ? [
+            _TableColumn(context.loc.homeworkLabel('15'), 'homework', 15),
+            _TableColumn(context.loc.attendanceLabel('15'), 'attendance', 15),
+            _TableColumn(context.loc.behaviorLabel('10'), 'behavior', 10),
+            _TableColumn(context.loc.oralLabel('10'), 'oral', 10),
+            _TableColumn(context.loc.writtenLabel('50'), 'written', 50),
+            _TableColumn(context.loc.total, 'total', 0, isReadOnly: true),
+          ]
+        : [
+            _TableColumn(context.loc.averageLabel('20'), 'average', 20, isReadOnly: true),
+            _TableColumn(context.loc.finalExamLabel('30'), 'finalExam', 30),
+            _TableColumn(context.loc.total, 'total', 0, isReadOnly: true),
+          ];
+
+    final double cellWidth = 90;
+    final double nameColumnWidth = 160;
+    final double rowHeight = 52;
+    final double headerHeight = 56;
+
+    final headerBg = isDark ? AppColors.surfaceAltDark : AppColors.primary;
+    final headerTextColor = Colors.white;
+    final rowBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final altRowBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final borderColor = isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.border;
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          // Header Row
+          SizedBox(
+            height: headerHeight,
+            child: Row(
+              children: [
+                // Sticky name header
+                Container(
+                  width: nameColumnWidth,
+                  height: headerHeight,
+                  decoration: BoxDecoration(
+                    color: headerBg,
+                    border: Border(
+                      left: BorderSide.none,
+                      right: BorderSide(color: isDark ? Colors.white12 : Colors.white24, width: 2),
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    context.loc.studentNameColumn,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: headerTextColor,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                // Scrollable column headers
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _tableHorizontalController,
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      children: columns.map((col) {
+                        return Container(
+                          width: cellWidth,
+                          height: headerHeight,
+                          decoration: BoxDecoration(
+                            color: headerBg,
+                            border: Border(
+                              right: BorderSide(color: isDark ? Colors.white12 : Colors.white24, width: 0.5),
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(
+                            col.label,
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: headerTextColor,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Data Rows
+          ListView.builder(
+              padding: EdgeInsets.zero,
+              physics: const NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+              itemCount: grades.length,
+              itemBuilder: (context, index) {
+                final grade = grades[index];
+                final termRecord = _selectedTermIndex == 1 ? grade.firstTerm : grade.secondTerm;
+                final isAlt = index % 2 == 1;
+                final currentRowBg = isAlt ? altRowBg : rowBg;
+
+                return SizedBox(
+                  height: rowHeight,
+                  child: Row(
+                    children: [
+                      // Sticky name cell
+                      Container(
+                        width: nameColumnWidth,
+                        height: rowHeight,
+                        decoration: BoxDecoration(
+                          color: currentRowBg,
+                          border: Border(
+                            right: BorderSide(color: borderColor, width: 2),
+                            bottom: BorderSide(color: borderColor, width: 0.5),
+                          ),
+                        ),
+                        alignment: AlignmentDirectional.centerStart,
+                        padding: const EdgeInsetsDirectional.only(start: 12, end: 8),
+                        child: Text(
+                          context.translateMock(grade.studentName),
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      // Scrollable cells
+                      Expanded(
+                        child: NotificationListener<ScrollNotification>(
+                          onNotification: (notification) {
+                            // Sync horizontal scroll across rows
+                            if (notification is ScrollUpdateNotification) {
+                              _tableHorizontalController.jumpTo(
+                                notification.metrics.pixels,
+                              );
+                            }
+                            return false;
+                          },
+                          child: SingleChildScrollView(
+                            controller: ScrollController(
+                              initialScrollOffset: _tableHorizontalController.hasClients
+                                  ? _tableHorizontalController.offset
+                                  : 0,
+                            ),
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            child: Row(
+                              children: columns.map((col) {
+                                return _buildTableCell(
+                                  grade: grade,
+                                  termRecord: termRecord,
+                                  column: col,
+                                  isMonthView: isMonthView,
+                                  cellWidth: cellWidth,
+                                  rowHeight: rowHeight,
+                                  bgColor: currentRowBg,
+                                  borderColor: borderColor,
+                                  isDark: isDark,
+                                  primaryColor: primaryColor,
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTableCell({
+    required StudentSubjectGrade grade,
+    required TermRecord termRecord,
+    required _TableColumn column,
+    required bool isMonthView,
+    required double cellWidth,
+    required double rowHeight,
+    required Color bgColor,
+    required Color borderColor,
+    required bool isDark,
+    required Color primaryColor,
+  }) {
+    final theme = Theme.of(context);
+    final MonthRecord month = isMonthView ? termRecord.months[_selectedView - 1] : termRecord.months.first;
+    final bool isSaved = isMonthView ? month.isSaved : termRecord.isFinalSaved;
+
+    // Get value
+    double value = 0;
+    if (isMonthView) {
+      switch (column.key) {
+        case 'homework': value = month.homework; break;
+        case 'attendance': value = month.attendance; break;
+        case 'behavior': value = month.behavior; break;
+        case 'oral': value = month.oral; break;
+        case 'written': value = month.written; break;
+        case 'total': value = month.total; break;
+      }
+    } else {
+      switch (column.key) {
+        case 'average': value = termRecord.monthsAverage; break;
+        case 'finalExam': value = termRecord.finalExam; break;
+        case 'total': value = termRecord.termTotal; break;
+      }
+    }
+
+    final bool isReadOnly = column.isReadOnly || isSaved;
+    final bool isTotalColumn = column.key == 'total';
+
+    if (isReadOnly) {
+      // Read-only cell (total, average, or saved)
+      Color textColor = isDark ? Colors.white70 : AppColors.textSecondaryLight;
+      Color cellBg = bgColor;
+
+      if (isTotalColumn && value > 0) {
+        final maxTotal = isMonthView ? 100.0 : 50.0;
+        if (value >= maxTotal * 0.9) {
+          textColor = AppColors.success;
+          cellBg = AppColors.success.withValues(alpha: isDark ? 0.12 : 0.06);
+        } else if (value >= maxTotal * 0.7) {
+          textColor = AppColors.primaryGradient;
+          cellBg = AppColors.primaryGradient.withValues(alpha: isDark ? 0.12 : 0.06);
+        } else if (value >= maxTotal * 0.5) {
+          textColor = AppColors.accent;
+          cellBg = AppColors.accent.withValues(alpha: isDark ? 0.12 : 0.06);
+        } else {
+          textColor = AppColors.error;
+          cellBg = AppColors.error.withValues(alpha: isDark ? 0.12 : 0.06);
+        }
+      }
+
+      return Container(
+        width: cellWidth,
+        height: rowHeight,
+        decoration: BoxDecoration(
+          color: cellBg,
+          border: Border(
+            right: BorderSide(color: borderColor, width: 0.5),
+            bottom: BorderSide(color: borderColor, width: 0.5),
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          value.toStringAsFixed(1),
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: isTotalColumn ? FontWeight.w800 : FontWeight.w600,
+            color: textColor,
+          ),
+        ),
+      );
+    }
+
+    // Editable cell
+    final controllerKey = '${grade.studentId}_${_selectedTermIndex}_${_selectedView}_${column.key}';
+    final controller = _getController(controllerKey, value);
+
+    return Container(
+      width: cellWidth,
+      height: rowHeight,
+      decoration: BoxDecoration(
+        color: bgColor,
+        border: Border(
+          right: BorderSide(color: borderColor, width: 0.5),
+          bottom: BorderSide(color: borderColor, width: 0.5),
+        ),
+      ),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      child: TextField(
+        controller: controller,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        textAlign: TextAlign.center,
+        style: theme.textTheme.labelMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+        ),
+        inputFormatters: [
+          TextInputFormatter.withFunction((oldValue, newValue) {
+            if (newValue.text.isEmpty) return newValue;
+            final val = double.tryParse(newValue.text);
+            if (val == null) return oldValue;
+            if (val > column.maxValue) return oldValue;
+            return newValue;
+          }),
+        ],
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: borderColor),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: borderColor),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: isDark ? AppColors.uiPalettePrimary : primaryColor, width: 2),
+          ),
+          filled: true,
+          fillColor: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
+        ),
+        onChanged: (val) {
+          final doubleVal = double.tryParse(val) ?? 0;
+          _updateGradeCell(grade, column.key, doubleVal, isMonthView);
+        },
+      ),
+    );
+  }
+
+  void _updateGradeCell(StudentSubjectGrade grade, String field, double value, bool isMonthView) {
+    TermRecord termRecord = _selectedTermIndex == 1 ? grade.firstTerm : grade.secondTerm;
+
+    if (isMonthView) {
+      final monthIdx = _selectedView - 1;
+      MonthRecord month = termRecord.months[monthIdx];
+      switch (field) {
+        case 'homework': month = month.copyWith(homework: value); break;
+        case 'attendance': month = month.copyWith(attendance: value); break;
+        case 'behavior': month = month.copyWith(behavior: value); break;
+        case 'oral': month = month.copyWith(oral: value); break;
+        case 'written': month = month.copyWith(written: value); break;
+      }
+      final updatedMonths = List<MonthRecord>.from(termRecord.months);
+      updatedMonths[monthIdx] = month;
+      termRecord = termRecord.copyWith(months: updatedMonths);
+    } else {
+      switch (field) {
+        case 'finalExam': termRecord = termRecord.copyWith(finalExam: value); break;
+      }
+    }
+
+    var updatedGrade = grade;
+    if (_selectedTermIndex == 1) {
+      updatedGrade = updatedGrade.copyWith(firstTerm: termRecord);
+    } else {
+      updatedGrade = updatedGrade.copyWith(secondTerm: termRecord);
+    }
+
+    ref.read(gradesDataProvider.notifier).updateStudentGrade(grade.studentId, updatedGrade);
   }
 
   Widget _buildStudentCard(StudentSubjectGrade grade, bool isDark, Color primaryColor) {
@@ -734,4 +1200,13 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
     
     widget.onSave(updatedGrade);
   }
+}
+
+class _TableColumn {
+  final String label;
+  final String key;
+  final double maxValue;
+  final bool isReadOnly;
+
+  const _TableColumn(this.label, this.key, this.maxValue, {this.isReadOnly = false});
 }

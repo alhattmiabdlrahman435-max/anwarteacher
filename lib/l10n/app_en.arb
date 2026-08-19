@@ -411,5 +411,9 @@
   "successReportSent": "Report sent successfully",
   "awaitingAdminApproval": "Awaiting administration review and approval",
   "errorSending": "An error occurred while sending",
-  "errorLoadingSchedule": "Error loading schedule"
+  "errorLoadingSchedule": "Error loading schedule",
+  "cardView": "Card View",
+  "tableView": "Table View",
+  "studentNameColumn": "Student Name",
+  "total": "Total"
 }

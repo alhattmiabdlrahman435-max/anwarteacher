@@ -411,5 +411,9 @@
   "successReportSent": "تم إرسال البلاغ بنجاح",
   "awaitingAdminApproval": "بانتظار مراجعة واعتماد الإدارة",
   "errorSending": "حدث خطأ أثناء الإرسال",
-  "errorLoadingSchedule": "حدث خطأ أثناء تحميل الجدول"
+  "errorLoadingSchedule": "حدث خطأ أثناء تحميل الجدول",
+  "cardView": "عرض البطاقات",
+  "tableView": "عرض الجدول",
+  "studentNameColumn": "اسم الطالب",
+  "total": "المجموع"
 }

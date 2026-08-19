@@ -930,4 +930,16 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get errorLoadingSchedule => 'حدث خطأ أثناء تحميل الجدول';
+
+  @override
+  String get cardView => 'عرض البطاقات';
+
+  @override
+  String get tableView => 'عرض الجدول';
+
+  @override
+  String get studentNameColumn => 'اسم الطالب';
+
+  @override
+  String get total => 'المجموع';
 }
