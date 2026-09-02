@@ -1160,6 +1160,72 @@ abstract class AppLocalizations {
   /// **'حفظ الدرجات'**
   String get saveGrades;
 
+  /// No description provided for @sendGradesToAdmin.
+  ///
+  /// In ar, this message translates to:
+  /// **'إرسال الدرجات للإدارة'**
+  String get sendGradesToAdmin;
+
+  /// No description provided for @gradesSavedLocally.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم حفظ الدرجات محلياً على الجهاز'**
+  String get gradesSavedLocally;
+
+  /// No description provided for @gradesSentSuccessfully.
+  ///
+  /// In ar, this message translates to:
+  /// **'تم إرسال الدرجات للإدارة بنجاح'**
+  String get gradesSentSuccessfully;
+
+  /// No description provided for @noInternetGradesSaved.
+  ///
+  /// In ar, this message translates to:
+  /// **'لا يوجد اتصال بالإنترنت. تم حفظ الدرجات محلياً بأمان، وسيتم إرسالها للإدارة عند توفر الإنترنت والنقر على زر الإرسال.'**
+  String get noInternetGradesSaved;
+
+  /// No description provided for @unsyncedGradesNotice.
+  ///
+  /// In ar, this message translates to:
+  /// **'توجد درجات وتعديلات غير مرسلة للإدارة'**
+  String get unsyncedGradesNotice;
+
+  /// No description provided for @allGradesSynced.
+  ///
+  /// In ar, this message translates to:
+  /// **'جميع الدرجات مرسلة للإدارة'**
+  String get allGradesSynced;
+
+  /// No description provided for @sendingGrades.
+  ///
+  /// In ar, this message translates to:
+  /// **'جاري إرسال الدرجات للإدارة...'**
+  String get sendingGrades;
+
+  /// No description provided for @confirmSendGradesTitle.
+  ///
+  /// In ar, this message translates to:
+  /// **'إرسال الدرجات للإدارة'**
+  String get confirmSendGradesTitle;
+
+  /// No description provided for @confirmSendGradesMessage.
+  ///
+  /// In ar, this message translates to:
+  /// **'هل أنت متأكد من رغبتك في إرسال درجات هذا الفصل والمادة إلى الإدارة؟'**
+  String get confirmSendGradesMessage;
+
+  /// No description provided for @sendNow.
+  ///
+  /// In ar, this message translates to:
+  /// **'إرسال الآن'**
+  String get sendNow;
+
+  /// No description provided for @offlineMode.
+  ///
+  /// In ar, this message translates to:
+  /// **'وضع عدم الاتصال (أوفلاين)'**
+  String get offlineMode;
+
   /// No description provided for @addNewAssignment.
   ///
   /// In ar, this message translates to:

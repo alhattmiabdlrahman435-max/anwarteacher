@@ -188,12 +188,12 @@ class StudentSubjectGrade {
 
   factory StudentSubjectGrade.fromMap(Map<String, dynamic> map) {
     return StudentSubjectGrade(
-      studentId: map['studentId']?.toString() ?? '',
-      studentName: map['studentName']?.toString() ?? '',
-      studentPhotoUrl: map['studentPhotoUrl']?.toString(),
-      subjectId: map['subjectId']?.toString() ?? '',
-      firstTerm: TermRecord.fromMap(map['firstTerm'] as Map<String, dynamic>? ?? {}),
-      secondTerm: TermRecord.fromMap(map['secondTerm'] as Map<String, dynamic>? ?? {}),
+      studentId: map['studentId']?.toString() ?? map['student_id']?.toString() ?? '',
+      studentName: map['studentName']?.toString() ?? map['student_name']?.toString() ?? map['name']?.toString() ?? '',
+      studentPhotoUrl: map['studentPhotoUrl']?.toString() ?? map['student_photo_url']?.toString() ?? map['photo_url']?.toString(),
+      subjectId: map['subjectId']?.toString() ?? map['subject_id']?.toString() ?? '',
+      firstTerm: TermRecord.fromMap((map['firstTerm'] ?? map['first_term']) as Map<String, dynamic>? ?? {}),
+      secondTerm: TermRecord.fromMap((map['secondTerm'] ?? map['second_term']) as Map<String, dynamic>? ?? {}),
     );
   }
 }
@@ -202,22 +202,51 @@ class ClassSubjectGrades {
   final String classId;
   final String subjectName;
   final List<StudentSubjectGrade> grades;
+  final bool hasUnsyncedChanges;
+  final bool isSubmitting;
 
   const ClassSubjectGrades({
     required this.classId,
     required this.subjectName,
     required this.grades,
+    this.hasUnsyncedChanges = false,
+    this.isSubmitting = false,
   });
 
   ClassSubjectGrades copyWith({
     String? classId,
     String? subjectName,
     List<StudentSubjectGrade>? grades,
+    bool? hasUnsyncedChanges,
+    bool? isSubmitting,
   }) {
     return ClassSubjectGrades(
       classId: classId ?? this.classId,
       subjectName: subjectName ?? this.subjectName,
       grades: grades ?? this.grades,
+      hasUnsyncedChanges: hasUnsyncedChanges ?? this.hasUnsyncedChanges,
+      isSubmitting: isSubmitting ?? this.isSubmitting,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'classId': classId,
+      'subjectName': subjectName,
+      'grades': grades.map((x) => x.toMap()).toList(),
+      'hasUnsyncedChanges': hasUnsyncedChanges,
+    };
+  }
+
+  factory ClassSubjectGrades.fromMap(Map<String, dynamic> map) {
+    return ClassSubjectGrades(
+      classId: map['classId']?.toString() ?? map['class_id']?.toString() ?? '',
+      subjectName: map['subjectName']?.toString() ?? map['subject_name']?.toString() ?? '',
+      grades: List<StudentSubjectGrade>.from(
+        (map['grades'] as List? ?? []).map((x) => StudentSubjectGrade.fromMap(x as Map<String, dynamic>)),
+      ),
+      hasUnsyncedChanges: map['hasUnsyncedChanges'] == true,
+      isSubmitting: false,
     );
   }
 }

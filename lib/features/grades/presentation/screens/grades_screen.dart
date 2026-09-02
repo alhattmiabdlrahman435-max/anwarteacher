@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/models/academic_grade.dart';
 import '../../../../core/providers/grades_provider.dart';
+import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../core/widgets/app_sliver_header.dart';
 import '../../../../core/widgets/class_subject_selector.dart';
 import '../../../../core/widgets/app_drawer.dart';
@@ -25,15 +26,24 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
   int _selectedTermIndex = 1; // 1 or 2
   int _selectedView = 1; // 1, 2, 3 for months, 4 for final/summary
   String _searchQuery = '';
-  bool _isTableView = false;
-  final ScrollController _tableVerticalController = ScrollController();
-  final ScrollController _tableHorizontalController = ScrollController();
-  // Track controllers for table cells: key = "studentId_field"
+  bool _isTableView = true; // Default to table view as requested by user
+
+  // Linked controllers for sticky table header and sticky student name column
+  final ScrollController _headerHorizontalController = ScrollController();
+  final ScrollController _bodyHorizontalController = ScrollController();
+  final ScrollController _namesVerticalController = ScrollController();
+  final ScrollController _cellsVerticalController = ScrollController();
+
+  bool _isSyncingHorizontal = false;
+  bool _isSyncingVertical = false;
+
+  // Track controllers for table cells: key = "studentId_term_view_field"
   final Map<String, TextEditingController> _cellControllers = {};
 
   @override
   void initState() {
     super.initState();
+    _setupScrollSynchronization();
     Future.microtask(() {
       if (mounted) {
         ref.read(gradesDataProvider.notifier).refresh();
@@ -41,10 +51,57 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
     });
   }
 
+  void _setupScrollSynchronization() {
+    // Horizontal sync between Header columns and Body cells
+    _headerHorizontalController.addListener(() {
+      if (!_isSyncingHorizontal && _bodyHorizontalController.hasClients) {
+        _isSyncingHorizontal = true;
+        if (_bodyHorizontalController.offset != _headerHorizontalController.offset) {
+          _bodyHorizontalController.jumpTo(_headerHorizontalController.offset);
+        }
+        _isSyncingHorizontal = false;
+      }
+    });
+
+    _bodyHorizontalController.addListener(() {
+      if (!_isSyncingHorizontal && _headerHorizontalController.hasClients) {
+        _isSyncingHorizontal = true;
+        if (_headerHorizontalController.offset != _bodyHorizontalController.offset) {
+          _headerHorizontalController.jumpTo(_bodyHorizontalController.offset);
+        }
+        _isSyncingHorizontal = false;
+      }
+    });
+
+    // Vertical sync between Sticky Student Name column and Body cells rows
+    _namesVerticalController.addListener(() {
+      if (!_isSyncingVertical && _cellsVerticalController.hasClients) {
+        _isSyncingVertical = true;
+        if (_cellsVerticalController.offset != _namesVerticalController.offset) {
+          _cellsVerticalController.jumpTo(_namesVerticalController.offset);
+        }
+        _isSyncingVertical = false;
+      }
+    });
+
+    _cellsVerticalController.addListener(() {
+      if (!_isSyncingVertical && _namesVerticalController.hasClients) {
+        _isSyncingVertical = true;
+        if (_namesVerticalController.offset != _cellsVerticalController.offset) {
+          _namesVerticalController.jumpTo(_cellsVerticalController.offset);
+        }
+        _isSyncingVertical = false;
+      }
+    });
+  }
+
   @override
   void dispose() {
-    _tableVerticalController.dispose();
-    _tableHorizontalController.dispose();
+    _headerHorizontalController.dispose();
+    _bodyHorizontalController.dispose();
+    _namesVerticalController.dispose();
+    _cellsVerticalController.dispose();
+
     for (final c in _cellControllers.values) {
       c.dispose();
     }
@@ -53,10 +110,16 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
   }
 
   TextEditingController _getController(String key, double value) {
+    final formatted = value == 0 ? '' : value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1);
     if (!_cellControllers.containsKey(key)) {
-      _cellControllers[key] = TextEditingController(
-        text: value == 0 ? '' : value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1),
-      );
+      _cellControllers[key] = TextEditingController(text: formatted);
+    } else {
+      // If controller text is different from current grade value and not currently focused, update it
+      final currentText = _cellControllers[key]!.text;
+      final currentDouble = double.tryParse(currentText) ?? 0.0;
+      if (currentDouble != value && (currentText.isNotEmpty || value != 0)) {
+        _cellControllers[key]!.text = formatted;
+      }
     }
     return _cellControllers[key]!;
   }
@@ -75,6 +138,7 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
 
     return Scaffold(
       drawer: const AppDrawer(),
+      bottomNavigationBar: _buildBottomSubmitBar(isDark, primaryColor),
       body: RefreshIndicator(
         onRefresh: () => ref.read(gradesDataProvider.notifier).refresh(),
         child: CustomScrollView(
@@ -83,69 +147,70 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
           ),
           slivers: [
             AppSliverHeader(
-            title: context.loc.gradesRecord,
-            automaticallyImplyLeading: true,
-            trailing: _buildHeaderViewToggle(isDark, primaryColor),
-          ),
-          const ClassSubjectSelector(),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-              child: _buildFilters(isDark, primaryColor),
+              title: context.loc.gradesRecord,
+              automaticallyImplyLeading: true,
+              trailing: _buildHeaderViewToggle(isDark, primaryColor),
             ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
-            sliver: filteredGrades.isEmpty
-                ? SliverToBoxAdapter(
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 40),
-                          Icon(CupertinoIcons.search, size: 64, color: isDark ? Colors.white24 : Colors.black12),
-                          const SizedBox(height: 16),
-                          Text(
-                            context.loc.noSearchResults,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: isDark ? Colors.white54 : Colors.black54,
-                              fontWeight: FontWeight.w600,
+            const ClassSubjectSelector(),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                child: _buildFilters(isDark, primaryColor),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 24.0),
+              sliver: filteredGrades.isEmpty
+                  ? SliverToBoxAdapter(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 40),
+                            Icon(CupertinoIcons.search, size: 64, color: isDark ? Colors.white24 : Colors.black12),
+                            const SizedBox(height: 16),
+                            Text(
+                              context.loc.noSearchResults,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: isDark ? Colors.white54 : Colors.black54,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : _isTableView
-                    ? SliverToBoxAdapter(
-                        child: _buildTableView(filteredGrades, isDark, primaryColor),
-                      )
-                    : SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final grade = filteredGrades[index];
-                            return _buildStudentCard(grade, isDark, primaryColor);
-                          },
-                          childCount: filteredGrades.length,
+                          ],
                         ),
                       ),
-          ),
+                    )
+                  : _isTableView
+                      ? SliverToBoxAdapter(
+                          child: _buildTableView(filteredGrades, isDark, primaryColor),
+                        )
+                      : SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final grade = filteredGrades[index];
+                              return _buildStudentCard(grade, isDark, primaryColor);
+                            },
+                            childCount: filteredGrades.length,
+                          ),
+                        ),
+            ),
           ],
         ),
       ),
     );
   }
+
   Widget _buildFilters(bool isDark, Color primaryColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Modern Search Bar
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: ModernCard(
             isDark: isDark,
-            padding: const EdgeInsets.all(0), // padding is handled inside TextField
+            padding: EdgeInsets.zero,
             child: TextField(
               onChanged: (value) => setState(() => _searchQuery = value),
               style: TextStyle(color: isDark ? Colors.white : Colors.black87),
@@ -157,22 +222,22 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
                 filled: false,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
             ),
           ),
         ),
-        const SizedBox(height: AppSpacing.xl),
+        const SizedBox(height: AppSpacing.md),
         
         // Custom Modern Term Segmented Control
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Container(
-            height: 54,
-            padding: const EdgeInsets.all(4),
+            height: 48,
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               color: isDark ? Colors.black26 : AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Row(
               children: [
@@ -182,21 +247,21 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
             ),
           ),
         ),
-        const SizedBox(height: AppSpacing.xl),
+        const SizedBox(height: AppSpacing.md),
         
-        // Modern Chips
+        // Modern Month & Summary Chips
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Row(
             children: [
               _buildFilterChip(1, context.loc.month1, isDark, primaryColor),
-              const SizedBox(width: AppSpacing.md),
+              const SizedBox(width: AppSpacing.sm),
               _buildFilterChip(2, context.loc.month2, isDark, primaryColor),
-              const SizedBox(width: AppSpacing.md),
+              const SizedBox(width: AppSpacing.sm),
               _buildFilterChip(3, context.loc.month3, isDark, primaryColor),
-              const SizedBox(width: AppSpacing.md),
+              const SizedBox(width: AppSpacing.sm),
               _buildFilterChip(4, context.loc.recordTotalFinal, isDark, primaryColor),
             ],
           ),
@@ -210,17 +275,17 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
     return GestureDetector(
       onTap: () => setState(() => _selectedTermIndex = index),
       child: Container(
-        margin: const EdgeInsets.all(4),
+        margin: const EdgeInsets.all(2),
         decoration: BoxDecoration(
           color: isSelected 
               ? (isDark ? AppColors.surfaceAltDark : Colors.white) 
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           boxShadow: isSelected
               ? [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-                    blurRadius: 8,
+                    blurRadius: 6,
                     offset: const Offset(0, 2),
                   )
                 ]
@@ -248,12 +313,12 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
       onTap: () => setState(() => _selectedView = value),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected 
               ? activeColor 
               : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white),
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected 
                 ? activeColor 
@@ -271,8 +336,8 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
                   ? [
                       BoxShadow(
                         color: activeColor.withValues(alpha: isDark ? 0.4 : 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
                       )
                     ]
                   : null),
@@ -284,7 +349,7 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
                 ? Colors.white 
                 : (isDark ? Colors.white70 : AppColors.textSecondaryLight),
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-            fontSize: 14,
+            fontSize: 13,
           ),
         ),
       ),
@@ -306,35 +371,12 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Card View
-          GestureDetector(
-            onTap: () => setState(() => _isTableView = false),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeInOut,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: !_isTableView ? activeColor : Colors.transparent,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: Icon(
-                CupertinoIcons.square_list,
-                size: 20,
-                color: !_isTableView
-                    ? Colors.white
-                    : (isDark ? Colors.white54 : AppColors.textSecondaryLight),
-              ),
-            ),
-          ),
-          const SizedBox(width: 2),
           // Table View
           GestureDetector(
             onTap: () {
-              for (final c in _cellControllers.values) {
-                c.dispose();
+              if (!_isTableView) {
+                setState(() => _isTableView = true);
               }
-              _cellControllers.clear();
-              setState(() => _isTableView = true);
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
@@ -346,8 +388,33 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
               ),
               child: Icon(
                 CupertinoIcons.table,
-                size: 20,
+                size: 18,
                 color: _isTableView
+                    ? Colors.white
+                    : (isDark ? Colors.white54 : AppColors.textSecondaryLight),
+              ),
+            ),
+          ),
+          const SizedBox(width: 2),
+          // Card View
+          GestureDetector(
+            onTap: () {
+              if (_isTableView) {
+                setState(() => _isTableView = false);
+              }
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: !_isTableView ? activeColor : Colors.transparent,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(
+                CupertinoIcons.square_list,
+                size: 18,
+                color: !_isTableView
                     ? Colors.white
                     : (isDark ? Colors.white54 : AppColors.textSecondaryLight),
               ),
@@ -358,11 +425,16 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
     );
   }
 
+  /// STICKY HEADER TABLE VIEW:
+  /// - Pinned Column Header at the top (never scrolls vertically)
+  /// - Pinned Student Name Column on the side (never scrolls horizontally)
+  /// - Synchronized horizontal scroll between Header and Body
+  /// - Synchronized vertical scroll between Names and Cells
   Widget _buildTableView(List<StudentSubjectGrade> grades, bool isDark, Color primaryColor) {
     final bool isMonthView = _selectedView <= 3;
     final theme = Theme.of(context);
 
-    // Define columns based on view
+    // Define columns based on selected month or summary
     final List<_TableColumn> columns = isMonthView
         ? [
             _TableColumn(context.loc.homeworkLabel('15'), 'homework', 15),
@@ -378,26 +450,35 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
             _TableColumn(context.loc.total, 'total', 0, isReadOnly: true),
           ];
 
-    final double cellWidth = 90;
-    final double nameColumnWidth = 160;
-    final double rowHeight = 52;
-    final double headerHeight = 56;
+    const double cellWidth = 92.0;
+    const double nameColumnWidth = 145.0;
+    const double rowHeight = 52.0;
+    const double headerHeight = 52.0;
+
+    final double totalColumnsWidth = columns.length * cellWidth;
+
+    // Calculate height to fit rows comfortably
+    final screenHeight = MediaQuery.of(context).size.height;
+    final maxTableBodyHeight = (screenHeight * 0.55).clamp(260.0, 520.0);
+    final double actualRowsHeight = grades.length * rowHeight;
+    final double tableBodyHeight = actualRowsHeight.clamp(rowHeight, maxTableBodyHeight);
 
     final headerBg = isDark ? AppColors.surfaceAltDark : AppColors.primary;
-    final headerTextColor = Colors.white;
+    const headerTextColor = Colors.white;
     final rowBg = isDark ? const Color(0xFF1E293B) : Colors.white;
     final altRowBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
-    final borderColor = isDark ? Colors.white.withValues(alpha: 0.08) : AppColors.border;
+    final borderColor = isDark ? Colors.white.withValues(alpha: 0.1) : AppColors.border;
 
     return Container(
       decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderColor),
         boxShadow: isDark
             ? null
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -405,128 +486,147 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Header Row
-          SizedBox(
+          // ================= 1. FIXED / STICKY HEADER ROW =================
+          Container(
             height: headerHeight,
+            decoration: BoxDecoration(
+              color: headerBg,
+              border: Border(bottom: BorderSide(color: borderColor, width: 1.5)),
+            ),
             child: Row(
               children: [
-                // Sticky name header
+                // Fixed Student Name Header
                 Container(
                   width: nameColumnWidth,
                   height: headerHeight,
                   decoration: BoxDecoration(
                     color: headerBg,
                     border: Border(
-                      left: BorderSide.none,
-                      right: BorderSide(color: isDark ? Colors.white12 : Colors.white24, width: 2),
+                      left: BorderSide(color: isDark ? Colors.white12 : Colors.white24, width: 1.5),
                     ),
                   ),
                   alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Text(
                     context.loc.studentNameColumn,
-                    style: theme.textTheme.labelLarge?.copyWith(
+                    style: theme.textTheme.labelMedium?.copyWith(
                       color: headerTextColor,
                       fontWeight: FontWeight.w800,
+                      fontSize: 13,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                // Scrollable column headers
+                // Horizontally Scrollable Column Headers (linked with body)
                 Expanded(
                   child: SingleChildScrollView(
-                    controller: _tableHorizontalController,
+                    controller: _headerHorizontalController,
                     scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    child: Row(
-                      children: columns.map((col) {
-                        return Container(
-                          width: cellWidth,
-                          height: headerHeight,
-                          decoration: BoxDecoration(
-                            color: headerBg,
-                            border: Border(
-                              right: BorderSide(color: isDark ? Colors.white12 : Colors.white24, width: 0.5),
+                    physics: const ClampingScrollPhysics(),
+                    child: SizedBox(
+                      width: totalColumnsWidth,
+                      child: Row(
+                        children: columns.map((col) {
+                          return Container(
+                            width: cellWidth,
+                            height: headerHeight,
+                            decoration: BoxDecoration(
+                              border: Border(
+                                left: BorderSide(color: isDark ? Colors.white12 : Colors.white24, width: 0.5),
+                              ),
                             ),
-                          ),
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(
-                            col.label,
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: headerTextColor,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 11,
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(
+                              col.label,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: headerTextColor,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      }).toList(),
+                          );
+                        }).toList(),
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          // Data Rows
-          ListView.builder(
-              padding: EdgeInsets.zero,
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              itemCount: grades.length,
-              itemBuilder: (context, index) {
-                final grade = grades[index];
-                final termRecord = _selectedTermIndex == 1 ? grade.firstTerm : grade.secondTerm;
-                final isAlt = index % 2 == 1;
-                final currentRowBg = isAlt ? altRowBg : rowBg;
 
-                return SizedBox(
-                  height: rowHeight,
-                  child: Row(
-                    children: [
-                      // Sticky name cell
-                      Container(
-                        width: nameColumnWidth,
+          // ================= 2. VERTICALLY SCROLLABLE ROWS BODY =================
+          SizedBox(
+            height: tableBodyHeight,
+            child: Row(
+              children: [
+                // Sticky Student Name Column (vertically scrollable, locked horizontally)
+                SizedBox(
+                  width: nameColumnWidth,
+                  child: ListView.builder(
+                    controller: _namesVerticalController,
+                    physics: const ClampingScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    itemCount: grades.length,
+                    itemExtent: rowHeight,
+                    itemBuilder: (context, index) {
+                      final grade = grades[index];
+                      final isAlt = index % 2 == 1;
+                      final currentRowBg = isAlt ? altRowBg : rowBg;
+
+                      return Container(
                         height: rowHeight,
                         decoration: BoxDecoration(
                           color: currentRowBg,
                           border: Border(
-                            right: BorderSide(color: borderColor, width: 2),
+                            left: BorderSide(color: borderColor, width: 1.5),
                             bottom: BorderSide(color: borderColor, width: 0.5),
                           ),
                         ),
                         alignment: AlignmentDirectional.centerStart,
-                        padding: const EdgeInsetsDirectional.only(start: 12, end: 8),
+                        padding: const EdgeInsetsDirectional.only(start: 10, end: 6),
                         child: Text(
                           context.translateMock(grade.studentName),
                           style: theme.textTheme.labelMedium?.copyWith(
                             fontWeight: FontWeight.w700,
+                            fontSize: 12,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      // Scrollable cells
-                      Expanded(
-                        child: NotificationListener<ScrollNotification>(
-                          onNotification: (notification) {
-                            // Sync horizontal scroll across rows
-                            if (notification is ScrollUpdateNotification) {
-                              _tableHorizontalController.jumpTo(
-                                notification.metrics.pixels,
-                              );
-                            }
-                            return false;
-                          },
-                          child: SingleChildScrollView(
-                            controller: ScrollController(
-                              initialScrollOffset: _tableHorizontalController.hasClients
-                                  ? _tableHorizontalController.offset
-                                  : 0,
-                            ),
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
+                      );
+                    },
+                  ),
+                ),
+
+                // Horizontally and Vertically scrollable data cells
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _bodyHorizontalController,
+                    scrollDirection: Axis.horizontal,
+                    physics: const ClampingScrollPhysics(),
+                    child: SizedBox(
+                      width: totalColumnsWidth,
+                      child: ListView.builder(
+                        controller: _cellsVerticalController,
+                        physics: const ClampingScrollPhysics(),
+                        padding: EdgeInsets.zero,
+                        itemCount: grades.length,
+                        itemExtent: rowHeight,
+                        itemBuilder: (context, index) {
+                          final grade = grades[index];
+                          final termRecord = _selectedTermIndex == 1 ? grade.firstTerm : grade.secondTerm;
+                          final isAlt = index % 2 == 1;
+                          final currentRowBg = isAlt ? altRowBg : rowBg;
+
+                          return SizedBox(
+                            height: rowHeight,
                             child: Row(
                               children: columns.map((col) {
                                 return _buildTableCell(
@@ -543,14 +643,15 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
                                 );
                               }).toList(),
                             ),
-                          ),
-                        ),
+                          );
+                        },
                       ),
-                    ],
+                    ),
                   ),
-                );
-              },
+                ),
+              ],
             ),
+          ),
         ],
       ),
     );
@@ -569,10 +670,13 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
     required Color primaryColor,
   }) {
     final theme = Theme.of(context);
-    final MonthRecord month = isMonthView ? termRecord.months[_selectedView - 1] : termRecord.months.first;
-    final bool isSaved = isMonthView ? month.isSaved : termRecord.isFinalSaved;
+    final MonthRecord month = isMonthView 
+        ? ((_selectedView - 1 < termRecord.months.length) 
+            ? termRecord.months[_selectedView - 1] 
+            : const MonthRecord(monthIndex: 1)) 
+        : (termRecord.months.isNotEmpty ? termRecord.months.first : const MonthRecord(monthIndex: 1));
 
-    // Get value
+    // Calculate value
     double value = 0;
     if (isMonthView) {
       switch (column.key) {
@@ -591,11 +695,11 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
       }
     }
 
-    final bool isReadOnly = column.isReadOnly || isSaved;
+    final bool isReadOnly = column.isReadOnly;
     final bool isTotalColumn = column.key == 'total';
 
     if (isReadOnly) {
-      // Read-only cell (total, average, or saved)
+      // Calculated Read-only cell (Total or Average)
       Color textColor = isDark ? Colors.white70 : AppColors.textSecondaryLight;
       Color cellBg = bgColor;
 
@@ -603,16 +707,16 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
         final maxTotal = isMonthView ? 100.0 : 50.0;
         if (value >= maxTotal * 0.9) {
           textColor = AppColors.success;
-          cellBg = AppColors.success.withValues(alpha: isDark ? 0.12 : 0.06);
+          cellBg = AppColors.success.withValues(alpha: isDark ? 0.15 : 0.08);
         } else if (value >= maxTotal * 0.7) {
           textColor = AppColors.primaryGradient;
-          cellBg = AppColors.primaryGradient.withValues(alpha: isDark ? 0.12 : 0.06);
+          cellBg = AppColors.primaryGradient.withValues(alpha: isDark ? 0.15 : 0.08);
         } else if (value >= maxTotal * 0.5) {
           textColor = AppColors.accent;
-          cellBg = AppColors.accent.withValues(alpha: isDark ? 0.12 : 0.06);
+          cellBg = AppColors.accent.withValues(alpha: isDark ? 0.15 : 0.08);
         } else {
           textColor = AppColors.error;
-          cellBg = AppColors.error.withValues(alpha: isDark ? 0.12 : 0.06);
+          cellBg = AppColors.error.withValues(alpha: isDark ? 0.15 : 0.08);
         }
       }
 
@@ -622,7 +726,7 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
         decoration: BoxDecoration(
           color: cellBg,
           border: Border(
-            right: BorderSide(color: borderColor, width: 0.5),
+            left: BorderSide(color: borderColor, width: 0.5),
             bottom: BorderSide(color: borderColor, width: 0.5),
           ),
         ),
@@ -632,12 +736,13 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
           style: theme.textTheme.labelMedium?.copyWith(
             fontWeight: isTotalColumn ? FontWeight.w800 : FontWeight.w600,
             color: textColor,
+            fontSize: 13,
           ),
         ),
       );
     }
 
-    // Editable cell
+    // Editable cell with seamless numeric keyboard & auto text selection on tap
     final controllerKey = '${grade.studentId}_${_selectedTermIndex}_${_selectedView}_${column.key}';
     final controller = _getController(controllerKey, value);
 
@@ -647,19 +752,27 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
       decoration: BoxDecoration(
         color: bgColor,
         border: Border(
-          right: BorderSide(color: borderColor, width: 0.5),
+          left: BorderSide(color: borderColor, width: 0.5),
           bottom: BorderSide(color: borderColor, width: 0.5),
         ),
       ),
       alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
       child: TextField(
         controller: controller,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         textAlign: TextAlign.center,
         style: theme.textTheme.labelMedium?.copyWith(
           fontWeight: FontWeight.w700,
+          fontSize: 13,
         ),
+        onTap: () {
+          // Select all text on tap for single-tap replacement without deleting
+          controller.selection = TextSelection(
+            baseOffset: 0,
+            extentOffset: controller.text.length,
+          );
+        },
         inputFormatters: [
           TextInputFormatter.withFunction((oldValue, newValue) {
             if (newValue.text.isEmpty) return newValue;
@@ -671,7 +784,7 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
         ],
         decoration: InputDecoration(
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 7),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
             borderSide: BorderSide(color: borderColor),
@@ -682,13 +795,13 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: isDark ? AppColors.uiPalettePrimary : primaryColor, width: 2),
+            borderSide: BorderSide(color: isDark ? AppColors.uiPalettePrimary : primaryColor, width: 1.5),
           ),
           filled: true,
-          fillColor: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
+          fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
         ),
         onChanged: (val) {
-          final doubleVal = double.tryParse(val) ?? 0;
+          final doubleVal = double.tryParse(val) ?? 0.0;
           _updateGradeCell(grade, column.key, doubleVal, isMonthView);
         },
       ),
@@ -700,7 +813,11 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
 
     if (isMonthView) {
       final monthIdx = _selectedView - 1;
-      MonthRecord month = termRecord.months[monthIdx];
+      final months = List<MonthRecord>.from(termRecord.months);
+      while (months.length <= monthIdx) {
+        months.add(MonthRecord(monthIndex: months.length + 1));
+      }
+      MonthRecord month = months[monthIdx];
       switch (field) {
         case 'homework': month = month.copyWith(homework: value); break;
         case 'attendance': month = month.copyWith(attendance: value); break;
@@ -708,9 +825,8 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
         case 'oral': month = month.copyWith(oral: value); break;
         case 'written': month = month.copyWith(written: value); break;
       }
-      final updatedMonths = List<MonthRecord>.from(termRecord.months);
-      updatedMonths[monthIdx] = month;
-      termRecord = termRecord.copyWith(months: updatedMonths);
+      months[monthIdx] = month;
+      termRecord = termRecord.copyWith(months: months);
     } else {
       switch (field) {
         case 'finalExam': termRecord = termRecord.copyWith(finalExam: value); break;
@@ -724,6 +840,7 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
       updatedGrade = updatedGrade.copyWith(secondTerm: termRecord);
     }
 
+    // Save locally immediately (Offline-First, no network call on keystroke)
     ref.read(gradesDataProvider.notifier).updateStudentGrade(grade.studentId, updatedGrade);
   }
 
@@ -731,58 +848,57 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
     final termRecord = _selectedTermIndex == 1 ? grade.firstTerm : grade.secondTerm;
     final bool isMonthView = _selectedView <= 3;
     final double currentTotal = isMonthView 
-        ? termRecord.months[_selectedView - 1].total 
+        ? ((_selectedView - 1 < termRecord.months.length) 
+            ? termRecord.months[_selectedView - 1].total 
+            : 0.0)
         : termRecord.termTotal;
 
     final theme = Theme.of(context);
     return ModernCard(
       isDark: isDark,
-      margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
       padding: EdgeInsets.zero,
       onTap: () {
         _showGradeEntrySheet(context, grade, termRecord, isMonthView, primaryColor);
       },
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                // Avatar
-                StudentAvatar(
-                  photoUrl: grade.studentPhotoUrl,
-                  name: grade.studentName,
-                  size: 50,
-                ),
-                const SizedBox(width: 16),
-                // Details
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        context.translateMock(grade.studentName),
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        isMonthView
-                            ? context.loc.monthGrades(Localizations.localeOf(context).languageCode == 'ar'
-                                ? context.toArabicNumbers(_selectedView.toString())
-                                : _selectedView.toString())
-                            : context.loc.endTermGrades,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Badge
-                _buildTotalBadge(currentTotal, isMonthView ? 100 : 50, isDark),
-              ],
+        child: Row(
+          children: [
+            StudentAvatar(
+              photoUrl: grade.studentPhotoUrl,
+              name: grade.studentName,
+              size: 48,
             ),
-          ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.translateMock(grade.studentName),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isMonthView
+                        ? context.loc.monthGrades(Localizations.localeOf(context).languageCode == 'ar'
+                            ? context.toArabicNumbers(_selectedView.toString())
+                            : _selectedView.toString())
+                        : context.loc.endTermGrades,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _buildTotalBadge(currentTotal, isMonthView ? 100 : 50, isDark),
+          ],
+        ),
+      ),
     );
   }
 
@@ -808,7 +924,7 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
             AppNotification.show(
               context,
               type: AppNotificationType.success,
-              title: context.loc.gradesSavedSuccessfully,
+              title: context.loc.gradesSavedLocally,
             );
           },
         );
@@ -842,11 +958,11 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
 
     final theme = Theme.of(context);
     return Container(
-      constraints: const BoxConstraints(minWidth: 56),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      constraints: const BoxConstraints(minWidth: 54),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
       ),
       alignment: Alignment.center,
       child: Text(
@@ -857,6 +973,168 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
         ),
       ),
     );
+  }
+
+  /// STICKY BOTTOM SUBMIT BAR:
+  /// Allows submitting all locally saved grades to the administration when desired.
+  Widget _buildBottomSubmitBar(bool isDark, Color primaryColor) {
+    final classGrades = ref.watch(gradesDataProvider);
+    final isUnsynced = classGrades.hasUnsyncedChanges;
+    final isSubmitting = classGrades.isSubmitting;
+    final connectivity = ref.watch(connectivityProvider);
+    final isOffline = connectivity == ConnectivityStatus.offline;
+
+    final barBg = isDark ? AppColors.surfaceAltDark : Colors.white;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: barBg,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? Colors.white12 : AppColors.border,
+            width: 1,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            // Status Icon & Text
+            Expanded(
+              child: Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isOffline
+                          ? Colors.grey
+                          : (isUnsynced ? Colors.orange : AppColors.success),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      isOffline
+                          ? context.loc.offlineMode
+                          : (isUnsynced
+                              ? context.loc.unsyncedGradesNotice
+                              : context.loc.allGradesSynced),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+
+            // Submit Button
+            FilledButton.icon(
+              onPressed: isSubmitting ? null : _confirmAndSubmitGrades,
+              icon: isSubmitting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CupertinoActivityIndicator(color: Colors.white),
+                    )
+                  : const Icon(CupertinoIcons.cloud_upload_fill, size: 18),
+              label: Text(
+                isSubmitting ? context.loc.sendingGrades : context.loc.sendGradesToAdmin,
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: isDark ? AppColors.uiPalettePrimary : AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmAndSubmitGrades() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? AppColors.surfaceAltDark : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          context.loc.confirmSendGradesTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          context.loc.confirmSendGradesMessage,
+          style: TextStyle(
+            color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              context.loc.cancel,
+              style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: isDark ? AppColors.uiPalettePrimary : AppColors.primary,
+            ),
+            child: Text(context.loc.sendNow),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    final result = await ref.read(gradesDataProvider.notifier).sendGradesToAdministration();
+
+    if (!mounted) return;
+
+    if (result.isOffline) {
+      AppNotification.show(
+        context,
+        type: AppNotificationType.warning,
+        title: context.loc.noInternetGradesSaved,
+      );
+    } else if (result.isSuccess) {
+      AppNotification.show(
+        context,
+        type: AppNotificationType.success,
+        title: context.loc.gradesSentSuccessfully,
+      );
+    } else {
+      AppNotification.show(
+        context,
+        type: AppNotificationType.error,
+        title: result.errorMessage ?? 'حدث خطأ أثناء إرسال الدرجات',
+      );
+    }
   }
 }
 
@@ -895,7 +1173,10 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
     super.initState();
     _currentTerm = widget.termRecord;
     if (widget.isMonthView) {
-      _currentMonth = _currentTerm.months[widget.selectedView - 1];
+      final monthIdx = widget.selectedView - 1;
+      _currentMonth = (monthIdx < _currentTerm.months.length)
+          ? _currentTerm.months[monthIdx]
+          : const MonthRecord(monthIndex: 1);
     }
   }
 
@@ -946,7 +1227,7 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
                     StudentAvatar(
                       photoUrl: widget.grade.studentPhotoUrl,
                       name: widget.grade.studentName,
-                      size: 56,
+                      size: 54,
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -979,7 +1260,7 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 28),
 
                 // Inputs
                 if (widget.isMonthView)
@@ -987,17 +1268,16 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
                 else
                   _buildTermSummaryInputs(),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 28),
 
-                if ((widget.isMonthView && !_currentMonth.isSaved) || (!widget.isMonthView && !_currentTerm.isFinalSaved))
-                  FilledButton(
-                    onPressed: _saveAndClose,
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
-                    child: Text(context.loc.saveGrades, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                FilledButton(
+                  onPressed: _saveAndClose,
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
+                  child: Text(context.loc.saveGrades, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                ),
               ],
             ),
           ),
@@ -1007,33 +1287,32 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
   }
 
   Widget _buildMonthInputs() {
-    bool isReadOnly = _currentMonth.isSaved;
     return Column(
       children: [
         Row(
           children: [
-            Expanded(child: _buildLabeledInput(context.loc.homeworkLabel('15'), _currentMonth.homework, 15, isReadOnly, (v) => setState(() => _currentMonth = _currentMonth.copyWith(homework: v)))),
+            Expanded(child: _buildLabeledInput(context.loc.homeworkLabel('15'), _currentMonth.homework, 15, (v) => setState(() => _currentMonth = _currentMonth.copyWith(homework: v)))),
             const SizedBox(width: 16),
-            Expanded(child: _buildLabeledInput(context.loc.attendanceLabel('15'), _currentMonth.attendance, 15, isReadOnly, (v) => setState(() => _currentMonth = _currentMonth.copyWith(attendance: v)))),
+            Expanded(child: _buildLabeledInput(context.loc.attendanceLabel('15'), _currentMonth.attendance, 15, (v) => setState(() => _currentMonth = _currentMonth.copyWith(attendance: v)))),
           ],
         ),
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(child: _buildLabeledInput(context.loc.behaviorLabel('10'), _currentMonth.behavior, 10, isReadOnly, (v) => setState(() => _currentMonth = _currentMonth.copyWith(behavior: v)))),
+            Expanded(child: _buildLabeledInput(context.loc.behaviorLabel('10'), _currentMonth.behavior, 10, (v) => setState(() => _currentMonth = _currentMonth.copyWith(behavior: v)))),
             const SizedBox(width: 16),
-            Expanded(child: _buildLabeledInput(context.loc.oralLabel('10'), _currentMonth.oral, 10, isReadOnly, (v) => setState(() => _currentMonth = _currentMonth.copyWith(oral: v)))),
+            Expanded(child: _buildLabeledInput(context.loc.oralLabel('10'), _currentMonth.oral, 10, (v) => setState(() => _currentMonth = _currentMonth.copyWith(oral: v)))),
           ],
         ),
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(child: _buildLabeledInput(context.loc.writtenLabel('50'), _currentMonth.written, 50, isReadOnly, (v) => setState(() => _currentMonth = _currentMonth.copyWith(written: v)))),
+            Expanded(child: _buildLabeledInput(context.loc.writtenLabel('50'), _currentMonth.written, 50, (v) => setState(() => _currentMonth = _currentMonth.copyWith(written: v)))),
           ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
             color: widget.primaryColor.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
@@ -1062,7 +1341,6 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
   }
 
   Widget _buildTermSummaryInputs() {
-    bool isReadOnly = _currentTerm.isFinalSaved;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1073,13 +1351,13 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: _buildLabeledInput(context.loc.finalExamLabel('30'), _currentTerm.finalExam, 30, isReadOnly, (v) => setState(() => _currentTerm = _currentTerm.copyWith(finalExam: v))),
+              child: _buildLabeledInput(context.loc.finalExamLabel('30'), _currentTerm.finalExam, 30, (v) => setState(() => _currentTerm = _currentTerm.copyWith(finalExam: v))),
             ),
           ],
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
             color: widget.primaryColor.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
@@ -1107,7 +1385,7 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
     );
   }
 
-  Widget _buildLabeledInput(String label, double value, double maxValue, bool isReadOnly, Function(double) onChanged) {
+  Widget _buildLabeledInput(String label, double value, double maxValue, Function(double) onChanged) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1122,7 +1400,6 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
         const SizedBox(height: 8),
         TextFormField(
           initialValue: value == 0 ? '' : value.toString(),
-          readOnly: isReadOnly,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [
             TextInputFormatter.withFunction((oldValue, newValue) {
@@ -1185,10 +1462,14 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
     
     if (widget.isMonthView) {
       final updatedMonths = List<MonthRecord>.from(_currentTerm.months);
-      updatedMonths[widget.selectedView - 1] = _currentMonth.copyWith(isSaved: true);
+      final monthIdx = widget.selectedView - 1;
+      while (updatedMonths.length <= monthIdx) {
+        updatedMonths.add(MonthRecord(monthIndex: updatedMonths.length + 1));
+      }
+      updatedMonths[monthIdx] = _currentMonth;
       updatedTerm = updatedTerm.copyWith(months: updatedMonths);
     } else {
-      updatedTerm = updatedTerm.copyWith(isFinalSaved: true);
+      updatedTerm = updatedTerm.copyWith(finalExam: _currentTerm.finalExam);
     }
 
     var updatedGrade = widget.grade;

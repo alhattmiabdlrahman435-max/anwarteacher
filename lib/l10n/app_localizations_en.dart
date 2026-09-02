@@ -573,6 +573,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveGrades => 'Save Grades';
 
   @override
+  String get sendGradesToAdmin => 'Send Grades to Administration';
+
+  @override
+  String get gradesSavedLocally => 'Grades saved locally on device';
+
+  @override
+  String get gradesSentSuccessfully =>
+      'Grades sent to administration successfully';
+
+  @override
+  String get noInternetGradesSaved =>
+      'No internet connection. Grades are safely saved locally and can be sent when connected.';
+
+  @override
+  String get unsyncedGradesNotice =>
+      'There are unsent changes to administration';
+
+  @override
+  String get allGradesSynced => 'All grades synced with administration';
+
+  @override
+  String get sendingGrades => 'Sending grades to administration...';
+
+  @override
+  String get confirmSendGradesTitle => 'Send Grades to Administration';
+
+  @override
+  String get confirmSendGradesMessage =>
+      'Are you sure you want to submit grades for this class and subject to the administration?';
+
+  @override
+  String get sendNow => 'Send Now';
+
+  @override
+  String get offlineMode => 'Offline Mode';
+
+  @override
   String get addNewAssignment => 'Add New Assignment';
 
   @override

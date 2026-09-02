@@ -36,40 +36,49 @@ class _AssignmentsScreenState extends ConsumerState<AssignmentsScreen> {
 
     return Scaffold(
       drawer: const AppDrawer(),
-      body: CustomScrollView(
-        slivers: [
-          AppSliverHeader(
-            title: context.loc.assignments,
-            automaticallyImplyLeading: true,
-            trailing: CupertinoButton(
-              padding: EdgeInsets.zero,
-              child: Icon(
-                Icons.add_circle_outline_rounded,
-                color: isDark ? Colors.white : AppColors.primary,
-              ),
-              onPressed: () {
-                context.push('/add_assignment');
-              },
-            ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(assignmentsDataProvider.notifier).refresh();
+        },
+        color: AppColors.primary,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
           ),
-          if (assignments.isEmpty)
-            SliverFillRemaining(
-              child: Center(child: Text(context.loc.noCurrentAssignments)),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.all(16),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final assignment = assignments[index];
-                    return _buildAssignmentCard(context, assignment, isDark);
-                  },
-                  childCount: assignments.length,
+          slivers: [
+            AppSliverHeader(
+              title: context.loc.assignments,
+              automaticallyImplyLeading: true,
+              trailing: CupertinoButton(
+                padding: EdgeInsets.zero,
+                child: Icon(
+                  Icons.add_circle_outline_rounded,
+                  color: isDark ? Colors.white : AppColors.primary,
+                ),
+                onPressed: () {
+                  context.push('/add_assignment');
+                },
+              ),
+            ),
+            if (assignments.isEmpty)
+              SliverFillRemaining(
+                child: Center(child: Text(context.loc.noCurrentAssignments)),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.all(16),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final assignment = assignments[index];
+                      return _buildAssignmentCard(context, assignment, isDark);
+                    },
+                    childCount: assignments.length,
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

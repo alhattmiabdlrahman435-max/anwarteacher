@@ -38,7 +38,7 @@ final class TeacherScheduleStateProvider
 }
 
 String _$teacherScheduleStateHash() =>
-    r'a104cd440c6bf60f71f07266d27431f993e81351';
+    r'e44cd2766cac7c7ed037a538eec29e05b3e4a625';
 
 abstract class _$TeacherScheduleState
     extends $AsyncNotifier<Map<String, List<TeacherPeriod>>> {

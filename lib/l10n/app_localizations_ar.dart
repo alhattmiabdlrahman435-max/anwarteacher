@@ -569,6 +569,41 @@ class AppLocalizationsAr extends AppLocalizations {
   String get saveGrades => 'حفظ الدرجات';
 
   @override
+  String get sendGradesToAdmin => 'إرسال الدرجات للإدارة';
+
+  @override
+  String get gradesSavedLocally => 'تم حفظ الدرجات محلياً على الجهاز';
+
+  @override
+  String get gradesSentSuccessfully => 'تم إرسال الدرجات للإدارة بنجاح';
+
+  @override
+  String get noInternetGradesSaved =>
+      'لا يوجد اتصال بالإنترنت. تم حفظ الدرجات محلياً بأمان، وسيتم إرسالها للإدارة عند توفر الإنترنت والنقر على زر الإرسال.';
+
+  @override
+  String get unsyncedGradesNotice => 'توجد درجات وتعديلات غير مرسلة للإدارة';
+
+  @override
+  String get allGradesSynced => 'جميع الدرجات مرسلة للإدارة';
+
+  @override
+  String get sendingGrades => 'جاري إرسال الدرجات للإدارة...';
+
+  @override
+  String get confirmSendGradesTitle => 'إرسال الدرجات للإدارة';
+
+  @override
+  String get confirmSendGradesMessage =>
+      'هل أنت متأكد من رغبتك في إرسال درجات هذا الفصل والمادة إلى الإدارة؟';
+
+  @override
+  String get sendNow => 'إرسال الآن';
+
+  @override
+  String get offlineMode => 'وضع عدم الاتصال (أوفلاين)';
+
+  @override
   String get addNewAssignment => 'إضافة واجب جديد';
 
   @override
