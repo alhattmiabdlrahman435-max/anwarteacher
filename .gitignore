@@ -46,6 +46,12 @@ app.*.map.json
 
 # Android build artifacts
 /android/build/
+/android/.gradle/
+.gradle/
+
+# Graphify
+graphify-out/
+.graphifyignore
 
 # Datasets & Data files
 /csv/
