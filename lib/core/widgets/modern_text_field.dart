@@ -11,6 +11,8 @@ class ModernTextField extends StatelessWidget {
   final TextInputAction? textInputAction;
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onFieldSubmitted;
 
   const ModernTextField({
     super.key,
@@ -23,6 +25,8 @@ class ModernTextField extends StatelessWidget {
     this.textInputAction,
     this.keyboardType,
     this.validator,
+    this.onChanged,
+    this.onFieldSubmitted,
   });
 
   @override
@@ -47,6 +51,8 @@ class ModernTextField extends StatelessWidget {
           textInputAction: textInputAction,
           keyboardType: keyboardType,
           validator: validator,
+          onChanged: onChanged,
+          onFieldSubmitted: onFieldSubmitted,
           style: theme.textTheme.bodyLarge?.copyWith(
             fontWeight: FontWeight.w500,
           ),

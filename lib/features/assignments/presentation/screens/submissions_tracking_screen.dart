@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -23,9 +24,13 @@ class _SubmissionsTrackingScreenState extends ConsumerState<SubmissionsTrackingS
   // To avoid constant rebuilding of text fields while typing, we keep track of notes locally 
   // and update the provider when focus is lost or submitting.
   final Map<String, TextEditingController> _noteControllers = {};
+  final Map<String, Timer?> _debounceTimers = {};
 
   @override
   void dispose() {
+    for (var timer in _debounceTimers.values) {
+      timer?.cancel();
+    }
     for (var controller in _noteControllers.values) {
       controller.dispose();
     }
@@ -207,6 +212,7 @@ class _SubmissionsTrackingScreenState extends ConsumerState<SubmissionsTrackingS
           Focus(
             onFocusChange: (hasFocus) {
               if (!hasFocus) {
+                _debounceTimers[submission.studentId]?.cancel();
                 ref.read(assignmentsDataProvider.notifier).updateSubmission(
                   assignmentId,
                   submission.studentId,
@@ -221,6 +227,36 @@ class _SubmissionsTrackingScreenState extends ConsumerState<SubmissionsTrackingS
               hint: context.loc.addNoteHint,
               icon: Icons.edit_note_rounded,
               isDark: isDark,
+              textInputAction: TextInputAction.done,
+              onChanged: (val) {
+                _debounceTimers[submission.studentId]?.cancel();
+                _debounceTimers[submission.studentId] = Timer(const Duration(milliseconds: 500), () {
+                  if (!mounted) return;
+                  final currentAssign = ref.read(assignmentsDataProvider).firstWhere(
+                    (a) => a.id == assignmentId,
+                    orElse: () => throw Exception('Assignment not found'),
+                  );
+                  final currentSub = currentAssign.submissions.firstWhere(
+                    (s) => s.studentId == submission.studentId,
+                    orElse: () => submission,
+                  );
+                  ref.read(assignmentsDataProvider.notifier).updateSubmission(
+                    assignmentId,
+                    submission.studentId,
+                    currentSub.status,
+                    val,
+                  );
+                });
+              },
+              onFieldSubmitted: (val) {
+                _debounceTimers[submission.studentId]?.cancel();
+                ref.read(assignmentsDataProvider.notifier).updateSubmission(
+                  assignmentId,
+                  submission.studentId,
+                  submission.status,
+                  val,
+                );
+              },
             ),
           ),
         ],
@@ -240,11 +276,13 @@ class _SubmissionsTrackingScreenState extends ConsumerState<SubmissionsTrackingS
     return Expanded(
       child: GestureDetector(
         onTap: () {
+          _debounceTimers[submission.studentId]?.cancel();
+          final currentNoteText = _getControllerFor(submission.studentId, submission.teacherNote).text;
           ref.read(assignmentsDataProvider.notifier).updateSubmission(
             assignmentId,
             submission.studentId,
             status,
-            submission.teacherNote,
+            currentNoteText,
           );
         },
         child: AnimatedContainer(
