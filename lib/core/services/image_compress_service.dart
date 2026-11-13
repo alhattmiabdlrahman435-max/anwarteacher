@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
@@ -37,6 +38,13 @@ class ImageValidationException implements Exception {
 /// - Target quality: 75%, max 1200×1200 px (profile) / 1920×1920 (attachments)
 /// - Max size AFTER compress: 5 MB   (if still too large → throws)
 class ImageCompressService {
+  /// ضغط صور الواجبات: أصغر حجماً مع بقاء النص واضحاً للقراءة (≈120–250 KB للصورة)
+  static const int homeworkMaxSide = 1600;
+  static const int homeworkQuality = 70;
+
+  /// صورة بهذا الحجم أو أقل تُعتبر مضغوطة مسبقاً فلا يُعاد ضغطها عند الرفع
+  static const int alreadyCompressedBytes = 400 * 1024;
+
   static const int _maxBeforeBytes = 10 * 1024 * 1024;  // 10 MB
   static const int _maxAfterBytes  =  5 * 1024 * 1024;  //  5 MB
   static const Set<String> _allowedExtensions = {'jpg', 'jpeg', 'png', 'webp'};
@@ -133,11 +141,24 @@ class ImageCompressService {
     final tmpDir  = await getTemporaryDirectory();
     final outPath = '${tmpDir.path}/${_uuid.v4()}.jpg';
 
+    // المكتبة تحسب الأبعاد بحيث لا يقل أي ضلع عن minWidth/minHeight، أي أن الحد يُطبَّق على
+    // الضلع القصير؛ فالصور الطويلة (لقطات الشاشة) كانت تبقى بطولها الأصلي.
+    // نحسب الضلع القصير المطلوب حتى يصبح الضلع الطويل = الحد الأقصى، ونمرره للضلعين
+    // (يعمل بنفس الطريقة مهما كان اتجاه الصورة).
+    final maxSide = maxWidth > maxHeight ? maxWidth : maxHeight;
+    var minSide = maxSide;
+    final size = await _imageSize(source);
+    if (size != null) {
+      final longSide = size.$1 > size.$2 ? size.$1 : size.$2;
+      final shortSide = size.$1 > size.$2 ? size.$2 : size.$1;
+      minSide = longSide > maxSide ? (shortSide * maxSide / longSide).round().clamp(1, maxSide) : shortSide;
+    }
+
     final result = await FlutterImageCompress.compressAndGetFile(
       source.absolute.path,
       outPath,
-      minWidth:  maxWidth,
-      minHeight: maxHeight,
+      minWidth:  minSide,
+      minHeight: minSide,
       quality:   quality,
       format:    CompressFormat.jpeg,
     );
@@ -148,5 +169,19 @@ class ImageCompressService {
     }
 
     return File(result.path);
+  }
+
+  /// أبعاد الصورة (عرض، ارتفاع) بدون فك ترميزها كاملة
+  static Future<(int, int)?> _imageSize(File file) async {
+    try {
+      final buffer = await ui.ImmutableBuffer.fromUint8List(await file.readAsBytes());
+      final descriptor = await ui.ImageDescriptor.encoded(buffer);
+      final size = (descriptor.width, descriptor.height);
+      descriptor.dispose();
+      buffer.dispose();
+      return size;
+    } catch (_) {
+      return null;
+    }
   }
 }

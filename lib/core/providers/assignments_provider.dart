@@ -10,6 +10,15 @@ import 'subjects_provider.dart';
 
 part 'assignments_provider.g.dart';
 
+/// خطأ مُرجع من الخادم عند تعديل الواجب ({success:false, message})
+class AssignmentUpdateException implements Exception {
+  final String message;
+  const AssignmentUpdateException(this.message);
+
+  @override
+  String toString() => message;
+}
+
 @riverpod
 class AssignmentsData extends _$AssignmentsData {
   List<Assignment> _cache = const [];
@@ -33,12 +42,19 @@ class AssignmentsData extends _$AssignmentsData {
 
   bool _isFetching = false;
 
+  /// طُلب تحديث أثناء جلب جارٍ (مثل بعد حفظ تعديل) — نعيد الجلب فور انتهائه حتى لا تبقى بيانات قديمة
+  bool _refetchRequested = false;
+
   Future<void> _fetch() async {
-    if (_isFetching) return;
+    if (_isFetching) {
+      _refetchRequested = true;
+      return;
+    }
     _isFetching = true;
     try {
       final dio = ref.read(apiClientProvider);
-      final response = await dio.get('assignments');
+      // كل واجبات المعلم السابقة (الخادم يُرجع 20 فقط افتراضياً)
+      final response = await dio.get('assignments', queryParameters: {'per_page': 1000});
       if (!ref.mounted) return;
       if (response.data != null && response.data['success'] == true) {
         final List<dynamic> list = response.data['assignments'] ?? [];
@@ -69,10 +85,17 @@ class AssignmentsData extends _$AssignmentsData {
             subjectName: item['subject']?['name_ar'] ?? item['subject']?['name'] ?? '',
             title: item['title'] ?? '',
             content: item['content'] ?? '',
-            dateCreated: DateTime.tryParse(item['date_created']?.toString() ?? '') ?? DateTime.now(),
+            // وقت الإرسال الفعلي بالتوقيت المحلي
+            dateCreated: (DateTime.tryParse(item['created_at']?.toString() ?? '') ??
+                    DateTime.tryParse(item['date_created']?.toString() ?? '') ??
+                    DateTime.now())
+                .toLocal(),
             dueDate: DateTime.tryParse(item['due_date']?.toString() ?? '') ?? DateTime.now(),
-            attachments: item['attachment_url'] != null ? [item['attachment_url'].toString()] : const [],
+            attachments: (item['attachment_urls'] is List && (item['attachment_urls'] as List).isNotEmpty)
+                ? (item['attachment_urls'] as List).map((u) => u.toString()).toList()
+                : (item['attachment_url'] != null ? [item['attachment_url'].toString()] : const []),
             submissions: submissions,
+            editedAt: DateTime.tryParse(item['edited_at']?.toString() ?? '')?.toLocal(),
           );
         }).toList();
         _cache = state;
@@ -81,6 +104,10 @@ class AssignmentsData extends _$AssignmentsData {
       debugPrint('Error fetching assignments: $e');
     } finally {
       _isFetching = false;
+      if (_refetchRequested && ref.mounted) {
+        _refetchRequested = false;
+        await _fetch();
+      }
     }
   }
 
@@ -88,32 +115,28 @@ class AssignmentsData extends _$AssignmentsData {
     await _fetch();
   }
 
-  Future<void> addAssignment(Assignment assignment, String? attachmentPath) async {
+  Future<void> addAssignment(Assignment assignment, List<String> attachmentPaths) async {
     try {
       final dio = ref.read(apiClientProvider);
 
-      MultipartFile? file;
-      if (attachmentPath != null && attachmentPath.isNotEmpty) {
-        final ext = attachmentPath.split('.').last.toLowerCase();
-        const imageExts = {'jpg', 'jpeg', 'png', 'webp'};
-
-        if (imageExts.contains(ext)) {
-          // Image attachment → compress before upload
+      // كل المرفقات (صور تُضغط قبل الرفع، وملفات تُرفع كما هي)
+      final files = <MultipartFile>[];
+      const imageExts = {'jpg', 'jpeg', 'png', 'webp'};
+      for (int i = 0; i < attachmentPaths.length; i++) {
+        final path = attachmentPaths[i];
+        if (path.isEmpty) continue;
+        final ext = path.split('.').last.toLowerCase();
+        // الصور المضغوطة مسبقاً (من المعرض/الكاميرا) لا يُعاد ضغطها — أسرع وبدون فقد جودة إضافي
+        if (imageExts.contains(ext) && await File(path).length() > ImageCompressService.alreadyCompressedBytes) {
           final result = await ImageCompressService.compress(
-            File(attachmentPath),
-            maxWidth:  1920,
-            maxHeight: 1920,
+            File(path),
+            maxWidth: ImageCompressService.homeworkMaxSide,
+            maxHeight: ImageCompressService.homeworkMaxSide,
+            quality: ImageCompressService.homeworkQuality,
           );
-          file = await MultipartFile.fromFile(
-            result.file.path,
-            filename: 'attachment.jpg',
-          );
+          files.add(await MultipartFile.fromFile(result.file.path, filename: 'image_${i + 1}.jpg'));
         } else {
-          // Non-image (PDF, DOC, etc.) → upload as-is
-          file = await MultipartFile.fromFile(
-            attachmentPath,
-            filename: attachmentPath.split('/').last,
-          );
+          files.add(await MultipartFile.fromFile(path, filename: path.split(RegExp(r'[\\/]')).last));
         }
       }
 
@@ -132,7 +155,7 @@ class AssignmentsData extends _$AssignmentsData {
         'title': assignment.title,
         'content': assignment.content,
         'due_date': '${assignment.dueDate.year}-${assignment.dueDate.month.toString().padLeft(2, '0')}-${assignment.dueDate.day.toString().padLeft(2, '0')}',
-        'attachment': file,
+        'attachments[]': files,
       });
 
       await dio.post('assignments', data: formData);
@@ -141,6 +164,62 @@ class AssignmentsData extends _$AssignmentsData {
       await _fetch();
     } catch (e) {
       debugPrint('Error adding assignment: $e');
+      rethrow;
+    }
+  }
+
+  /// تعديل واجب بعد إرساله (العنوان/النص/موعد التسليم/المرفقات).
+  /// يُرسل كـ multipart مع `_method=PUT` ليتمكن الخادم من استقبال الملفات.
+  Future<void> updateAssignment({
+    required String id,
+    required String title,
+    required String content,
+    required DateTime dueDate,
+    required List<String> newAttachmentPaths,
+    required List<String> removeAttachmentUrls,
+  }) async {
+    try {
+      final dio = ref.read(apiClientProvider);
+
+      // المرفقات الجديدة (صور تُضغط قبل الرفع، وملفات تُرفع كما هي)
+      final files = <MultipartFile>[];
+      const imageExts = {'jpg', 'jpeg', 'png', 'webp'};
+      for (int i = 0; i < newAttachmentPaths.length; i++) {
+        final path = newAttachmentPaths[i];
+        if (path.isEmpty) continue;
+        final ext = path.split('.').last.toLowerCase();
+        // الصور المضغوطة مسبقاً (من المعرض/الكاميرا) لا يُعاد ضغطها — أسرع وبدون فقد جودة إضافي
+        if (imageExts.contains(ext) && await File(path).length() > ImageCompressService.alreadyCompressedBytes) {
+          final result = await ImageCompressService.compress(
+            File(path),
+            maxWidth: ImageCompressService.homeworkMaxSide,
+            maxHeight: ImageCompressService.homeworkMaxSide,
+            quality: ImageCompressService.homeworkQuality,
+          );
+          files.add(await MultipartFile.fromFile(result.file.path, filename: 'image_${i + 1}.jpg'));
+        } else {
+          files.add(await MultipartFile.fromFile(path, filename: path.split(RegExp(r'[\\/]')).last));
+        }
+      }
+
+      final formData = FormData.fromMap({
+        '_method': 'PUT',
+        'title': title,
+        'content': content,
+        'due_date': '${dueDate.year}-${dueDate.month.toString().padLeft(2, '0')}-${dueDate.day.toString().padLeft(2, '0')}',
+        if (files.isNotEmpty) 'attachments[]': files,
+        if (removeAttachmentUrls.isNotEmpty) 'remove_attachment_urls[]': removeAttachmentUrls,
+      });
+
+      final response = await dio.post('assignments/$id', data: formData);
+      final data = response.data;
+      if (data is Map && data['success'] == false) {
+        throw AssignmentUpdateException(data['message']?.toString() ?? 'فشل تعديل الواجب');
+      }
+      if (!ref.mounted) return;
+      await _fetch();
+    } catch (e) {
+      debugPrint('Error updating assignment: $e');
       rethrow;
     }
   }

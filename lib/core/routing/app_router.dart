@@ -11,6 +11,8 @@ import '../../features/attendance/presentation/screens/attendance_screen.dart';
 import '../../features/assignments/presentation/screens/assignments_screen.dart';
 import '../../features/assignments/presentation/screens/add_assignment_screen.dart';
 import '../../features/assignments/presentation/screens/submissions_tracking_screen.dart';
+import '../../features/assignments/presentation/screens/assignment_details_screen.dart';
+import '../../features/assignments/presentation/screens/edit_assignment_screen.dart';
 import '../../features/schedule/presentation/screens/schedule_screen.dart';
 
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
@@ -124,6 +126,20 @@ GoRouter appRouter(Ref ref) {
         builder: (context, state) {
           final id = state.pathParameters['id']!;
           return SubmissionsTrackingScreen(assignmentId: id);
+        },
+      ),
+      GoRoute(
+        path: '/assignment_details/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return AssignmentDetailsScreen(assignmentId: id);
+        },
+      ),
+      GoRoute(
+        path: '/edit_assignment/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return EditAssignmentScreen(assignmentId: id);
         },
       ),
       GoRoute(

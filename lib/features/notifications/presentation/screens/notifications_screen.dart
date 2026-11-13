@@ -47,7 +47,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           await ref.read(notificationsProvider.notifier).refresh();
         },
         color: AppColors.primary,
-        child: CustomScrollView(
+        // تحميل الإشعارات الأقدم عند الاقتراب من نهاية القائمة
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (sn) {
+            if (sn.metrics.extentAfter < 400) {
+              ref.read(notificationsProvider.notifier).loadMore();
+            }
+            return false;
+          },
+          child: CustomScrollView(
           physics: const BouncingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
           ),
@@ -83,6 +91,18 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
+                      if (index == notifications.length) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2.5),
+                            ),
+                          ),
+                        );
+                      }
                       final n = notifications[index];
                       return Padding(
                         padding: const EdgeInsets.only(bottom: AppSpacing.md),
@@ -101,11 +121,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                         ),
                       );
                     },
-                    childCount: notifications.length,
+                    childCount: notifications.length +
+                        (ref.read(notificationsProvider.notifier).hasMore ? 1 : 0),
                   ),
                 ),
               ),
           ],
+          ),
         ),
       ),
     );

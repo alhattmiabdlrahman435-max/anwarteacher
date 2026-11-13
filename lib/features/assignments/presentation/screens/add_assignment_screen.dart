@@ -33,7 +33,20 @@ class _AddAssignmentScreenState extends ConsumerState<AddAssignmentScreen> {
   DateTime? _dueDate;
   String? _selectedClass;
   String? _selectedSubject;
-  String? _pickedImagePath;
+  /// مرفقات الواجب (صور/ملفات) — حتى 10
+  final List<String> _pickedPaths = [];
+  static const int _maxAttachments = 10;
+
+  void _addPicked(Iterable<String> paths) {
+    final room = _maxAttachments - _pickedPaths.length;
+    final toAdd = paths.take(room).toList();
+    setState(() => _pickedPaths.addAll(toAdd));
+    if (paths.length > room && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('الحد الأقصى 10 مرفقات للواجب الواحد.')),
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -301,89 +314,114 @@ class _AddAssignmentScreenState extends ConsumerState<AddAssignmentScreen> {
   }
 
   Widget _buildAttachmentButton(bool isDark) {
-    final hasAttachment = _pickedImagePath != null;
-    IconData attachmentIcon = Icons.insert_drive_file_outlined;
-    if (hasAttachment) {
-      final ext = _pickedImagePath!.split('.').last.toLowerCase();
-      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'].contains(ext)) {
-        attachmentIcon = Icons.image_outlined;
-      }
-    }
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: hasAttachment ? null : _pickAttachment,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-          decoration: BoxDecoration(
-            color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark ? Colors.white12 : Colors.grey.shade300,
-              style: BorderStyle.solid,
+    final canAddMore = _pickedPaths.length < _maxAttachments;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (int i = 0; i < _pickedPaths.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade300),
+              ),
+              child: Row(
+                children: [
+                  _isImagePath(_pickedPaths[i])
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            File(_pickedPaths[i]),
+                            width: 44,
+                            height: 44,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : const Icon(Icons.insert_drive_file_outlined, color: AppColors.primary, size: 32),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _pickedPaths[i].split(RegExp(r'[\\/]')).last,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.cancel_rounded, color: AppColors.error),
+                    onPressed: () => setState(() => _pickedPaths.removeAt(i)),
+                  ),
+                ],
+              ),
             ),
           ),
-          child: hasAttachment 
-              ? Row(
-                  children: [
-                    Icon(attachmentIcon, color: AppColors.primary, size: 28),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _pickedImagePath!.split('/').last,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.cancel_rounded, color: AppColors.error),
-                      onPressed: () => setState(() => _pickedImagePath = null),
-                    )
-                  ],
-                )
-              : Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.white10 : Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          if (!isDark)
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+        if (canAddMore)
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _pickAttachment,
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  vertical: _pickedPaths.isEmpty ? 24 : 14,
+                  horizontal: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: isDark ? Colors.white12 : Colors.grey.shade300),
+                ),
+                child: _pickedPaths.isEmpty
+                    ? Column(
+                        children: [
+                          Icon(
+                            Icons.cloud_upload_rounded,
+                            color: isDark ? Colors.white : AppColors.primary,
+                            size: 32,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            context.loc.attachFilesOrImages,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: isDark ? Colors.white70 : AppColors.primaryDark,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'يمكنك إرفاق حتى 10 صور أو ملفات في نفس الواجب',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: isDark ? Colors.white38 : Colors.grey.shade500,
+                                ),
+                          ),
+                        ],
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.add_circle_outline_rounded, color: AppColors.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'إضافة مرفق آخر (${_pickedPaths.length}/$_maxAttachments)',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
                             ),
+                          ),
                         ],
                       ),
-                      child: Icon(Icons.cloud_upload_rounded, color: isDark ? Colors.white : AppColors.primary, size: 32),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      context.loc.attachFilesOrImages,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: isDark ? Colors.white70 : AppColors.primaryDark,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      context.loc.fileFormatHint,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: isDark ? Colors.white38 : Colors.grey.shade500,
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-      ),
+              ),
+            ),
+          ),
+      ],
     );
   }
+
+  bool _isImagePath(String path) =>
+      ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'].contains(path.split('.').last.toLowerCase());
 
   Widget _buildAttachmentOptionCard({
     required BuildContext context,
@@ -433,13 +471,31 @@ class _AddAssignmentScreenState extends ConsumerState<AddAssignmentScreen> {
 
   Future<void> _pickFromSource(ImageSource source) async {
     try {
+      if (source == ImageSource.gallery) {
+        // اختيار أكثر من صورة دفعة واحدة من المعرض
+        final picked = await ImagePicker().pickMultiImage();
+        if (picked.isEmpty) return;
+        final paths = <String>[];
+        for (final x in picked) {
+          final result = await ImageCompressService.compress(
+            File(x.path),
+            maxWidth: ImageCompressService.homeworkMaxSide,
+            maxHeight: ImageCompressService.homeworkMaxSide,
+            quality: ImageCompressService.homeworkQuality,
+          );
+          paths.add(result.file.path);
+        }
+        _addPicked(paths);
+        return;
+      }
       final result = await ImageCompressService.pickAndCompress(
         source: source,
-        maxWidth: 1920,
-        maxHeight: 1920,
+        maxWidth: ImageCompressService.homeworkMaxSide,
+        maxHeight: ImageCompressService.homeworkMaxSide,
+        quality: ImageCompressService.homeworkQuality,
       );
       if (result != null) {
-        setState(() => _pickedImagePath = result.file.path);
+        _addPicked([result.file.path]);
       }
     } on ImageValidationException catch (e) {
       if (mounted) {
@@ -471,31 +527,32 @@ class _AddAssignmentScreenState extends ConsumerState<AddAssignmentScreen> {
     try {
       final FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.any,
-        allowMultiple: false,
+        allowMultiple: true,
       );
-      if (result != null && result.files.single.path != null) {
-        final path = result.files.single.path!;
-        final file = File(path);
-        
+      if (result == null) return;
+      final accepted = <String>[];
+      for (final f in result.files) {
+        final path = f.path;
+        if (path == null) continue;
         // Enforce 10 MB limit for non-image attachments
-        final size = await file.length();
+        final size = await File(path).length();
         if (size > 10 * 1024 * 1024) {
           final mb = (size / 1_048_576).toStringAsFixed(1);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('حجم الملف ($mb MB) يتجاوز الحد المسموح (10 MB).'),
+                content: Text('حجم الملف ${f.name} ($mb MB) يتجاوز الحد المسموح (10 MB).'),
                 backgroundColor: AppColors.error,
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             );
           }
-          return;
+          continue;
         }
-
-        setState(() => _pickedImagePath = path);
+        accepted.add(path);
       }
+      _addPicked(accepted);
     } catch (e) {
       debugPrint('Error picking file: $e');
       if (mounted) {
@@ -640,7 +697,7 @@ class _AddAssignmentScreenState extends ConsumerState<AddAssignmentScreen> {
         dueDate: _dueDate!,
       );
 
-      await ref.read(assignmentsDataProvider.notifier).addAssignment(newAssignment, _pickedImagePath);
+      await ref.read(assignmentsDataProvider.notifier).addAssignment(newAssignment, _pickedPaths);
 
       // Close loading dialog
       if (mounted) {

@@ -54,6 +54,7 @@ class _SubmissionsTrackingScreenState extends ConsumerState<SubmissionsTrackingS
     );
 
     int submittedCount = assignment.submissions.where((s) => s.status == SubmissionStatus.submitted).length;
+    int lateCount = assignment.submissions.where((s) => s.status == SubmissionStatus.submittedLate).length;
     int notSubmittedCount = assignment.submissions.where((s) => s.status == SubmissionStatus.notSubmitted).length;
 
     return Scaffold(
@@ -103,6 +104,7 @@ class _SubmissionsTrackingScreenState extends ConsumerState<SubmissionsTrackingS
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         _buildStatColumn(context.loc.submissionStatusSubmitted, submittedCount, AppColors.success),
+                        _buildStatColumn(_lateLabel(context), lateCount, AppColors.warning),
                         _buildStatColumn(context.loc.submissionStatusNotSubmitted, notSubmittedCount, AppColors.error),
                       ],
                     ),
@@ -197,6 +199,15 @@ class _SubmissionsTrackingScreenState extends ConsumerState<SubmissionsTrackingS
                   AppColors.success,
                   isDark,
                 ),
+                // نفس خيارات لوحة التحكم: سلّم / سلّم متأخراً / لم يسلّم
+                _buildStatusOption(
+                  assignmentId,
+                  submission,
+                  SubmissionStatus.submittedLate,
+                  _lateLabel(context),
+                  AppColors.warning,
+                  isDark,
+                ),
                 _buildStatusOption(
                   assignmentId,
                   submission,
@@ -263,6 +274,10 @@ class _SubmissionsTrackingScreenState extends ConsumerState<SubmissionsTrackingS
       ),
     );
   }
+
+  /// نفس تسمية لوحة التحكم ("سلم متأخراً") حتى لا تُفهم "متأخر" على أنها "لم يسلّم"
+  String _lateLabel(BuildContext context) =>
+      Localizations.localeOf(context).languageCode == 'ar' ? 'سلّم متأخراً' : 'Submitted late';
 
   Widget _buildStatusOption(
     String assignmentId,

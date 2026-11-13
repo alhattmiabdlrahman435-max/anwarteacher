@@ -31,14 +31,27 @@ class Notifications extends _$Notifications {
 
   bool _isFetching = false;
 
-  Future<void> _fetch() async {
+  static const int _perPage = 20;
+  int _currentPage = 0;
+  int _lastPage = 1;
+
+  /// هل توجد إشعارات أقدم لم تُحمَّل بعد
+  bool get hasMore => _currentPage < _lastPage;
+
+  /// يجلب صفحة من الإشعارات. الصفحة 1 تستبدل القائمة، والتالية تُضاف لنهايتها.
+  Future<void> _fetch({int page = 1}) async {
     if (_isFetching) return;
     _isFetching = true;
     try {
       final dio = ref.read(apiClientProvider);
-      final response = await dio.get('notifications');
+      final response = await dio.get('notifications', queryParameters: {
+        'page': page,
+        'per_page': _perPage,
+      });
       if (!ref.mounted) return;
       if (response.data != null && response.data['success'] == true) {
+        _currentPage = (response.data['current_page'] as num?)?.toInt() ?? page;
+        _lastPage = (response.data['last_page'] as num?)?.toInt() ?? _currentPage;
         final List<dynamic> list = response.data['notifications'] ?? [];
         final parsedList = list.map((item) {
           final String type = item['type']?.toString().toLowerCase() ?? 'general';
@@ -65,9 +78,13 @@ class Notifications extends _$Notifications {
           );
         }).toList();
 
-        // Only keep notifications created within the last 7 days
-        final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
-        state = parsedList.where((n) => n.date.isAfter(sevenDaysAgo)).toList();
+        // كل الإشعارات تبقى محفوظة (لا يُخفى القديم)؛ الأقدم يُحمَّل عند النزول
+        if (page == 1) {
+          state = parsedList;
+        } else {
+          final existing = state.map((n) => n.id).toSet();
+          state = [...state, ...parsedList.where((n) => !existing.contains(n.id))];
+        }
         _cache = state;
 
         final unreadCount = state.where((n) => !n.isRead).length;
@@ -82,6 +99,12 @@ class Notifications extends _$Notifications {
 
   Future<void> refresh() async {
     await _fetch();
+  }
+
+  /// تحميل الإشعارات الأقدم (الصفحة التالية)
+  Future<void> loadMore() async {
+    if (!hasMore) return;
+    await _fetch(page: _currentPage + 1);
   }
 
   void addNotification({

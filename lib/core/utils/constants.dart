@@ -5,6 +5,9 @@ import '../config/app_config.dart';
 class AppConstants {
   static String get baseUrl {
     if (AppConfig.isLocal) {
+      if (AppConfig.localHost.isNotEmpty) {
+        return 'http://${AppConfig.localHost}:8000/api/';
+      }
       if (kDebugMode) {
         try {
           if (Platform.isAndroid) {

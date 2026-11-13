@@ -40,6 +40,8 @@ class Assignment {
   final DateTime dueDate;
   final List<String> attachments; // e.g. file paths or URLs
   final List<StudentSubmission> submissions;
+  /// وقت آخر تعديل للواجب بعد إرساله (null = لم يُعدَّل)
+  final DateTime? editedAt;
 
   const Assignment({
     required this.id,
@@ -51,6 +53,7 @@ class Assignment {
     required this.dueDate,
     this.attachments = const [],
     this.submissions = const [],
+    this.editedAt,
   });
 
   Assignment copyWith({
@@ -63,6 +66,7 @@ class Assignment {
     DateTime? dueDate,
     List<String>? attachments,
     List<StudentSubmission>? submissions,
+    DateTime? editedAt,
   }) {
     return Assignment(
       id: id ?? this.id,
@@ -74,6 +78,7 @@ class Assignment {
       dueDate: dueDate ?? this.dueDate,
       attachments: attachments ?? this.attachments,
       submissions: submissions ?? this.submissions,
+      editedAt: editedAt ?? this.editedAt,
     );
   }
 }
