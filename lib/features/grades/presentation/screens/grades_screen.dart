@@ -15,6 +15,45 @@ import '../../../../core/extensions/localization_extension.dart';
 import '../../../../core/widgets/app_notification.dart';
 import '../../../../core/widgets/student_avatar.dart';
 
+/// Formatter that strictly allows English ASCII digits (0-9) and at most one decimal point.
+/// Rejects Arabic digits (٠-٩), Persian digits (۰-۹), Arabic commas (،, ٫),
+/// European commas (,), letters, and values exceeding [maxValue].
+/// Rejection keeps [oldValue] without automatic conversion or replacement.
+class StrictEnglishGradeInputFormatter extends TextInputFormatter {
+  final double maxValue;
+
+  StrictEnglishGradeInputFormatter({required this.maxValue});
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    // Strictly enforce English digits and single decimal dot
+    final allowedRegex = RegExp(r'^[0-9]+(\.[0-9]*)?$');
+    if (!allowedRegex.hasMatch(newValue.text)) {
+      return oldValue; // Reject non-English, commas, spaces, or multiple dots
+    }
+
+    // Enforce maximum allowed value
+    final textToCheck = newValue.text.endsWith('.')
+        ? newValue.text.substring(0, newValue.text.length - 1)
+        : newValue.text;
+    if (textToCheck.isNotEmpty) {
+      final parsed = double.tryParse(textToCheck);
+      if (parsed == null || parsed > maxValue) {
+        return oldValue; // Reject values exceeding max
+      }
+    }
+
+    return newValue;
+  }
+}
+
 class GradesScreen extends ConsumerStatefulWidget {
   const GradesScreen({super.key});
 
@@ -469,6 +508,9 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
     final altRowBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
     final borderColor = isDark ? Colors.white.withValues(alpha: 0.1) : AppColors.border;
 
+    final classGrades = ref.watch(gradesDataProvider);
+    final isUnsynced = classGrades.hasUnsyncedChanges;
+
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
@@ -488,6 +530,40 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Table Status Banner
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: isUnsynced
+                  ? (isDark ? Colors.amber.withValues(alpha: 0.15) : const Color(0xFFFEF3C7))
+                  : (isDark ? AppColors.success.withValues(alpha: 0.15) : const Color(0xFFECFDF5)),
+              border: Border(
+                bottom: BorderSide(color: borderColor, width: 1),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  isUnsynced ? CupertinoIcons.pencil_ellipsis_rectangle : CupertinoIcons.checkmark_seal_fill,
+                  size: 16,
+                  color: isUnsynced ? (isDark ? Colors.amber[300] : Colors.amber[800]) : AppColors.success,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    isUnsynced
+                        ? 'توجد درجات محفوظة كمسودة محلية — اضغط «إرسال الدرجات للإدارة» في الأسفل عند الرغبة في اعتمادها.'
+                        : 'جميع الدرجات في هذا الكشف متزامنة ومعتمدة لدى الإدارة.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: isUnsynced ? (isDark ? Colors.amber[200] : Colors.amber[900]) : (isDark ? Colors.green[200] : Colors.green[900]),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           // ================= 1. FIXED / STICKY HEADER ROW =================
           Container(
             height: headerHeight,
@@ -774,13 +850,7 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
           );
         },
         inputFormatters: [
-          TextInputFormatter.withFunction((oldValue, newValue) {
-            if (newValue.text.isEmpty) return newValue;
-            final val = double.tryParse(newValue.text);
-            if (val == null) return oldValue;
-            if (val > column.maxValue) return oldValue;
-            return newValue;
-          }),
+          StrictEnglishGradeInputFormatter(maxValue: column.maxValue),
         ],
         decoration: InputDecoration(
           isDense: true,
@@ -853,6 +923,10 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
             : 0.0)
         : termRecord.termTotal;
 
+    final classGrades = ref.watch(gradesDataProvider);
+    final bool hasDraft = classGrades.hasUnsyncedChanges && currentTotal > 0;
+    final bool isSubmitted = !classGrades.hasUnsyncedChanges && currentTotal > 0;
+
     final theme = Theme.of(context);
     return ModernCard(
       isDark: isDark,
@@ -882,15 +956,68 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    isMonthView
-                        ? context.loc.monthGrades(Localizations.localeOf(context).languageCode == 'ar'
-                            ? context.toArabicNumbers(_selectedView.toString())
-                            : _selectedView.toString())
-                        : context.loc.endTermGrades,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        isMonthView
+                            ? context.loc.monthGrades(Localizations.localeOf(context).languageCode == 'ar'
+                                ? context.toArabicNumbers(_selectedView.toString())
+                                : _selectedView.toString())
+                            : context.loc.endTermGrades,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      if (hasDraft)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withValues(alpha: isDark ? 0.2 : 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.amber.shade700.withValues(alpha: 0.5)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(CupertinoIcons.pencil, size: 10, color: isDark ? Colors.amber[300] : Colors.amber[800]),
+                              const SizedBox(width: 3),
+                              Text(
+                                'مسودة محلية',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.amber[300] : Colors.amber[800],
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else if (isSubmitted)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withValues(alpha: isDark ? 0.2 : 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: AppColors.success.withValues(alpha: 0.5)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(CupertinoIcons.checkmark_alt, size: 10, color: AppColors.success),
+                              SizedBox(width: 3),
+                              Text(
+                                'معتمدة للإدارة',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.success,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ),
@@ -920,12 +1047,6 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
           primaryColor: primaryColor,
           onSave: (updatedGrade) {
             ref.read(gradesDataProvider.notifier).updateStudentGrade(grade.studentId, updatedGrade);
-            Navigator.pop(context);
-            AppNotification.show(
-              context,
-              type: AppNotificationType.success,
-              title: context.loc.gradesSavedLocally,
-            );
           },
         );
       },
@@ -1167,6 +1288,19 @@ class GradeEntrySheet extends StatefulWidget {
 class _GradeEntrySheetState extends State<GradeEntrySheet> {
   late MonthRecord _currentMonth;
   late TermRecord _currentTerm;
+  bool _isSaved = false;
+
+  late final TextEditingController _hwController;
+  late final TextEditingController _attController;
+  late final TextEditingController _behController;
+  late final TextEditingController _oralController;
+  late final TextEditingController _wrtController;
+  late final TextEditingController _finalExamController;
+
+  static String _formatGrade(double val) {
+    if (val == 0) return '';
+    return val % 1 == 0 ? val.toInt().toString() : val.toString();
+  }
 
   @override
   void initState() {
@@ -1177,6 +1311,68 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
       _currentMonth = (monthIdx < _currentTerm.months.length)
           ? _currentTerm.months[monthIdx]
           : const MonthRecord(monthIndex: 1);
+    } else {
+      _currentMonth = const MonthRecord(monthIndex: 1);
+    }
+
+    _hwController = TextEditingController(text: _formatGrade(widget.isMonthView ? _currentMonth.homework : 0));
+    _attController = TextEditingController(text: _formatGrade(widget.isMonthView ? _currentMonth.attendance : 0));
+    _behController = TextEditingController(text: _formatGrade(widget.isMonthView ? _currentMonth.behavior : 0));
+    _oralController = TextEditingController(text: _formatGrade(widget.isMonthView ? _currentMonth.oral : 0));
+    _wrtController = TextEditingController(text: _formatGrade(widget.isMonthView ? _currentMonth.written : 0));
+    _finalExamController = TextEditingController(text: _formatGrade(widget.isMonthView ? 0 : _currentTerm.finalExam));
+  }
+
+  @override
+  void dispose() {
+    _hwController.dispose();
+    _attController.dispose();
+    _behController.dispose();
+    _oralController.dispose();
+    _wrtController.dispose();
+    _finalExamController.dispose();
+    super.dispose();
+  }
+
+  void _autoSaveDraft() {
+    TermRecord updatedTerm = _currentTerm;
+
+    if (widget.isMonthView) {
+      final updatedMonths = List<MonthRecord>.from(_currentTerm.months);
+      final monthIdx = widget.selectedView - 1;
+      while (updatedMonths.length <= monthIdx) {
+        updatedMonths.add(MonthRecord(monthIndex: updatedMonths.length + 1));
+      }
+      updatedMonths[monthIdx] = _currentMonth.copyWith(isSaved: true);
+      updatedTerm = updatedTerm.copyWith(months: updatedMonths);
+    } else {
+      updatedTerm = updatedTerm.copyWith(
+        finalExam: _currentTerm.finalExam,
+        isFinalSaved: true,
+      );
+    }
+
+    var updatedGrade = widget.grade;
+    if (widget.selectedTermIndex == 1) {
+      updatedGrade = updatedGrade.copyWith(firstTerm: updatedTerm);
+    } else {
+      updatedGrade = updatedGrade.copyWith(secondTerm: updatedTerm);
+    }
+
+    widget.onSave(updatedGrade);
+  }
+
+  void _saveAndClose({bool shouldPop = true}) {
+    if (_isSaved) {
+      if (shouldPop && mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      return;
+    }
+    _isSaved = true;
+    _autoSaveDraft();
+    if (shouldPop && mounted && Navigator.canPop(context)) {
+      Navigator.pop(context);
     }
   }
 
@@ -1184,99 +1380,225 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dialogBg = widget.isDark ? AppColors.surfaceAltDark : Colors.white;
-    return Container(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      decoration: BoxDecoration(
-        color: dialogBg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        boxShadow: widget.isDark ? null : [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          )
-        ],
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!_isSaved) {
+          _saveAndClose(shouldPop: false);
+        }
+      },
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.88,
+        ),
+        decoration: BoxDecoration(
+          color: dialogBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          boxShadow: widget.isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, -5),
+                  )
+                ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: AnimatedPadding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeOut,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Drag handle
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: widget.isDark ? Colors.white24 : Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                
-                // Header
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    StudentAvatar(
-                      photoUrl: widget.grade.studentPhotoUrl,
-                      name: widget.grade.studentName,
-                      size: 54,
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                // 1. FIXED TOP HEADER
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
+                  child: Column(
+                    children: [
+                      // Drag handle
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: widget.isDark ? Colors.white24 : Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Header Row
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(
-                            context.translateMock(widget.grade.studentName),
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
+                          StudentAvatar(
+                            photoUrl: widget.grade.studentPhotoUrl,
+                            name: widget.grade.studentName,
+                            size: 50,
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  context.translateMock(widget.grade.studentName),
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    Text(
+                                      widget.isMonthView
+                                          ? context.loc.recordMonthGrades(Localizations.localeOf(context).languageCode == 'ar'
+                                              ? context.toArabicNumbers(widget.selectedView.toString())
+                                              : widget.selectedView.toString())
+                                          : context.loc.recordTotalFinal,
+                                      style: theme.textTheme.labelMedium?.copyWith(
+                                        color: widget.isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.amber.withValues(alpha: widget.isDark ? 0.2 : 0.12),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Text(
+                                        'مسودة محلية',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.amber,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          IconButton(
+                            icon: Icon(
+                              CupertinoIcons.xmark_circle_fill,
+                              size: 28,
+                              color: widget.isDark ? Colors.white30 : Colors.grey.shade400,
+                            ),
+                            onPressed: () => _saveAndClose(shouldPop: true),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(
+                  height: 1,
+                  color: widget.isDark ? Colors.white12 : AppColors.border,
+                ),
+
+                // 2. SCROLLABLE MIDDLE (Input Fields)
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    physics: const BouncingScrollPhysics(),
+                    child: widget.isMonthView
+                        ? _buildMonthInputs()
+                        : _buildTermSummaryInputs(),
+                  ),
+                ),
+
+                // 3. FIXED BOTTOM BAR (Total + Save Button - ALWAYS VISIBLE ABOVE KEYBOARD)
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                  decoration: BoxDecoration(
+                    color: widget.isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                    border: Border(
+                      top: BorderSide(
+                        color: widget.isDark ? Colors.white12 : AppColors.border,
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Total Grade Row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                CupertinoIcons.chart_bar_alt_fill,
+                                size: 18,
+                                color: widget.primaryColor,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                widget.isMonthView
+                                    ? context.loc.monthlyTotal
+                                    : context.loc.totalGrade,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: widget.primaryColor,
+                                ),
+                              ),
+                            ],
+                          ),
                           Text(
-                            widget.isMonthView
-                                ? context.loc.recordMonthGrades(Localizations.localeOf(context).languageCode == 'ar'
-                                    ? context.toArabicNumbers(widget.selectedView.toString())
-                                    : widget.selectedView.toString())
-                                : context.loc.recordTotalFinal,
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: widget.isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                            (widget.isMonthView
+                                    ? _currentMonth.total
+                                    : _currentTerm.termTotal)
+                                .toStringAsFixed(1),
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              color: widget.primaryColor,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    IconButton(
-                      icon: Icon(CupertinoIcons.xmark_circle_fill, size: 28, color: widget.isDark ? Colors.white30 : Colors.grey.shade400),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 28),
+                      const SizedBox(height: 12),
 
-                // Inputs
-                if (widget.isMonthView)
-                  _buildMonthInputs()
-                else
-                  _buildTermSummaryInputs(),
-
-                const SizedBox(height: 28),
-
-                FilledButton(
-                  onPressed: _saveAndClose,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      // Fixed Save Button (Always above keyboard, never scrolls away)
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: FilledButton.icon(
+                          onPressed: () => _saveAndClose(shouldPop: true),
+                          icon: const Icon(CupertinoIcons.floppy_disk, size: 20),
+                          label: Text(
+                            context.loc.saveGrades,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: widget.isDark
+                                ? AppColors.uiPalettePrimary
+                                : AppColors.primary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  child: Text(context.loc.saveGrades, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                 ),
               ],
             ),
@@ -1291,51 +1613,80 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
       children: [
         Row(
           children: [
-            Expanded(child: _buildLabeledInput(context.loc.homeworkLabel('15'), _currentMonth.homework, 15, (v) => setState(() => _currentMonth = _currentMonth.copyWith(homework: v)))),
+            Expanded(
+              child: _buildLabeledInput(
+                context.loc.homeworkLabel('15'),
+                _hwController,
+                15,
+                (v) {
+                  _currentMonth = _currentMonth.copyWith(homework: v);
+                  _autoSaveDraft();
+                  setState(() {});
+                },
+              ),
+            ),
             const SizedBox(width: 16),
-            Expanded(child: _buildLabeledInput(context.loc.attendanceLabel('15'), _currentMonth.attendance, 15, (v) => setState(() => _currentMonth = _currentMonth.copyWith(attendance: v)))),
+            Expanded(
+              child: _buildLabeledInput(
+                context.loc.attendanceLabel('15'),
+                _attController,
+                15,
+                (v) {
+                  _currentMonth = _currentMonth.copyWith(attendance: v);
+                  _autoSaveDraft();
+                  setState(() {});
+                },
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(child: _buildLabeledInput(context.loc.behaviorLabel('10'), _currentMonth.behavior, 10, (v) => setState(() => _currentMonth = _currentMonth.copyWith(behavior: v)))),
+            Expanded(
+              child: _buildLabeledInput(
+                context.loc.behaviorLabel('10'),
+                _behController,
+                10,
+                (v) {
+                  _currentMonth = _currentMonth.copyWith(behavior: v);
+                  _autoSaveDraft();
+                  setState(() {});
+                },
+              ),
+            ),
             const SizedBox(width: 16),
-            Expanded(child: _buildLabeledInput(context.loc.oralLabel('10'), _currentMonth.oral, 10, (v) => setState(() => _currentMonth = _currentMonth.copyWith(oral: v)))),
+            Expanded(
+              child: _buildLabeledInput(
+                context.loc.oralLabel('10'),
+                _oralController,
+                10,
+                (v) {
+                  _currentMonth = _currentMonth.copyWith(oral: v);
+                  _autoSaveDraft();
+                  setState(() {});
+                },
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(child: _buildLabeledInput(context.loc.writtenLabel('50'), _currentMonth.written, 50, (v) => setState(() => _currentMonth = _currentMonth.copyWith(written: v)))),
+            Expanded(
+              child: _buildLabeledInput(
+                context.loc.writtenLabel('50'),
+                _wrtController,
+                50,
+                (v) {
+                  _currentMonth = _currentMonth.copyWith(written: v);
+                  _autoSaveDraft();
+                  setState(() {});
+                },
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: 20),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          decoration: BoxDecoration(
-            color: widget.primaryColor.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: widget.primaryColor.withValues(alpha: 0.1)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Text(
-                  context.loc.monthlyTotal,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: widget.primaryColor),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _currentMonth.total.toStringAsFixed(1),
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900, color: widget.primaryColor),
-              ),
-            ],
-          ),
-        )
       ],
     );
   }
@@ -1347,45 +1698,36 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
         Row(
           children: [
             Expanded(
-              child: _buildReadOnlyBox(context.loc.averageLabel('20'), _currentTerm.monthsAverage),
+              child: _buildReadOnlyBox(
+                context.loc.averageLabel('20'),
+                _currentTerm.monthsAverage,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: _buildLabeledInput(context.loc.finalExamLabel('30'), _currentTerm.finalExam, 30, (v) => setState(() => _currentTerm = _currentTerm.copyWith(finalExam: v))),
+              child: _buildLabeledInput(
+                context.loc.finalExamLabel('30'),
+                _finalExamController,
+                30,
+                (v) {
+                  _currentTerm = _currentTerm.copyWith(finalExam: v);
+                  _autoSaveDraft();
+                  setState(() {});
+                },
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 20),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          decoration: BoxDecoration(
-            color: widget.primaryColor.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: widget.primaryColor.withValues(alpha: 0.1)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Text(
-                  context.loc.totalGrade,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: widget.primaryColor),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _currentTerm.termTotal.toStringAsFixed(1),
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900, color: widget.primaryColor),
-              ),
-            ],
-          ),
-        )
       ],
     );
   }
 
-  Widget _buildLabeledInput(String label, double value, double maxValue, Function(double) onChanged) {
+  Widget _buildLabeledInput(
+    String label,
+    TextEditingController controller,
+    double maxValue,
+    Function(double) onChanged,
+  ) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1394,28 +1736,56 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
           label,
           style: theme.textTheme.labelMedium?.copyWith(
             fontWeight: FontWeight.w600,
-            color: widget.isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            color: widget.isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
           ),
         ),
         const SizedBox(height: 8),
         TextFormField(
-          initialValue: value == 0 ? '' : value.toString(),
+          controller: controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [
-            TextInputFormatter.withFunction((oldValue, newValue) {
-              if (newValue.text.isEmpty) return newValue;
-              final val = double.tryParse(newValue.text);
-              if (val == null) return oldValue;
-              if (val > maxValue) return oldValue;
-              return newValue;
-            }),
+            StrictEnglishGradeInputFormatter(maxValue: maxValue),
           ],
           textAlign: TextAlign.center,
           style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w800, 
+            fontWeight: FontWeight.w800,
+          ),
+          onTap: () {
+            controller.selection = TextSelection(
+              baseOffset: 0,
+              extentOffset: controller.text.length,
+            );
+          },
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: widget.isDark ? Colors.white24 : AppColors.border,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: widget.isDark
+                    ? AppColors.uiPalettePrimary
+                    : widget.primaryColor,
+                width: 2,
+              ),
+            ),
+            filled: true,
+            fillColor: widget.isDark
+                ? Colors.white.withValues(alpha: 0.05)
+                : Colors.white,
           ),
           onChanged: (val) {
-            final doubleVal = double.tryParse(val) ?? 0;
+            final doubleVal = double.tryParse(val) ?? 0.0;
             onChanged(doubleVal);
           },
         ),
@@ -1432,7 +1802,9 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
           label,
           style: theme.textTheme.labelMedium?.copyWith(
             fontWeight: FontWeight.w600,
-            color: widget.isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+            color: widget.isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
           ),
         ),
         const SizedBox(height: 8),
@@ -1442,44 +1814,23 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
           decoration: BoxDecoration(
             color: widget.isDark ? AppColors.surfaceAltDark : AppColors.surfaceLight,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: widget.isDark ? Colors.white12 : AppColors.border),
+            border: Border.all(
+              color: widget.isDark ? Colors.white12 : AppColors.border,
+            ),
           ),
           child: Text(
             value.toStringAsFixed(1),
             textAlign: TextAlign.center,
             style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800, 
-              color: widget.isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+              fontWeight: FontWeight.w800,
+              color: widget.isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
             ),
           ),
         ),
       ],
     );
-  }
-
-  void _saveAndClose() {
-    TermRecord updatedTerm = _currentTerm;
-    
-    if (widget.isMonthView) {
-      final updatedMonths = List<MonthRecord>.from(_currentTerm.months);
-      final monthIdx = widget.selectedView - 1;
-      while (updatedMonths.length <= monthIdx) {
-        updatedMonths.add(MonthRecord(monthIndex: updatedMonths.length + 1));
-      }
-      updatedMonths[monthIdx] = _currentMonth;
-      updatedTerm = updatedTerm.copyWith(months: updatedMonths);
-    } else {
-      updatedTerm = updatedTerm.copyWith(finalExam: _currentTerm.finalExam);
-    }
-
-    var updatedGrade = widget.grade;
-    if (widget.selectedTermIndex == 1) {
-      updatedGrade = updatedGrade.copyWith(firstTerm: updatedTerm);
-    } else {
-      updatedGrade = updatedGrade.copyWith(secondTerm: updatedTerm);
-    }
-    
-    widget.onSave(updatedGrade);
   }
 }
 

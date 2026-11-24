@@ -8,6 +8,7 @@ import '../network/api_client.dart';
 import '../network/pusher_service.dart';
 import '../utils/constants.dart';
 import '../services/badge_service.dart';
+import '../services/grades_local_service.dart';
 import '../services/image_compress_service.dart';
 
 part 'auth_provider.g.dart';
@@ -279,6 +280,13 @@ class Auth extends _$Auth {
       await BadgeService.clearBadge();
     } catch (e) {
       debugPrint('Error clearing badge: $e');
+    }
+
+    // Clear locally cached grades on logout to prevent cross-user / cross-year leakage (DEC-07)
+    try {
+      await GradesLocalService.clearAllCache();
+    } catch (e) {
+      debugPrint('Error clearing grades cache on logout: $e');
     }
     
     // Disconnect Pusher to prevent unwanted messages and battery drain
