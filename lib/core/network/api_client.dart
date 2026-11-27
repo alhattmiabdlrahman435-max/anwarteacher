@@ -13,9 +13,9 @@ Dio apiClient(Ref ref) {
   final dio = Dio(
     BaseOptions(
       baseUrl: AppConstants.baseUrl,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 15),
-      sendTimeout: const Duration(seconds: 15),
+      connectTimeout: const Duration(seconds: 45),
+      receiveTimeout: const Duration(seconds: 45),
+      sendTimeout: const Duration(seconds: 45),
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -52,18 +52,17 @@ Dio apiClient(Ref ref) {
     },
     onError: (DioException e, handler) {
       final isConnectionError = e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout ||
           e.type == DioExceptionType.connectionError;
       
       final isServerError = e.response != null && e.response!.statusCode != null && e.response!.statusCode! >= 500;
       final isGetRequest  = e.requestOptions.method.toUpperCase() == 'GET';
       
-      // Only show full-screen server error overlay for data-fetching GET requests.
-      // Form actions (POST/PUT/DELETE) should fail gracefully to let screen-level error handlers display a toast.
+      // Only show full-screen server error overlay for actual connectivity/5xx failures on GET requests.
+      // A slow receiveTimeout on a background list request (e.g. assignments) should not lock out active screens.
       if (isGetRequest && (isConnectionError || isServerError)) {
         ref.read(serverErrorProvider.notifier).setHasError(true);
-      } else {
+      } else if (e.type != DioExceptionType.receiveTimeout) {
         ref.read(serverErrorProvider.notifier).setHasError(false);
       }
 

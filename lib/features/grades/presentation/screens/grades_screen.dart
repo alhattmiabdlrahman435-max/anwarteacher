@@ -61,7 +61,7 @@ class GradesScreen extends ConsumerStatefulWidget {
   ConsumerState<GradesScreen> createState() => _GradesScreenState();
 }
 
-class _GradesScreenState extends ConsumerState<GradesScreen> {
+class _GradesScreenState extends ConsumerState<GradesScreen> with WidgetsBindingObserver {
   int _selectedTermIndex = 1; // 1 or 2
   int _selectedView = 1; // 1, 2, 3 for months, 4 for final/summary
   String _searchQuery = '';
@@ -78,16 +78,28 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
 
   // Track controllers for table cells: key = "studentId_term_view_field"
   final Map<String, TextEditingController> _cellControllers = {};
+  // Per-row total notifiers to isolate table cell updates without full-table rebuilds
+  final Map<String, ValueNotifier<double>> _totalNotifiers = {};
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _setupScrollSynchronization();
     Future.microtask(() {
       if (mounted) {
         ref.read(gradesDataProvider.notifier).refresh();
       }
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      ref.read(gradesDataProvider.notifier).flushPendingSave();
+    }
   }
 
   void _setupScrollSynchronization() {
@@ -136,6 +148,9 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    ref.read(gradesDataProvider.notifier).flushPendingSave();
+
     _headerHorizontalController.dispose();
     _bodyHorizontalController.dispose();
     _namesVerticalController.dispose();
@@ -145,18 +160,40 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
       c.dispose();
     }
     _cellControllers.clear();
+    for (final n in _totalNotifiers.values) {
+      n.dispose();
+    }
+    _totalNotifiers.clear();
     super.dispose();
   }
 
-  TextEditingController _getController(String key, double value) {
-    final formatted = value == 0 ? '' : value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1);
+  ValueNotifier<double> _getTotalNotifier(String key, double initialValue) {
+    final existing = _totalNotifiers[key];
+    if (existing != null) {
+      if (existing.value != initialValue) {
+        existing.value = initialValue;
+      }
+      return existing;
+    }
+    return _totalNotifiers[key] = ValueNotifier<double>(initialValue);
+  }
+
+  TextEditingController _getController(String key, double? value, {bool showZero = false}) {
+    final String formatted;
+    if (value == null) {
+      formatted = '';
+    } else if (value == 0) {
+      formatted = showZero ? '0' : '';
+    } else {
+      formatted = value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1);
+    }
     if (!_cellControllers.containsKey(key)) {
       _cellControllers[key] = TextEditingController(text: formatted);
     } else {
-      // If controller text is different from current grade value and not currently focused, update it
       final currentText = _cellControllers[key]!.text;
-      final currentDouble = double.tryParse(currentText) ?? 0.0;
-      if (currentDouble != value && (currentText.isNotEmpty || value != 0)) {
+      final currentDouble = currentText.trim().isEmpty ? null : double.tryParse(currentText);
+      final normalizedVal = (value == 0 && !showZero) ? null : value;
+      if (currentDouble != normalizedVal) {
         _cellControllers[key]!.text = formatted;
       }
     }
@@ -165,7 +202,15 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final classGrades = ref.watch(gradesDataProvider);
+    // Watch structural metadata in Table View so typing in a single cell does not rebuild all rows.
+    if (_isTableView) {
+      ref.watch(gradesDataProvider.select(
+        (s) => '${s.classId}|${s.subjectName}|${s.grades.length}|${s.hasUnsyncedChanges}|${s.isSubmitting}|${s.unsyncedStudentIds.length}',
+      ));
+    } else {
+      ref.watch(gradesDataProvider);
+    }
+    final classGrades = ref.read(gradesDataProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = isDark ? Colors.white : AppColors.primary;
 
@@ -288,23 +333,46 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
         ),
         const SizedBox(height: AppSpacing.md),
         
-        // Modern Month & Summary Chips
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: Row(
-            children: [
-              _buildFilterChip(1, context.loc.month1, isDark, primaryColor),
-              const SizedBox(width: AppSpacing.sm),
-              _buildFilterChip(2, context.loc.month2, isDark, primaryColor),
-              const SizedBox(width: AppSpacing.sm),
-              _buildFilterChip(3, context.loc.month3, isDark, primaryColor),
-              const SizedBox(width: AppSpacing.sm),
-              _buildFilterChip(4, context.loc.recordTotalFinal, isDark, primaryColor),
-            ],
+        // Modern Month & Summary Chips (hidden for descriptive subjects)
+        if (ref.watch(gradesDataProvider).isDescriptive)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(CupertinoIcons.star_circle_fill, color: primaryColor, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    'مادة تقديرية — رصد التقدير الوصفي فقط',
+                    style: TextStyle(color: primaryColor, fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Row(
+              children: [
+                _buildFilterChip(1, context.loc.month1, isDark, primaryColor),
+                const SizedBox(width: AppSpacing.sm),
+                _buildFilterChip(2, context.loc.month2, isDark, primaryColor),
+                const SizedBox(width: AppSpacing.sm),
+                _buildFilterChip(3, context.loc.month3, isDark, primaryColor),
+                const SizedBox(width: AppSpacing.sm),
+                _buildFilterChip(4, context.loc.recordTotalFinal, isDark, primaryColor),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }
@@ -470,7 +538,8 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
   /// - Synchronized horizontal scroll between Header and Body
   /// - Synchronized vertical scroll between Names and Cells
   Widget _buildTableView(List<StudentSubjectGrade> grades, bool isDark, Color primaryColor) {
-    final bool isMonthView = _selectedView <= 3;
+    final classGrades = ref.watch(gradesDataProvider);
+    final bool isMonthView = !classGrades.isDescriptive && _selectedView <= 3;
     final theme = Theme.of(context);
 
     // Define columns based on selected month or summary
@@ -483,13 +552,17 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
             _TableColumn(context.loc.writtenLabel('50'), 'written', 50),
             _TableColumn(context.loc.total, 'total', 0, isReadOnly: true),
           ]
-        : [
-            _TableColumn(context.loc.averageLabel('20'), 'average', 20, isReadOnly: true),
-            _TableColumn(context.loc.finalExamLabel('30'), 'finalExam', 30),
-            _TableColumn(context.loc.total, 'total', 0, isReadOnly: true),
-          ];
+        : (classGrades.isDescriptive
+            ? [
+                _TableColumn('التقدير الوصفي', 'descriptiveGrade', 0),
+              ]
+            : [
+                _TableColumn(context.loc.averageLabel('20'), 'average', 20, isReadOnly: true),
+                _TableColumn(context.loc.finalExamLabel('30'), 'finalExam', 30),
+                _TableColumn(context.loc.total, 'total', 0, isReadOnly: true),
+              ]);
 
-    const double cellWidth = 92.0;
+    final double cellWidth = (!isMonthView && classGrades.isDescriptive) ? 160.0 : 92.0;
     const double nameColumnWidth = 145.0;
     const double rowHeight = 52.0;
     const double headerHeight = 52.0;
@@ -508,8 +581,7 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
     final altRowBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
     final borderColor = isDark ? Colors.white.withValues(alpha: 0.1) : AppColors.border;
 
-    final classGrades = ref.watch(gradesDataProvider);
-    final isUnsynced = classGrades.hasUnsyncedChanges;
+    final bool isUnsynced = classGrades.hasUnsyncedChanges;
 
     return Container(
       decoration: BoxDecoration(
@@ -752,8 +824,72 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
             : const MonthRecord(monthIndex: 1)) 
         : (termRecord.months.isNotEmpty ? termRecord.months.first : const MonthRecord(monthIndex: 1));
 
+    if (column.key == 'descriptiveGrade') {
+      final estimates = ref.read(gradesDataProvider).descriptiveEstimates;
+      final currentDesc = (termRecord.descriptiveGrade != null &&
+              estimates.contains(termRecord.descriptiveGrade))
+          ? termRecord.descriptiveGrade
+          : null;
+      return Container(
+        width: cellWidth,
+        height: rowHeight,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: bgColor,
+          border: Border(right: BorderSide(color: borderColor)),
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: currentDesc != null
+                  ? primaryColor.withValues(alpha: 0.5)
+                  : (isDark ? Colors.white24 : const Color(0xFFCBD5E1)),
+            ),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String?>(
+              isExpanded: true,
+              value: currentDesc,
+              hint: const Text('لم يُرصد', style: TextStyle(fontSize: 12)),
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('لم يُرصد', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                ),
+                ...estimates.map((est) => DropdownMenuItem<String?>(
+                      value: est,
+                      child: Text(est, overflow: TextOverflow.ellipsis),
+                    )),
+              ],
+              onChanged: (val) {
+                final updatedTerm = val == null
+                    ? termRecord.copyWith(clearDescriptiveGrade: true, isFinalSaved: false)
+                    : termRecord.copyWith(descriptiveGrade: val);
+                final updatedGrade = _selectedTermIndex == 1
+                    ? grade.copyWith(firstTerm: updatedTerm)
+                    : grade.copyWith(secondTerm: updatedTerm);
+                ref.read(gradesDataProvider.notifier).updateStudentGrade(
+                      grade.studentId,
+                      updatedGrade,
+                      changedPeriodKey: '${grade.studentId}_${_selectedTermIndex}_final',
+                    );
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
     // Calculate value
-    double value = 0;
+    double? value = 0;
     if (isMonthView) {
       switch (column.key) {
         case 'homework': value = month.homework; break;
@@ -775,52 +911,67 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
     final bool isTotalColumn = column.key == 'total';
 
     if (isReadOnly) {
-      // Calculated Read-only cell (Total or Average)
-      Color textColor = isDark ? Colors.white70 : AppColors.textSecondaryLight;
-      Color cellBg = bgColor;
+      final double readOnlyValue = value ?? 0.0;
+      // Calculated Read-only cell (Total or Average) isolated via ValueNotifier
+      final totalKey = '${grade.studentId}_${_selectedTermIndex}_$_selectedView';
+      final notifier = isTotalColumn ? _getTotalNotifier(totalKey, readOnlyValue) : null;
 
-      if (isTotalColumn && value > 0) {
-        final maxTotal = isMonthView ? 100.0 : 50.0;
-        if (value >= maxTotal * 0.9) {
-          textColor = AppColors.success;
-          cellBg = AppColors.success.withValues(alpha: isDark ? 0.15 : 0.08);
-        } else if (value >= maxTotal * 0.7) {
-          textColor = AppColors.primaryGradient;
-          cellBg = AppColors.primaryGradient.withValues(alpha: isDark ? 0.15 : 0.08);
-        } else if (value >= maxTotal * 0.5) {
-          textColor = AppColors.accent;
-          cellBg = AppColors.accent.withValues(alpha: isDark ? 0.15 : 0.08);
-        } else {
-          textColor = AppColors.error;
-          cellBg = AppColors.error.withValues(alpha: isDark ? 0.15 : 0.08);
+      Widget buildReadOnlyContent(double displayVal) {
+        Color textColor = isDark ? Colors.white70 : AppColors.textSecondaryLight;
+        Color cellBg = bgColor;
+
+        if (isTotalColumn && displayVal > 0) {
+          final maxTotal = isMonthView ? 100.0 : 50.0;
+          if (displayVal >= maxTotal * 0.9) {
+            textColor = AppColors.success;
+            cellBg = AppColors.success.withValues(alpha: isDark ? 0.15 : 0.08);
+          } else if (displayVal >= maxTotal * 0.7) {
+            textColor = AppColors.primaryGradient;
+            cellBg = AppColors.primaryGradient.withValues(alpha: isDark ? 0.15 : 0.08);
+          } else if (displayVal >= maxTotal * 0.5) {
+            textColor = AppColors.accent;
+            cellBg = AppColors.accent.withValues(alpha: isDark ? 0.15 : 0.08);
+          } else {
+            textColor = AppColors.error;
+            cellBg = AppColors.error.withValues(alpha: isDark ? 0.15 : 0.08);
+          }
         }
+
+        return Container(
+          width: cellWidth,
+          height: rowHeight,
+          decoration: BoxDecoration(
+            color: cellBg,
+            border: Border(
+              left: BorderSide(color: borderColor, width: 0.5),
+              bottom: BorderSide(color: borderColor, width: 0.5),
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            displayVal.toStringAsFixed(1),
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: isTotalColumn ? FontWeight.w800 : FontWeight.w600,
+              color: textColor,
+              fontSize: 13,
+            ),
+          ),
+        );
       }
 
-      return Container(
-        width: cellWidth,
-        height: rowHeight,
-        decoration: BoxDecoration(
-          color: cellBg,
-          border: Border(
-            left: BorderSide(color: borderColor, width: 0.5),
-            bottom: BorderSide(color: borderColor, width: 0.5),
-          ),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          value.toStringAsFixed(1),
-          style: theme.textTheme.labelMedium?.copyWith(
-            fontWeight: isTotalColumn ? FontWeight.w800 : FontWeight.w600,
-            color: textColor,
-            fontSize: 13,
-          ),
-        ),
-      );
+      if (notifier != null) {
+        return ValueListenableBuilder<double>(
+          valueListenable: notifier,
+          builder: (_, val, _) => buildReadOnlyContent(val),
+        );
+      }
+      return buildReadOnlyContent(readOnlyValue);
     }
 
     // Editable cell with seamless numeric keyboard & auto text selection on tap
     final controllerKey = '${grade.studentId}_${_selectedTermIndex}_${_selectedView}_${column.key}';
-    final controller = _getController(controllerKey, value);
+    final bool isFinalExamField = !isMonthView && column.key == 'finalExam';
+    final controller = _getController(controllerKey, value, showZero: isFinalExamField);
 
     return Container(
       width: cellWidth,
@@ -871,17 +1022,34 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
           fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
         ),
         onChanged: (val) {
-          final doubleVal = double.tryParse(val) ?? 0.0;
-          _updateGradeCell(grade, column.key, doubleVal, isMonthView);
+          final trimmed = val.trim();
+          final double? parsedVal = trimmed.isEmpty
+              ? (isFinalExamField ? null : 0.0)
+              : (double.tryParse(trimmed) ?? (isFinalExamField ? null : 0.0));
+          _updateGradeCell(grade.studentId, column.key, parsedVal, isMonthView);
         },
       ),
     );
   }
 
-  void _updateGradeCell(StudentSubjectGrade grade, String field, double value, bool isMonthView) {
+  void _updateGradeCell(String studentId, String field, double? value, bool isMonthView) {
+    // Always read the latest student record so isolated cell edits never overwrite sibling cells
+    final currentGrades = ref.read(gradesDataProvider).grades;
+    final grade = currentGrades.firstWhere(
+      (g) => g.studentId == studentId,
+      orElse: () => StudentSubjectGrade(
+        studentId: studentId,
+        studentName: '',
+        subjectId: '',
+        firstTerm: const TermRecord(termIndex: 1, months: []),
+        secondTerm: const TermRecord(termIndex: 2, months: []),
+      ),
+    );
     TermRecord termRecord = _selectedTermIndex == 1 ? grade.firstTerm : grade.secondTerm;
+    double newTotal = 0.0;
 
     if (isMonthView) {
+      final monthVal = value ?? 0.0;
       final monthIdx = _selectedView - 1;
       final months = List<MonthRecord>.from(termRecord.months);
       while (months.length <= monthIdx) {
@@ -889,18 +1057,24 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
       }
       MonthRecord month = months[monthIdx];
       switch (field) {
-        case 'homework': month = month.copyWith(homework: value); break;
-        case 'attendance': month = month.copyWith(attendance: value); break;
-        case 'behavior': month = month.copyWith(behavior: value); break;
-        case 'oral': month = month.copyWith(oral: value); break;
-        case 'written': month = month.copyWith(written: value); break;
+        case 'homework': month = month.copyWith(homework: monthVal); break;
+        case 'attendance': month = month.copyWith(attendance: monthVal); break;
+        case 'behavior': month = month.copyWith(behavior: monthVal); break;
+        case 'oral': month = month.copyWith(oral: monthVal); break;
+        case 'written': month = month.copyWith(written: monthVal); break;
       }
       months[monthIdx] = month;
+      newTotal = month.total;
       termRecord = termRecord.copyWith(months: months);
     } else {
       switch (field) {
-        case 'finalExam': termRecord = termRecord.copyWith(finalExam: value); break;
+        case 'finalExam':
+          termRecord = value == null
+              ? termRecord.copyWith(clearFinalExam: true, isFinalSaved: false)
+              : termRecord.copyWith(finalExam: value);
+          break;
       }
+      newTotal = termRecord.termTotal;
     }
 
     var updatedGrade = grade;
@@ -910,22 +1084,38 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
       updatedGrade = updatedGrade.copyWith(secondTerm: termRecord);
     }
 
-    // Save locally immediately (Offline-First, no network call on keystroke)
-    ref.read(gradesDataProvider.notifier).updateStudentGrade(grade.studentId, updatedGrade);
+    final totalKey = '${studentId}_${_selectedTermIndex}_$_selectedView';
+    _totalNotifiers[totalKey]?.value = newTotal;
+
+    final periodCode = isMonthView ? 'm$_selectedView' : 'final';
+    final periodKey = '${studentId}_${_selectedTermIndex}_$periodCode';
+
+    // Save locally immediately in memory + debounced compact delta (no network call on keystroke)
+    ref.read(gradesDataProvider.notifier).updateStudentGrade(
+          studentId,
+          updatedGrade,
+          changedPeriodKey: periodKey,
+        );
   }
 
   Widget _buildStudentCard(StudentSubjectGrade grade, bool isDark, Color primaryColor) {
+    final classGrades = ref.watch(gradesDataProvider);
     final termRecord = _selectedTermIndex == 1 ? grade.firstTerm : grade.secondTerm;
-    final bool isMonthView = _selectedView <= 3;
+    final bool isMonthView = !classGrades.isDescriptive && _selectedView <= 3;
     final double currentTotal = isMonthView 
         ? ((_selectedView - 1 < termRecord.months.length) 
             ? termRecord.months[_selectedView - 1].total 
             : 0.0)
         : termRecord.termTotal;
-
-    final classGrades = ref.watch(gradesDataProvider);
-    final bool hasDraft = classGrades.hasUnsyncedChanges && currentTotal > 0;
-    final bool isSubmitted = !classGrades.hasUnsyncedChanges && currentTotal > 0;
+    final bool isStudentUnsynced = classGrades.unsyncedStudentIds.contains(grade.studentId) ||
+        (classGrades.hasUnsyncedChanges && classGrades.unsyncedStudentIds.isEmpty && currentTotal > 0);
+    final bool hasDraft = isStudentUnsynced;
+    final bool isSubmitted = !isStudentUnsynced &&
+        (isMonthView
+            ? currentTotal > 0
+            : (classGrades.isDescriptive
+                ? (termRecord.descriptiveGrade != null && termRecord.descriptiveGrade!.isNotEmpty)
+                : (termRecord.isFinalSaved && termRecord.finalExam != null)));
 
     final theme = Theme.of(context);
     return ModernCard(
@@ -1031,6 +1221,7 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
 
   void _showGradeEntrySheet(BuildContext context, StudentSubjectGrade grade, TermRecord termRecord, bool isMonthView, Color primaryColor) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final classGrades = ref.read(gradesDataProvider);
 
     showModalBottomSheet(
       context: context,
@@ -1045,8 +1236,16 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
           selectedTermIndex: _selectedTermIndex,
           isDark: isDark,
           primaryColor: primaryColor,
+          isDescriptive: classGrades.isDescriptive,
+          descriptiveEstimates: classGrades.descriptiveEstimates,
           onSave: (updatedGrade) {
-            ref.read(gradesDataProvider.notifier).updateStudentGrade(grade.studentId, updatedGrade);
+            final periodCode = isMonthView ? 'm$_selectedView' : 'final';
+            final periodKey = '${grade.studentId}_${_selectedTermIndex}_$periodCode';
+            ref.read(gradesDataProvider.notifier).updateStudentGrade(
+                  grade.studentId,
+                  updatedGrade,
+                  changedPeriodKey: periodKey,
+                );
           },
         );
       },
@@ -1100,7 +1299,7 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
   /// Allows submitting all locally saved grades to the administration when desired.
   Widget _buildBottomSubmitBar(bool isDark, Color primaryColor) {
     final classGrades = ref.watch(gradesDataProvider);
-    final isUnsynced = classGrades.hasUnsyncedChanges;
+    final bool isUnsynced = classGrades.hasUnsyncedChanges;
     final isSubmitting = classGrades.isSubmitting;
     final connectivity = ref.watch(connectivityProvider);
     final isOffline = connectivity == ConnectivityStatus.offline;
@@ -1196,44 +1395,147 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
 
   void _confirmAndSubmitGrades() async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+    final classGrades = ref.read(gradesDataProvider);
+    final allStudents = classGrades.grades;
+
+    if (allStudents.isEmpty) {
+      AppNotification.show(
+        context,
+        type: AppNotificationType.warning,
+        title: 'لا توجد درجات لإرسالها',
+      );
+      return;
+    }
+
+    final unsyncedSet = classGrades.unsyncedStudentIds.toSet();
+    final Set<String> selectedIds = unsyncedSet.isNotEmpty
+        ? Set<String>.from(unsyncedSet)
+        : allStudents.map((g) => g.studentId).toSet();
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? AppColors.surfaceAltDark : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          context.loc.confirmSendGradesTitle,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          context.loc.confirmSendGradesMessage,
-          style: TextStyle(
-            color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(
-              context.loc.cancel,
-              style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          return AlertDialog(
+            backgroundColor: isDark ? AppColors.surfaceAltDark : Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Text(
+              context.loc.confirmSendGradesTitle,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
             ),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: isDark ? AppColors.uiPalettePrimary : AppColors.primary,
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'اختر الطلاب المراد إرسال درجاتهم للإدارة (تبقى المسودات الأخرى محفوظة محلياً):',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          setDialogState(() {
+                            selectedIds
+                              ..clear()
+                              ..addAll(allStudents.map((g) => g.studentId));
+                          });
+                        },
+                        child: const Text('تحديد الكل', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                      if (unsyncedSet.isNotEmpty)
+                        TextButton(
+                          onPressed: () {
+                            setDialogState(() {
+                              selectedIds
+                                ..clear()
+                                ..addAll(unsyncedSet);
+                            });
+                          },
+                          child: const Text('المسودات فقط', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        ),
+                      TextButton(
+                        onPressed: () {
+                          setDialogState(() => selectedIds.clear());
+                        },
+                        child: const Text('إلغاء التحديد', style: TextStyle(fontSize: 12)),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 1),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 280),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: allStudents.length,
+                      itemBuilder: (context, idx) {
+                        final st = allStudents[idx];
+                        final isSelected = selectedIds.contains(st.studentId);
+                        final isDraft = unsyncedSet.contains(st.studentId);
+                        return CheckboxListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          value: isSelected,
+                          onChanged: (checked) {
+                            setDialogState(() {
+                              if (checked == true) {
+                                selectedIds.add(st.studentId);
+                              } else {
+                                selectedIds.remove(st.studentId);
+                              }
+                            });
+                          },
+                          title: Text(
+                            context.translateMock(st.studentName),
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: isDraft
+                              ? const Text(
+                                  'مسودة محلية غير مرسلة',
+                                  style: TextStyle(fontSize: 10, color: Colors.amber, fontWeight: FontWeight.bold),
+                                )
+                              : null,
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: Text(context.loc.sendNow),
-          ),
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(
+                  context.loc.cancel,
+                  style: TextStyle(color: isDark ? Colors.white60 : Colors.black54),
+                ),
+              ),
+              FilledButton(
+                onPressed: selectedIds.isEmpty ? null : () => Navigator.pop(ctx, true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: isDark ? AppColors.uiPalettePrimary : AppColors.primary,
+                ),
+                child: Text('${context.loc.sendNow} (${selectedIds.length})'),
+              ),
+            ],
+          );
+        },
       ),
     );
 
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || selectedIds.isEmpty || !mounted) return;
 
-    final result = await ref.read(gradesDataProvider.notifier).sendGradesToAdministration();
+    final result = await ref
+        .read(gradesDataProvider.notifier)
+        .sendGradesToAdministration(selectedStudentIds: selectedIds);
 
     if (!mounted) return;
 
@@ -1247,7 +1549,14 @@ class _GradesScreenState extends ConsumerState<GradesScreen> {
       AppNotification.show(
         context,
         type: AppNotificationType.success,
-        title: context.loc.gradesSentSuccessfully,
+        title: '${context.loc.gradesSentSuccessfully} (${result.succeededCount})',
+      );
+    } else if (result.isPartial) {
+      final firstReason = result.failedDetails.isNotEmpty ? ' — ${result.failedDetails.first}' : '';
+      AppNotification.show(
+        context,
+        type: AppNotificationType.warning,
+        title: 'نجح إرسال ${result.succeededCount}، وفشل ${result.failedCount}$firstReason',
       );
     } else {
       AppNotification.show(
@@ -1267,6 +1576,8 @@ class GradeEntrySheet extends StatefulWidget {
   final int selectedTermIndex;
   final bool isDark;
   final Color primaryColor;
+  final bool isDescriptive;
+  final List<String> descriptiveEstimates;
   final Function(StudentSubjectGrade) onSave;
 
   const GradeEntrySheet({
@@ -1278,6 +1589,8 @@ class GradeEntrySheet extends StatefulWidget {
     required this.selectedTermIndex,
     required this.isDark,
     required this.primaryColor,
+    this.isDescriptive = false,
+    this.descriptiveEstimates = const ['ممتاز', 'جيد جداً', 'جيد', 'مقبول', 'ضعيف'],
     required this.onSave,
   });
 
@@ -1289,6 +1602,7 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
   late MonthRecord _currentMonth;
   late TermRecord _currentTerm;
   bool _isSaved = false;
+  bool _hasUserEdited = false;
 
   late final TextEditingController _hwController;
   late final TextEditingController _attController;
@@ -1299,6 +1613,12 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
 
   static String _formatGrade(double val) {
     if (val == 0) return '';
+    return val % 1 == 0 ? val.toInt().toString() : val.toString();
+  }
+
+  static String _formatNullableGrade(double? val) {
+    if (val == null) return '';
+    if (val == 0) return '0';
     return val % 1 == 0 ? val.toInt().toString() : val.toString();
   }
 
@@ -1320,7 +1640,7 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
     _behController = TextEditingController(text: _formatGrade(widget.isMonthView ? _currentMonth.behavior : 0));
     _oralController = TextEditingController(text: _formatGrade(widget.isMonthView ? _currentMonth.oral : 0));
     _wrtController = TextEditingController(text: _formatGrade(widget.isMonthView ? _currentMonth.written : 0));
-    _finalExamController = TextEditingController(text: _formatGrade(widget.isMonthView ? 0 : _currentTerm.finalExam));
+    _finalExamController = TextEditingController(text: _formatNullableGrade(widget.isMonthView ? null : _currentTerm.finalExam));
   }
 
   @override
@@ -1335,6 +1655,7 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
   }
 
   void _autoSaveDraft() {
+    if (!_hasUserEdited) return;
     TermRecord updatedTerm = _currentTerm;
 
     if (widget.isMonthView) {
@@ -1348,7 +1669,8 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
     } else {
       updatedTerm = updatedTerm.copyWith(
         finalExam: _currentTerm.finalExam,
-        isFinalSaved: true,
+        clearFinalExam: _currentTerm.finalExam == null,
+        isFinalSaved: _currentTerm.finalExam != null,
       );
     }
 
@@ -1363,7 +1685,7 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
   }
 
   void _saveAndClose({bool shouldPop = true}) {
-    if (_isSaved) {
+    if (!_hasUserEdited || _isSaved) {
       if (shouldPop && mounted && Navigator.canPop(context)) {
         Navigator.pop(context);
       }
@@ -1692,6 +2014,33 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
   }
 
   Widget _buildTermSummaryInputs() {
+    if (widget.isDescriptive) {
+      final estimates = widget.descriptiveEstimates;
+      final currentDesc = (_currentTerm.descriptiveGrade != null &&
+              estimates.contains(_currentTerm.descriptiveGrade))
+          ? _currentTerm.descriptiveGrade
+          : null;
+      return DropdownButtonFormField<String?>(
+        initialValue: currentDesc,
+        decoration: InputDecoration(
+          labelText: 'التقدير الوصفي',
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        items: [
+          const DropdownMenuItem<String?>(value: null, child: Text('لم يُرصد')),
+          ...estimates.map((e) => DropdownMenuItem<String?>(value: e, child: Text(e))),
+        ],
+        onChanged: (val) {
+          _hasUserEdited = true;
+          _currentTerm = val == null
+              ? _currentTerm.copyWith(clearDescriptiveGrade: true, isFinalSaved: false)
+              : _currentTerm.copyWith(descriptiveGrade: val);
+          _autoSaveDraft();
+          setState(() {});
+        },
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1709,8 +2058,12 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
                 context.loc.finalExamLabel('30'),
                 _finalExamController,
                 30,
-                (v) {
-                  _currentTerm = _currentTerm.copyWith(finalExam: v);
+                (_) {},
+                onNullableChanged: (v) {
+                  _hasUserEdited = true;
+                  _currentTerm = v == null
+                      ? _currentTerm.copyWith(clearFinalExam: true, isFinalSaved: false)
+                      : _currentTerm.copyWith(finalExam: v);
                   _autoSaveDraft();
                   setState(() {});
                 },
@@ -1726,8 +2079,9 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
     String label,
     TextEditingController controller,
     double maxValue,
-    Function(double) onChanged,
-  ) {
+    Function(double) onChanged, {
+    Function(double?)? onNullableChanged,
+  }) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1785,8 +2139,14 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
                 : Colors.white,
           ),
           onChanged: (val) {
-            final doubleVal = double.tryParse(val) ?? 0.0;
-            onChanged(doubleVal);
+            _hasUserEdited = true;
+            if (onNullableChanged != null) {
+              final trimmed = val.trim();
+              onNullableChanged(trimmed.isEmpty ? null : double.tryParse(trimmed));
+            } else {
+              final doubleVal = double.tryParse(val) ?? 0.0;
+              onChanged(doubleVal);
+            }
           },
         ),
       ],

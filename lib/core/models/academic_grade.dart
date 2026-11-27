@@ -77,13 +77,15 @@ class MonthRecord {
 class TermRecord {
   final int termIndex; // 1 or 2
   final List<MonthRecord> months;
-  final double finalExam;
+  final double? finalExam;
+  final String? descriptiveGrade;
   final bool isFinalSaved;
 
   const TermRecord({
     required this.termIndex,
     required this.months,
-    this.finalExam = 0,
+    this.finalExam,
+    this.descriptiveGrade,
     this.isFinalSaved = false,
   });
 
@@ -93,18 +95,22 @@ class TermRecord {
     return sum / 15;
   }
 
-  double get termTotal => monthsAverage + finalExam;
+  double get termTotal => monthsAverage + (finalExam ?? 0.0);
 
   TermRecord copyWith({
     int? termIndex,
     List<MonthRecord>? months,
     double? finalExam,
+    bool clearFinalExam = false,
+    String? descriptiveGrade,
+    bool clearDescriptiveGrade = false,
     bool? isFinalSaved,
   }) {
     return TermRecord(
       termIndex: termIndex ?? this.termIndex,
       months: months ?? this.months,
-      finalExam: finalExam ?? this.finalExam,
+      finalExam: clearFinalExam ? null : (finalExam ?? this.finalExam),
+      descriptiveGrade: clearDescriptiveGrade ? null : (descriptiveGrade ?? this.descriptiveGrade),
       isFinalSaved: isFinalSaved ?? this.isFinalSaved,
     );
   }
@@ -114,6 +120,7 @@ class TermRecord {
       'termIndex': termIndex,
       'months': months.map((x) => x.toMap()).toList(),
       'finalExam': finalExam,
+      'descriptiveGrade': descriptiveGrade,
       'isFinalSaved': isFinalSaved,
     };
   }
@@ -129,11 +136,14 @@ class TermRecord {
       if (value is num) return value.toInt();
       return int.tryParse(value.toString()) ?? 0;
     }
+    final rawFinal = map['finalExam'];
+    final rawDesc = (map['descriptiveGrade'] ?? map['descriptive_grade'])?.toString();
     return TermRecord(
       termIndex: parseInt(map['termIndex']),
       months: List<MonthRecord>.from((map['months'] as List? ?? []).map((x) => MonthRecord.fromMap(x as Map<String, dynamic>))),
-      finalExam: parseDouble(map['finalExam']),
-      isFinalSaved: map['isFinalSaved'] == true,
+      finalExam: rawFinal == null ? null : parseDouble(rawFinal),
+      descriptiveGrade: (rawDesc != null && rawDesc.isNotEmpty) ? rawDesc : null,
+      isFinalSaved: map['isFinalSaved'] == true && (rawFinal != null || (rawDesc != null && rawDesc.isNotEmpty)),
     );
   }
 }
@@ -201,30 +211,52 @@ class StudentSubjectGrade {
 class ClassSubjectGrades {
   final String classId;
   final String subjectName;
+  final String subjectType; // 'basic' or 'descriptive'
+  final List<String> descriptiveEstimates;
   final List<StudentSubjectGrade> grades;
   final bool hasUnsyncedChanges;
+  final List<String> unsyncedStudentIds;
+  final List<String> dirtyPeriodKeys;
+  final Map<String, int> studentEditVersions;
   final bool isSubmitting;
+
+  bool get isDescriptive => subjectType == 'descriptive';
 
   const ClassSubjectGrades({
     required this.classId,
     required this.subjectName,
+    this.subjectType = 'basic',
+    this.descriptiveEstimates = const ['ممتاز', 'جيد جداً', 'جيد', 'مقبول', 'ضعيف'],
     required this.grades,
     this.hasUnsyncedChanges = false,
+    this.unsyncedStudentIds = const [],
+    this.dirtyPeriodKeys = const [],
+    this.studentEditVersions = const {},
     this.isSubmitting = false,
   });
 
   ClassSubjectGrades copyWith({
     String? classId,
     String? subjectName,
+    String? subjectType,
+    List<String>? descriptiveEstimates,
     List<StudentSubjectGrade>? grades,
     bool? hasUnsyncedChanges,
+    List<String>? unsyncedStudentIds,
+    List<String>? dirtyPeriodKeys,
+    Map<String, int>? studentEditVersions,
     bool? isSubmitting,
   }) {
     return ClassSubjectGrades(
       classId: classId ?? this.classId,
       subjectName: subjectName ?? this.subjectName,
+      subjectType: subjectType ?? this.subjectType,
+      descriptiveEstimates: descriptiveEstimates ?? this.descriptiveEstimates,
       grades: grades ?? this.grades,
       hasUnsyncedChanges: hasUnsyncedChanges ?? this.hasUnsyncedChanges,
+      unsyncedStudentIds: unsyncedStudentIds ?? this.unsyncedStudentIds,
+      dirtyPeriodKeys: dirtyPeriodKeys ?? this.dirtyPeriodKeys,
+      studentEditVersions: studentEditVersions ?? this.studentEditVersions,
       isSubmitting: isSubmitting ?? this.isSubmitting,
     );
   }
@@ -235,6 +267,8 @@ class ClassSubjectGrades {
       'subjectName': subjectName,
       'grades': grades.map((x) => x.toMap()).toList(),
       'hasUnsyncedChanges': hasUnsyncedChanges,
+      'unsyncedStudentIds': unsyncedStudentIds,
+      'dirtyPeriodKeys': dirtyPeriodKeys,
     };
   }
 
@@ -246,6 +280,12 @@ class ClassSubjectGrades {
         (map['grades'] as List? ?? []).map((x) => StudentSubjectGrade.fromMap(x as Map<String, dynamic>)),
       ),
       hasUnsyncedChanges: map['hasUnsyncedChanges'] == true,
+      unsyncedStudentIds: List<String>.from(
+        (map['unsyncedStudentIds'] as List? ?? []).map((x) => x.toString()),
+      ),
+      dirtyPeriodKeys: List<String>.from(
+        (map['dirtyPeriodKeys'] as List? ?? []).map((x) => x.toString()),
+      ),
       isSubmitting: false,
     );
   }

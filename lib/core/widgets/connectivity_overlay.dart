@@ -24,17 +24,63 @@ class ConnectivityOverlay extends ConsumerWidget {
       children: [
         child,
         if (connectivityStatus == ConnectivityStatus.offline)
-          _buildErrorScreen(
-            context: context,
-            isDark: isDark,
-            title: 'لا يوجد اتصال بالإنترنت',
-            message: 'يرجى التحقق من اتصالك بشبكة الواي فاي أو بيانات الهاتف والمحاولة مرة أخرى.',
-            icon: PhosphorIcons.wifiSlash(PhosphorIconsStyle.duotone),
-            iconColor: AppColors.error,
-            onRetry: () {
-              // Trigger state refresh
-              ref.invalidate(connectivityProvider);
-            },
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              bottom: false,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.error,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        PhosphorIcons.wifiSlash(PhosphorIconsStyle.bold),
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'لا يوجد اتصال بالإنترنت — التعديلات تُحفظ محلياً كمسودة',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () => ref.invalidate(connectivityProvider),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            PhosphorIcons.arrowsClockwise(PhosphorIconsStyle.bold),
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           )
         else if (hasServerError)
           _buildErrorScreen(
