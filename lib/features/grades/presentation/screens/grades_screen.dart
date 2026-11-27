@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/models/academic_grade.dart';
 import '../../../../core/providers/grades_provider.dart';
+import '../../../../core/providers/classes_provider.dart';
 import '../../../../core/providers/connectivity_provider.dart';
 import '../../../../core/widgets/app_sliver_header.dart';
 import '../../../../core/widgets/class_subject_selector.dart';
@@ -537,8 +538,26 @@ class _GradesScreenState extends ConsumerState<GradesScreen> with WidgetsBinding
   /// - Pinned Student Name Column on the side (never scrolls horizontally)
   /// - Synchronized horizontal scroll between Header and Body
   /// - Synchronized vertical scroll between Names and Cells
+  static bool _isMinisterialGrade(String gradeOrClassName) {
+    final norm = gradeOrClassName
+        .trim()
+        .replaceAll(RegExp(r'[أإآ]'), 'ا')
+        .replaceAll('ة', 'ه')
+        .replaceAll('ى', 'ي')
+        .replaceAll(RegExp(r'\s+'), ' ');
+    if (norm.isEmpty) return false;
+    return norm.contains('تاسع') ||
+        norm.contains('ثالث ثانوي') ||
+        norm.contains('الثالث الثانوي') ||
+        norm.contains('الثالث ثانوي') ||
+        norm.contains('ثالث الثانوي');
+  }
+
   Widget _buildTableView(List<StudentSubjectGrade> grades, bool isDark, Color primaryColor) {
     final classGrades = ref.watch(gradesDataProvider);
+    final selectedClass = ref.watch(selectedClassProvider);
+    final bool isMinisterial = _isMinisterialGrade(selectedClass);
+    final int finalExamMax = isMinisterial ? 80 : 30;
     final bool isMonthView = !classGrades.isDescriptive && _selectedView <= 3;
     final theme = Theme.of(context);
 
@@ -558,7 +577,7 @@ class _GradesScreenState extends ConsumerState<GradesScreen> with WidgetsBinding
               ]
             : [
                 _TableColumn(context.loc.averageLabel('20'), 'average', 20, isReadOnly: true),
-                _TableColumn(context.loc.finalExamLabel('30'), 'finalExam', 30),
+                _TableColumn(context.loc.finalExamLabel('$finalExamMax'), 'finalExam', finalExamMax.toDouble()),
                 _TableColumn(context.loc.total, 'total', 0, isReadOnly: true),
               ]);
 
@@ -921,7 +940,8 @@ class _GradesScreenState extends ConsumerState<GradesScreen> with WidgetsBinding
         Color cellBg = bgColor;
 
         if (isTotalColumn && displayVal > 0) {
-          final maxTotal = isMonthView ? 100.0 : 50.0;
+          final termMax = _isMinisterialGrade(ref.read(selectedClassProvider)) ? 100.0 : 50.0;
+          final maxTotal = isMonthView ? 100.0 : termMax;
           if (displayVal >= maxTotal * 0.9) {
             textColor = AppColors.success;
             cellBg = AppColors.success.withValues(alpha: isDark ? 0.15 : 0.08);
@@ -1212,7 +1232,7 @@ class _GradesScreenState extends ConsumerState<GradesScreen> with WidgetsBinding
                 ],
               ),
             ),
-            _buildTotalBadge(currentTotal, isMonthView ? 100 : 50, isDark),
+            _buildTotalBadge(currentTotal, isMonthView ? 100 : (_isMinisterialGrade(ref.read(selectedClassProvider)) ? 100 : 50), isDark),
           ],
         ),
       ),
@@ -1222,6 +1242,7 @@ class _GradesScreenState extends ConsumerState<GradesScreen> with WidgetsBinding
   void _showGradeEntrySheet(BuildContext context, StudentSubjectGrade grade, TermRecord termRecord, bool isMonthView, Color primaryColor) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final classGrades = ref.read(gradesDataProvider);
+    final bool isMinisterial = _isMinisterialGrade(ref.read(selectedClassProvider));
 
     showModalBottomSheet(
       context: context,
@@ -1237,6 +1258,7 @@ class _GradesScreenState extends ConsumerState<GradesScreen> with WidgetsBinding
           isDark: isDark,
           primaryColor: primaryColor,
           isDescriptive: classGrades.isDescriptive,
+          isMinisterial: isMinisterial,
           descriptiveEstimates: classGrades.descriptiveEstimates,
           onSave: (updatedGrade) {
             final periodCode = isMonthView ? 'm$_selectedView' : 'final';
@@ -1577,6 +1599,7 @@ class GradeEntrySheet extends StatefulWidget {
   final bool isDark;
   final Color primaryColor;
   final bool isDescriptive;
+  final bool isMinisterial;
   final List<String> descriptiveEstimates;
   final Function(StudentSubjectGrade) onSave;
 
@@ -1590,6 +1613,7 @@ class GradeEntrySheet extends StatefulWidget {
     required this.isDark,
     required this.primaryColor,
     this.isDescriptive = false,
+    this.isMinisterial = false,
     this.descriptiveEstimates = const ['ممتاز', 'جيد جداً', 'جيد', 'مقبول', 'ضعيف'],
     required this.onSave,
   });
@@ -2055,9 +2079,9 @@ class _GradeEntrySheetState extends State<GradeEntrySheet> {
             const SizedBox(width: 16),
             Expanded(
               child: _buildLabeledInput(
-                context.loc.finalExamLabel('30'),
+                context.loc.finalExamLabel('${widget.isMinisterial ? 80 : 30}'),
                 _finalExamController,
-                30,
+                widget.isMinisterial ? 80 : 30,
                 (_) {},
                 onNullableChanged: (v) {
                   _hasUserEdited = true;
